@@ -70,4 +70,4 @@ plt.title('n = '+str(n))
 
 plt.xlabel(r'FAM QRPA $\alpha_D$', size = 16)
 plt.ylabel(r'Emulated $\alpha_D$', size = 16)
-plt.savefig('dipole_polarizability_reconstruction.pdf', bbox_inches='tight')
+#plt.savefig('dipole_polarizability_reconstruction.pdf', bbox_inches='tight')

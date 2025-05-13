@@ -37,8 +37,8 @@ for beta in formatted_beta_values:
     for alpha in formatted_alpha_values:
 
 
-        data_hl = np.loadtxt('../new_data/half_life_Ni_74_'+beta+'_'+alpha+'.txt')
-        data_excm = np.loadtxt('../new_data/excm_Ni_74_'+beta+'_'+alpha+'.out')
+        data_hl = np.loadtxt('../beta_decay_data/half_life_Ni_74_'+beta+'_'+alpha+'.txt')
+        data_excm = np.loadtxt('../beta_decay_data/excm_Ni_74_'+beta+'_'+alpha+'.out')
         eigenvalues = data_excm[:,0]
         B = data_excm[:,1]
         

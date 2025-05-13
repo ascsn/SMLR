@@ -30,7 +30,7 @@ for alpha in formatted_alpha_values:
     for beta in formatted_beta_values:
         
         # first open the file with the data
-        file_strength = np.loadtxt('../new_data/lorm_Ni_74_'+beta+'_'+alpha+'.out')
+        file_strength = np.loadtxt('../beta_decay_data/lorm_Ni_74_'+beta+'_'+alpha+'.out')
         
         file_strength = file_strength[file_strength[:,0] < 0.782]
         

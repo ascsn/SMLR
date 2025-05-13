@@ -83,8 +83,8 @@ def data_table(fmt_data):
         beta = frmt[1]
 
         # first open the file with the data
-        file_strength = np.loadtxt('../total_strength/strength_'+beta+'_'+alpha+'.out')
-        file_alphaD = np.loadtxt('../total_alphaD/alphaD_'+beta+'_'+alpha+'.out')
+        file_strength = np.loadtxt('../dipoles_data/total_strength/strength_'+beta+'_'+alpha+'.out')
+        file_alphaD = np.loadtxt('../dipoles_data/total_alphaD/alphaD_'+beta+'_'+alpha+'.out')
         
         file_strength = file_strength[file_strength[:,0] > 1]
 

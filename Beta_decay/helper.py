@@ -237,7 +237,7 @@ def nec_mat(n):
 def data_table(fmt_data, coeffs, g_A):
     '''
     
-    Here split the dataset from "new_data" folder
+    Here split the dataset from "beta_decay_data" folder
     into: training set, validation set and test set
     use any ratio you like (e.g. 0.8 0.1 0.1)
     
@@ -258,7 +258,7 @@ def data_table(fmt_data, coeffs, g_A):
         beta = frmt[1]
 
         # first open the file with the data
-        file = np.loadtxt('../new_data/lorm_Ni_74_'+beta+'_'+alpha+'.out')
+        file = np.loadtxt('../beta_decay_data/lorm_Ni_74_'+beta+'_'+alpha+'.out')
         
         # normalize the Lorentzians
         #norm = np.sum(file[:,1])
@@ -273,7 +273,7 @@ def data_table(fmt_data, coeffs, g_A):
         Lors.append(file)  
         
         # now calculate half-lives the old way
-        file = np.loadtxt('../new_data/excm_Ni_74_'+beta+'_'+alpha+'.out')
+        file = np.loadtxt('../beta_decay_data/excm_Ni_74_'+beta+'_'+alpha+'.out')
         file = file[file[:,0]<del_nH]
         file = file[file[:,0]>-10]
         HLs.append(half_life_loss(file[:,0], file[:,1],coeffs, g_A))
@@ -446,7 +446,7 @@ def cost_function_only_HL(params, n, fmt_data, HLs_true):
 def data_table_only_HL(fmt_data,coeffs, g_A):
     '''
     
-    Here split the dataset from "new_data" folder
+    Here split the dataset from "beta_decay_data" folder
     into: training set, validation set and test set
     use any ratio you like (e.g. 0.8 0.1 0.1)
     
@@ -466,7 +466,7 @@ def data_table_only_HL(fmt_data,coeffs, g_A):
         beta = frmt[1]
 
         # now calculate half-lives the old way
-        file = np.loadtxt('../new_data/excm_Ni_74_'+beta+'_'+alpha+'.out')
+        file = np.loadtxt('../beta_decay_data/excm_Ni_74_'+beta+'_'+alpha+'.out')
         file = file[file[:,0]<del_nH]
         file = file[file[:,0]>-10]
         HLs.append(half_life_loss(file[:,0], file[:,1],coeffs, g_A))
