@@ -48,7 +48,7 @@ plt.gca().tick_params(axis="x",direction="in", which = 'both', labelsize = 12)
 plt.gca().yaxis.set_minor_locator(ticker.MultipleLocator(0.1))
 plt.gca().xaxis.set_minor_locator(ticker.MultipleLocator(5))
 plt.annotate('$n = $'+str(n), (0.1,0.9), xycoords='axes fraction', size = 18)
-plt.savefig('dipole_polarizability_emulator.pdf', bbox_inches='tight')
+#plt.savefig('dipole_polarizability_emulator.pdf', bbox_inches='tight')
 
 plt.figure(3)
 rel =  np.abs(np.array(alphaD_test)-np.array(alphaD))/np.array(alphaD_test)

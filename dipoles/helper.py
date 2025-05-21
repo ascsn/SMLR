@@ -412,7 +412,41 @@ def plot_Lorentzian_for_idx(idx, test_set,n,params, fold):
     plt.xlim(0,30)
     plt.ylim(0,10)
     
-    plt.savefig('isovector_dipole_strength_emulator.pdf', bbox_inches='tight')
+    #plt.savefig('isovector_dipole_strength_emulator.pdf', bbox_inches='tight')
+    
+    return
+
+def data_Lorentzian_for_idx(idx, test_set,n,params, fold):
+
+    alpha = float(test_set[idx][0])
+    beta = float(test_set[idx][1])
+    
+    
+    Lors_test, alphaD_test = data_table(test_set)
+    Lors_orig = Lors_test[idx]
+    
+    opt_D, opt_S1, opt_S2, opt_v0 = modified_DS(params, n)
+    opt_eigenvalues, opt_eigenvectors = generalized_eigen(opt_D.numpy(), opt_S1.numpy(), opt_S2.numpy(), test_set[idx])
+    
+    projections = tf.linalg.matvec(tf.transpose(opt_eigenvectors), opt_v0)
+    
+    # Square each projection
+    B = tf.square(projections)
+    
+    mask = tf.cast((opt_eigenvalues > 1) &  (opt_eigenvalues < 30), dtype=tf.float64)
+
+    # Apply the mask to zero out B where eigenvalue is negative
+    opt_dot_products = B #* mask
+    
+
+   
+    x = Lors_orig[:,0]
+        
+    opt_Lor = give_me_Lorentzian(x, opt_eigenvalues, opt_dot_products, fold)
+    
+
+    
+    return x, Lors_orig[:,1], opt_Lor
     
  
 def plot_alphaD(test_set,params,n): 

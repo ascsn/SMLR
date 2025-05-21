@@ -578,6 +578,33 @@ def plot_Lorentzian_for_idx(idx, test_set,n,params, coeffs, g_A):
     
     plt.savefig('gamow_teller_strength_emulator.pdf', bbox_inches='tight')
     
+    
+def data_Lorentzian_for_idx(idx, test_set,n,params, coeffs, g_A):
+
+    
+    
+    Lors_test, HLs_test = data_table(test_set, coeffs, g_A)
+    Lors_orig = Lors_test[idx]
+    
+    opt_D, opt_S1, opt_S2, opt_v0 = modified_DS(params, n)
+    opt_eigenvalues, opt_eigenvectors = generalized_eigen(opt_D.numpy(), opt_S1.numpy(), opt_S2.numpy(), test_set[idx])
+    opt_dot_products = [np.square(np.dot(opt_eigenvectors[:, i], opt_v0.numpy())) for i in range(opt_eigenvectors.shape[1])]
+    
+    
+    
+    fig, ax = plt.subplots()
+    
+    
+    
+    # plot the Lorentzian for the original data
+    x = Lors_orig[:,0]
+    opt_Lor = []
+    for en in x:
+        opt_Lor.append(give_me_Lorentzian(en,opt_eigenvalues,opt_dot_products,0.5))
+    
+    
+    return x, Lors_orig[:,1], opt_Lor
+    
  
 def plot_half_lives(test_set,params,n, coeffs, g_A): 
     hl_guess = []
