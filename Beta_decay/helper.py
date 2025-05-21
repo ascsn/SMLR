@@ -592,7 +592,7 @@ def data_Lorentzian_for_idx(idx, test_set,n,params, coeffs, g_A):
     
     
     
-    fig, ax = plt.subplots()
+    # fig, ax = plt.subplots()    #  "just junk" (according to Ante)
     
     
     
