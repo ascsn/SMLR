@@ -44,6 +44,9 @@ for n in range(len(num_par)):
     rel =  np.abs(np.array(HLs_test)-np.array(HLs))/np.array(HLs_test)
     plt.scatter(np.array(times)*1000, rel, label = 'n(Alg 1) = '+str(num_par[n]), alpha = 0.8, color = colors[n])
     print(n, np.mean(rel))
+    
+    dat = np.concatenate((np.array(times).reshape(len(times),1), rel.reshape(len(times),1)), axis=1)
+    np.savetxt('CAT_Emulator1_'+str(n)+'.txt', dat)
  
 plt.axhline(np.mean(rel), color = 'black')
 num_par = [6,8,10]
@@ -69,6 +72,9 @@ for n in range(len(num_par)):
     plt.scatter(np.array(times)*1000, rel, label = 'n(Alg 2) = '+str(num_par[n]), alpha = 0.8, marker ='x', color = colors[n])
     print(n, np.mean(rel))
     
+    dat = np.concatenate((np.array(times).reshape(len(times),1), rel.reshape(len(times),1)), axis=1)
+    np.savetxt('CAT_Emulator2_'+str(n)+'.txt', dat)
+    
 plt.yscale('log')
 #plt.xscale('log')
 plt.xlim(3.5e-4*1000,0.0009*1000)
@@ -86,7 +92,7 @@ plt.gca().tick_params(axis="y",direction="in", which = 'both', labelsize = 12)
 plt.gca().tick_params(axis="x",direction="in", which = 'both', labelsize = 12)
 
 plt.legend(ncol=2, frameon = False, fontsize = 11)
-plt.ylim(1e-5,1e1)
+#plt.ylim(1e-5,1e1)
 
 
 #plt.savefig('CAT_beta.pdf', bbox_inches='tight')

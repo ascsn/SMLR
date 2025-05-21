@@ -36,6 +36,9 @@ for n in range(len(num_par)):
     plt.scatter(np.array(times)*1e3, rel, label = 'n(Alg 1) = '+str(num_par[n]), alpha = 0.8, color = colors[n])
     print(n, (np.mean(rel))*100)
     
+    dat = np.concatenate((np.array(times).reshape(len(times),1), rel.reshape(len(times),1)), axis=1)
+    np.savetxt('CAT_Emulator1_'+str(n)+'.txt', dat)
+    
     
 
 plt.yscale('log')
@@ -82,12 +85,15 @@ for n in range(len(num_par)):
                 color = colors[n])
     
     print(n, np.log10(np.mean(rel)))
+    
+    dat = np.concatenate((np.array(times).reshape(len(times),1), rel.reshape(len(times),1)), axis=1)
+    np.savetxt('CAT_Emulator2_'+str(n)+'.txt', dat)
 
 plt.axhline((np.mean(rel)), color = 'black', ls = '--')
     
 plt.legend(frameon = False, ncol = 2, fontsize = 11)
 
-plt.xlim(0.3,0.9)
+
 
 plt.ylim(1e-6,1e-1)
 #plt.xscale('log')
