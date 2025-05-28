@@ -39,3 +39,9 @@ Contains scripts to run the emulator for the **like-particle QRPA**. These scrip
 ## DATA files
 
 Folders which contain the high-fidelity QRPA calculations are stored in `dipoles_data` and `beta_decay_data`. Please ask Ante for details.
+
+
+## How to use code for Emulator 2
+
+Please switch to `dev_branch` and locate `dipoles` folder, the training script used for Emulator 2 is called `main_only_alphaD.py`. In the file up to line `118` is just reading the data in and then you have to select dimension of PMM which is number `n`. That's the only input parameter we have, other than selecting the initialization values in the line `random_initial_guess = np.random.uniform(0, 2, nec_num_param)`. The learning rate is set in the line `optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.1)` for the Adam optimizer. The line `optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.1)` sets the learning rate for the optimization, please keep in mind that 0.1 is already a large number. Number of iterations are defined in line 169 `num_iterations=40000`. The code selects those parameters which minimize the cross-validation cost. Finally, the parameters are stored in a text file `params_n.txt` (`n` is replaced with a number of params) and the training set is stored in `train_set.txt`. These two are used by the plotting scripts. The main plotting script is `plot_alphaD.py`, it produces a figure showing how the $\alpha_D$ changes as a function of parameters. We still have to work a bit on those plots ... 
+
