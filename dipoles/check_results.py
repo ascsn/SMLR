@@ -17,8 +17,8 @@ import matplotlib.ticker as ticker
 
 
 
-n = 30
-fold=1.8
+n = 60
+
 
 params = np.loadtxt('params_'+str(n)+'.txt')
 
@@ -30,9 +30,9 @@ with open("test_set.txt", "r") as f:
 
 print(test_set)
 
-idx = 67
+idx = 4
 
-helper.plot_Lorentzian_for_idx(idx, test_set,n,params, fold)
+helper.plot_Lorentzian_for_idx(idx, test_set,n,params)
 
 alphaD, alphaD_test, times = helper.plot_alphaD(test_set,params,n)
 
@@ -53,14 +53,14 @@ plt.annotate('$n = $'+str(n), (0.1,0.9), xycoords='axes fraction', size = 18)
 plt.figure(3)
 rel =  np.abs(np.array(alphaD_test)-np.array(alphaD))/np.array(alphaD_test)
 plt.scatter(alphaD, alphaD_test, marker = 'o', label = 'QRPA calc', color = 'blue', alpha = 0.8) 
-x = np.linspace(15.8,19,100)
+x = np.linspace(min(alphaD),max(alphaD),100)
 plt.plot(x, x, color = 'black')
 plt.gca().tick_params(axis="y",direction="in", which = 'both', labelsize = 12)
 plt.gca().tick_params(axis="x",direction="in", which = 'both', labelsize = 12)
 plt.gca().yaxis.set_minor_locator(ticker.MultipleLocator(0.1))
 plt.gca().xaxis.set_minor_locator(ticker.MultipleLocator(0.1))
-plt.xlim(15.8,19)
-plt.ylim(15.8,19)
+#plt.xlim(15.8,19)
+#plt.ylim(15.8,19)
 
 #plt.axhline(np.mean(rel), marker = '.', label = 'QRPA calc', ls = '--', color = 'black') 
 #plt.axhline(np.std(rel)+np.mean(rel), marker = '.', label = 'QRPA calc', ls = '--', color = 'black') 

@@ -11,10 +11,13 @@ import helper
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
+'''
+Test performance on the train set
+'''
 
 
-n = 30
-fold=1.8
+
+n = 40
 
 params = np.loadtxt('params_'+str(n)+'.txt')
 
@@ -29,10 +32,10 @@ print(test_set)
 '''
 I chose by hand test set indices 17, 40 and 70 so that they are sufficiently different
 '''
-idxs = [17,22,18]
-x1, orig1, opt1 = helper.data_Lorentzian_for_idx(idxs[0], test_set,n,params, fold)
-x2, orig2, opt2 = helper.data_Lorentzian_for_idx(idxs[1], test_set,n,params, fold)
-x3, orig3, opt3 = helper.data_Lorentzian_for_idx(idxs[2], test_set,n,params, fold)
+idxs = [4,1,2]
+x1, orig1, opt1 = helper.data_Lorentzian_for_idx(idxs[0], test_set,n,params)
+x2, orig2, opt2 = helper.data_Lorentzian_for_idx(idxs[1], test_set,n,params)
+x3, orig3, opt3 = helper.data_Lorentzian_for_idx(idxs[2], test_set,n,params)
 plt.plot(x1, orig1, color = 'red', label ='$b_{TV} ='+test_set[idxs[0]][1][:4]+'$ fm${}^{-2}$, $d_{TV}='+test_set[idxs[0]][0][:4]+'$')
 plt.plot(x2, orig2, color = 'blue', label ='$b_{TV} ='+test_set[idxs[1]][1][:4]+'$ fm${}^{-2}$, $d_{TV}='+test_set[idxs[1]][0][:4]+'$')
 plt.plot(x3, orig3, color = 'green', label ='$b_{TV} ='+test_set[idxs[2]][1][:4]+'$ fm${}^{-2}$, $d_{TV}='+test_set[idxs[2]][0][:4]+'$')

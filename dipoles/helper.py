@@ -20,6 +20,8 @@ from numpy.polynomial.polynomial import Polynomial
 import scipy.integrate as integrate
 from scipy.special import gamma
 import scipy.integrate as integrate
+import os
+import re
 
 
 # definition of the constants
@@ -36,12 +38,12 @@ def give_me_Lorentzian(energy, poles, strength, width):
     poles = tf.convert_to_tensor(poles, dtype=tf.float64)
     strength = tf.convert_to_tensor(strength, dtype=tf.float64)
     
-    mask = tf.cast((poles > 1) & (poles < 30), dtype=tf.float64)
+    mask = tf.cast((poles > 3) & (poles < 40), dtype=tf.float64)
 
     # Apply the mask to zero out B where eigenvalue is negative
     strength = strength * mask
     
-    width = tf.constant(width, dtype=tf.float64)
+    #width = tf.constant(width, dtype=tf.float64)
 
     energy_expanded = tf.expand_dims(energy, axis=-1)
 
@@ -83,10 +85,10 @@ def data_table(fmt_data):
         beta = frmt[1]
 
         # first open the file with the data
-        file_strength = np.loadtxt('../dipoles_data/total_strength/strength_'+beta+'_'+alpha+'.out')
-        file_alphaD = np.loadtxt('../dipoles_data/total_alphaD/alphaD_'+beta+'_'+alpha+'.out')
+        file_strength = np.loadtxt('../dipoles_data_all/total_strength/strength_'+beta+'_'+alpha+'.out')
+        file_alphaD = np.loadtxt('../dipoles_data_all/total_alphaD/alphaD_'+beta+'_'+alpha+'.out')
         
-        file_strength = file_strength[file_strength[:,0] > 1]
+        #file_strength = file_strength[file_strength[:,0] > 1]
 
 
         strength.append(file_strength)  
@@ -96,6 +98,46 @@ def data_table(fmt_data):
     return strength, alphaD
 
 
+
+
+def data_table_new():
+    '''
+    Automatically loads strength and alphaD files from the given directories.
+    Extracts alpha and beta from filenames like strength_beta_alpha.out
+    '''
+    strength = []
+    alphaD = []
+    fmt_data = []
+
+    strength_dir = '../dipoles_data_new/total_strength/'
+    alphaD_dir = '../dipoles_data_new/total_alphaD/'
+
+    # Pattern for strength files: strength_beta_alpha.out
+    pattern = re.compile(r'strength_([0-9.]+)_([0-9.]+)\.out')
+
+    for fname in os.listdir(strength_dir):
+        match = pattern.match(fname)
+        if match:
+            beta = match.group(1)
+            alpha = match.group(2)
+
+            strength_file = os.path.join(strength_dir, fname)
+            alphaD_file = os.path.join(alphaD_dir, f'alphaD_{beta}_{alpha}.out')
+
+            if os.path.exists(alphaD_file):
+                # Read data
+                file_strength = np.loadtxt(strength_file)
+                file_alphaD = np.loadtxt(alphaD_file)
+
+                # Apply filter on strength
+                #file_strength = file_strength[file_strength[:, 0] > 1]
+
+                # Store
+                strength.append(file_strength)
+                alphaD.append(file_alphaD)
+                fmt_data.append((alpha, beta))
+
+    return strength, alphaD, fmt_data
 
 '''
     data table is now constructed for alpha & beta parameters
@@ -121,6 +163,9 @@ def modified_DS_simple(params, n):
     S1_shape = (n,n)
     S2_shape = (n,n)
     
+    # print(params)
+    # print('----------------')
+    
     # initialize v0, D, S1 and S2
     D_mod = tf.linalg.diag(params[:D_shape[0]])
     S1_mod = tf.zeros(S1_shape, dtype=tf.float64)
@@ -143,6 +188,14 @@ def modified_DS_simple(params, n):
     
     S2_mod = S2_mod + tf.linalg.band_part(tf.transpose(S2_mod), -1, 0) - tf.linalg.diag(tf.linalg.diag_part(S2_mod))
     
+    # print(D_mod.numpy())
+    # print(S1_mod.numpy())
+    # print(S2_mod.numpy())
+    # print('-------------')
+    
+    
+    
+    
     
     return D_mod, S1_mod, S2_mod
 
@@ -160,6 +213,8 @@ def modified_DS(params, n):
      
      given params, construct D, S1 and S2 matrices , 
      as well as the external field v0
+     
+     added folding with into the mix -- eta
     
     '''
     D_shape = (n,n)
@@ -167,8 +222,9 @@ def modified_DS(params, n):
     S2_shape = (n,n)
     
     # initialize v0, D, S1 and S2
-    v0_mod = tf.convert_to_tensor(params[:n])
-    D_mod = tf.linalg.diag(params[n:D_shape[0]+n])
+    eta = tf.convert_to_tensor(params[0])
+    v0_mod = tf.convert_to_tensor(params[1:n+1])
+    D_mod = tf.linalg.diag(params[n+1:D_shape[0]+n+1])
     S1_mod = tf.zeros(S1_shape, dtype=tf.float64)
     S2_mod = tf.zeros(S2_shape, dtype=tf.float64)
     
@@ -176,7 +232,7 @@ def modified_DS(params, n):
     upper_tri_indices1 = np.triu_indices(S1_shape[0])
     indices1 = tf.constant(list(zip(upper_tri_indices1[0], upper_tri_indices1[1])))
     S1_mod = tf.tensor_scatter_nd_update(S1_mod, indices1,\
-            params[D_shape[0]+n:D_shape[0] + len(upper_tri_indices1[0])+n])
+            params[D_shape[0]+n+1:D_shape[0] + len(upper_tri_indices1[0])+n+1])
     
     S1_mod = S1_mod + tf.linalg.band_part(tf.transpose(S1_mod), -1, 0) - tf.linalg.diag(tf.linalg.diag_part(S1_mod))
     
@@ -184,18 +240,18 @@ def modified_DS(params, n):
     upper_tri_indices2 = np.triu_indices(S2_shape[0])
     indices2 = tf.constant(list(zip(upper_tri_indices2[0], upper_tri_indices2[1])))
     S2_mod = tf.tensor_scatter_nd_update(S2_mod, indices2 \
-    , params[D_shape[0] + len(upper_tri_indices1[0])+n:D_shape[0] \
-        + len(upper_tri_indices1[0])+n+len(upper_tri_indices2[0])])
+    , params[D_shape[0] + len(upper_tri_indices1[0])+n+1:D_shape[0] \
+        + len(upper_tri_indices1[0])+n+1+len(upper_tri_indices2[0])])
     
     S2_mod = S2_mod + tf.linalg.band_part(tf.transpose(S2_mod), -1, 0) - tf.linalg.diag(tf.linalg.diag_part(S2_mod))
     
     
-    return D_mod, S1_mod, S2_mod, v0_mod
+    return D_mod, S1_mod, S2_mod, v0_mod, eta
 
 @tf.function
 def calculate_alphaD(eigenvalues, B):
     
-    mask = tf.cast((eigenvalues > 1) & (eigenvalues < 30), dtype=tf.float64)
+    mask = tf.cast((eigenvalues > 3) & (eigenvalues < 40), dtype=tf.float64)
 
     # Apply the mask to zero out B where eigenvalue is negative
     B = B * mask
@@ -208,7 +264,7 @@ def calculate_alphaD(eigenvalues, B):
 
 
 # cost_function
-def cost_function(params, n, fmt_data, strength_true, alphaD_true, weight, fold):
+def cost_function(params, n, fmt_data, strength_true, alphaD_true, weight):
     
     '''
     params: tf.Variable
@@ -218,11 +274,10 @@ def cost_function(params, n, fmt_data, strength_true, alphaD_true, weight, fold)
     calculates the cost function by subtracting two Lorentzians
     and also alphaD
     
-    fold: folding width for training
     
     '''
     
-    D_mod, S1_mod, S2_mod, v0_mod = modified_DS(params,  n)
+    D_mod, S1_mod, S2_mod, v0_mod, fold = modified_DS(params,  n)
     
     total_cost = 0
     
@@ -250,7 +305,7 @@ def cost_function(params, n, fmt_data, strength_true, alphaD_true, weight, fold)
         # Square each projection
         B = tf.square(projections)
         
-        mask = tf.cast((eigenvalues > 1) & (eigenvalues < 30), dtype=tf.float64)
+        mask = tf.cast((eigenvalues > 3) & (eigenvalues < 40), dtype=tf.float64)
 
         # Apply the mask to zero out B where eigenvalue is negative
         B = B * mask
@@ -320,8 +375,8 @@ def cost_function_only_alphaD(params, n, fmt_data, alphaD_true):
         
         
 
-        val_true = alphaD_true[count][2]
-        val = eigenvalues[0]
+        val_true = alphaD_true[idx][2]
+        val = eigenvalues[1]
         #
     
         
@@ -350,7 +405,7 @@ def generalized_eigen(D, S1, S2, alpha):
 
 
 
-def plot_Lorentzian_for_idx(idx, test_set,n,params, fold):
+def plot_Lorentzian_for_idx(idx, test_set,n,params):
 
     alpha = float(test_set[idx][0])
     beta = float(test_set[idx][1])
@@ -359,7 +414,7 @@ def plot_Lorentzian_for_idx(idx, test_set,n,params, fold):
     Lors_test, alphaD_test = data_table(test_set)
     Lors_orig = Lors_test[idx]
     
-    opt_D, opt_S1, opt_S2, opt_v0 = modified_DS(params, n)
+    opt_D, opt_S1, opt_S2, opt_v0, fold = modified_DS(params, n)
     opt_eigenvalues, opt_eigenvectors = generalized_eigen(opt_D.numpy(), opt_S1.numpy(), opt_S2.numpy(), test_set[idx])
     
     projections = tf.linalg.matvec(tf.transpose(opt_eigenvectors), opt_v0)
@@ -367,7 +422,7 @@ def plot_Lorentzian_for_idx(idx, test_set,n,params, fold):
     # Square each projection
     B = tf.square(projections)
     
-    mask = tf.cast((opt_eigenvalues > 1) &  (opt_eigenvalues < 30), dtype=tf.float64)
+    mask = tf.cast((opt_eigenvalues > 3) &  (opt_eigenvalues < 40), dtype=tf.float64)
 
     # Apply the mask to zero out B where eigenvalue is negative
     opt_dot_products = B #* mask
@@ -409,14 +464,14 @@ def plot_Lorentzian_for_idx(idx, test_set,n,params, fold):
     
     #plt.stem(opt_eigenvalues, B)
     
-    plt.xlim(0,30)
+    plt.xlim(0,40)
     plt.ylim(0,10)
     
     #plt.savefig('isovector_dipole_strength_emulator.pdf', bbox_inches='tight')
     
     return
 
-def data_Lorentzian_for_idx(idx, test_set,n,params, fold):
+def data_Lorentzian_for_idx(idx, test_set,n,params):
 
     alpha = float(test_set[idx][0])
     beta = float(test_set[idx][1])
@@ -425,7 +480,7 @@ def data_Lorentzian_for_idx(idx, test_set,n,params, fold):
     Lors_test, alphaD_test = data_table(test_set)
     Lors_orig = Lors_test[idx]
     
-    opt_D, opt_S1, opt_S2, opt_v0 = modified_DS(params, n)
+    opt_D, opt_S1, opt_S2, opt_v0, fold = modified_DS(params, n)
     opt_eigenvalues, opt_eigenvectors = generalized_eigen(opt_D.numpy(), opt_S1.numpy(), opt_S2.numpy(), test_set[idx])
     
     projections = tf.linalg.matvec(tf.transpose(opt_eigenvectors), opt_v0)
@@ -433,7 +488,7 @@ def data_Lorentzian_for_idx(idx, test_set,n,params, fold):
     # Square each projection
     B = tf.square(projections)
     
-    mask = tf.cast((opt_eigenvalues > 1) &  (opt_eigenvalues < 30), dtype=tf.float64)
+    mask = tf.cast((opt_eigenvalues > 3) &  (opt_eigenvalues < 40), dtype=tf.float64)
 
     # Apply the mask to zero out B where eigenvalue is negative
     opt_dot_products = B #* mask
@@ -461,7 +516,7 @@ def plot_alphaD(test_set,params,n):
         
         start = time.time()  # Start time
         
-        opt_D, opt_S1, opt_S2, opt_v0 = modified_DS(params, n)
+        opt_D, opt_S1, opt_S2, opt_v0, fold = modified_DS(params, n)
         
         
         
@@ -514,7 +569,7 @@ def plot_alphaD_simple(test_set,params,n):
         
         end = time.time()  # Start time
         
-        alphaD_guess.append(opt_eigenvalues[0])
+        alphaD_guess.append(opt_eigenvalues[1])
         
         
         

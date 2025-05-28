@@ -12,13 +12,13 @@ import matplotlib.pyplot as plt
 
 
 
-n = 20
+n = 6
 
 
 params = np.loadtxt('params_'+str(n)+'_only_alphaD.txt')
 
 test_set = []
-with open("test_set.txt", "r") as f:
+with open("train_set.txt", "r") as f:
     for line in f:
         tup = tuple(map(str, line.strip().split(",")))  # Convert back to tuple of integers
         test_set.append(tup)
