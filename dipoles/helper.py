@@ -100,44 +100,6 @@ def data_table(fmt_data):
 
 
 
-def data_table_new():
-    '''
-    Automatically loads strength and alphaD files from the given directories.
-    Extracts alpha and beta from filenames like strength_beta_alpha.out
-    '''
-    strength = []
-    alphaD = []
-    fmt_data = []
-
-    strength_dir = '../dipoles_data_new/total_strength/'
-    alphaD_dir = '../dipoles_data_new/total_alphaD/'
-
-    # Pattern for strength files: strength_beta_alpha.out
-    pattern = re.compile(r'strength_([0-9.]+)_([0-9.]+)\.out')
-
-    for fname in os.listdir(strength_dir):
-        match = pattern.match(fname)
-        if match:
-            beta = match.group(1)
-            alpha = match.group(2)
-
-            strength_file = os.path.join(strength_dir, fname)
-            alphaD_file = os.path.join(alphaD_dir, f'alphaD_{beta}_{alpha}.out')
-
-            if os.path.exists(alphaD_file):
-                # Read data
-                file_strength = np.loadtxt(strength_file)
-                file_alphaD = np.loadtxt(alphaD_file)
-
-                # Apply filter on strength
-                #file_strength = file_strength[file_strength[:, 0] > 1]
-
-                # Store
-                strength.append(file_strength)
-                alphaD.append(file_alphaD)
-                fmt_data.append((alpha, beta))
-
-    return strength, alphaD, fmt_data
 
 '''
     data table is now constructed for alpha & beta parameters

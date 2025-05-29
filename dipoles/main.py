@@ -102,18 +102,18 @@ x_all = [float(x) for x, y in all_points]
 y_all = [float(y) for x, y in all_points]
 
 # Scatter plot
-# plt.figure(figsize=(6, 4))
-# plt.scatter(x_train, y_train, color='blue', marker='o', label = 'train('+str(len(train_set))+')')
-# #plt.scatter(x_test, y_test, color='red', marker='o', label = 'test('+str(len(test_set))+')')
-# plt.scatter(x_cv, y_cv, color='green', marker='o', label = 'cv('+str(len(cv_set))+')')
-# plt.scatter(x_all, y_all, color='green', marker='x', label = 'cv('+str(len(cv_set))+')')
-# plt.xlabel(r"$\alpha (d_{tv}$)", size = 18)
-# plt.ylabel(r"$\beta (b_{tv})$", size = 18)
+plt.figure(figsize=(6, 4))
+plt.scatter(x_train, y_train, color='blue', marker='o', label = 'train('+str(len(train_set))+')')
+#plt.scatter(x_test, y_test, color='red', marker='o', label = 'test('+str(len(test_set))+')')
+plt.scatter(x_cv, y_cv, color='green', marker='o', label = 'cv('+str(len(cv_set))+')')
+plt.scatter(x_all, y_all, color='green', marker='x', label = 'cv('+str(len(cv_set))+')')
+plt.xlabel(r"$\alpha (d_{tv}$)", size = 18)
+plt.ylabel(r"$\beta (b_{tv})$", size = 18)
 
-# plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
-#             ncol=3, fancybox=True, shadow=True)
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
+            ncol=3, fancybox=True, shadow=True)
 
-# sys.exit(-1)
+sys.exit(-1)
 
 
 

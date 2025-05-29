@@ -115,7 +115,7 @@ y_all = [float(y) for x, y in all_points]
 '''
 How many parameters you want ?
 '''
-n = 4
+n = 6
 
 
 D, S1, S2 = helper.nec_mat(n)
@@ -173,6 +173,7 @@ cost_loop_cv = []
 cv_cost_min = 1e5
 train_cost_min = 1e3
 params_min = params
+params_in_train = params
 for i in range(num_iterations):
     cost = optimization_step()
     current_learning_rate = optimizer._decayed_lr(tf.float32).numpy()
@@ -184,8 +185,11 @@ for i in range(num_iterations):
     
     if (cost_cv < cv_cost_min):
         cv_cost_min = cost_cv
-        train_cost_min = cost
         params_min = params
+        
+    if (cost < train_cost_min):
+        train_cost_min = cost
+        params_min_train = params
     
     '''
     Keep the best configuration
