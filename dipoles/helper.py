@@ -341,8 +341,9 @@ def cost_function_only_alphaD(params, n, fmt_data, alphaD_true):
         # val = eigenvalues[1]
         val = 0.0
         for i in range(n):
-            # val += eigenvalues[i]**2
-            val += eigenvalues[i]
+            # val += tf.sqrt(eigenvalues[i]**2)
+            val += eigenvalues[i]**2
+            # val += eigenvalues[i]
         
     
         
