@@ -338,8 +338,12 @@ def cost_function_only_alphaD(params, n, fmt_data, alphaD_true):
         
 
         val_true = alphaD_true[idx][2]
-        val = eigenvalues[1]
-        #
+        # val = eigenvalues[1]
+        val = 0.0
+        for i in range(n):
+            # val += eigenvalues[i]**2
+            val += eigenvalues[i]
+        
     
         
         total_cost += (val_true - val)**2

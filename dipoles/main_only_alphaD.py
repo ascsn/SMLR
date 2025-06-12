@@ -144,7 +144,9 @@ params_shape = [D.shape, S1.shape, S2.shape]
 params = tf.Variable(random_initial_guess, dtype=tf.float64)
 
 
-optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.1)
+# optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.1)
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.1)
+
 
 
 # Optimization step function
@@ -167,7 +169,7 @@ def cv_step():
 
 # Run the optimization
 num_iterations = 40000 # Total number of optimization iterations
-num_check = 300 #Print output after this many steps
+num_check = 1000 #Print output after this many steps
 cost_loop = []
 cost_loop_cv = []
 cv_cost_min = 1e5
@@ -176,7 +178,8 @@ params_min = params
 params_in_train = params
 for i in range(num_iterations):
     cost = optimization_step()
-    current_learning_rate = optimizer._decayed_lr(tf.float32).numpy()
+    # current_learning_rate = optimizer._decayed_lr(tf.float32).numpy()
+    current_learning_rate = optimizer.lr.numpy()
     cost_loop.append(cost.numpy())
     
     cost_cv, alphaD_check_cv = cv_step()
@@ -210,10 +213,12 @@ for i in range(num_iterations):
         print('r: ', np.mean(rel))
         plt.figure(i)
         rel =  np.abs(np.array(alphaD_check_cv)-np.array(alphaD_cv[:,2]))/np.array(alphaD_cv[:,2])
-        plt.plot([j for j in range(len(cv_set))],rel, marker = '.', label = 'QRPA calc', ls = '--') 
-        plt.axhline(np.mean(rel), marker = '.', label = 'QRPA calc', ls = '--', color = 'black') 
+        plt.plot([j for j in range(len(cv_set))],alphaD_check_cv, marker = '.', label = 'Emu', ls = '--', color = 'red') 
+        plt.plot([j for j in range(len(cv_set))],np.array(alphaD_cv[:,2]), marker = '.', label = 'QRPA', ls = '--',color = 'black') 
+        # plt.axhline(np.mean(rel), marker = '.', label = 'QRPA calc', ls = '--', color = 'black') 
         plt.yscale('log')
         plt.title('iter = '+str(i))
+        plt.savefig('it_out.png')
         plt.show()
         
         # plot CV half-lives 
@@ -225,6 +230,7 @@ print('Final: ', cost.numpy())
 plt.xlabel('Number of training iterations', size = 16)
 plt.legend()
 plt.ylabel('Cost function', size = 16)
+plt.savefig('cost_function.png')
 
 
 
