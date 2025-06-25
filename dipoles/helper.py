@@ -69,6 +69,46 @@ def initial_matrix(n):
 
 
 
+import os, re
+import numpy as np
+
+
+# def data_table(fmt_data):
+#     # Build absolute paths relative to this helper.py file
+#     this_dir = os.path.dirname(__file__)
+#     data_base = os.path.join(this_dir, 'dipoles_data_all')
+#     strength_dir = os.path.join(data_base, 'total_strength')
+#     alphaD_dir   = os.path.join(data_base, 'total_alphaD')
+
+#     # Pattern to parse beta and alpha values from filenames
+#     pattern = re.compile(r'strength_([0-9.]+)_([0-9.]+)\.out')
+
+#     # Collect all (beta, alpha) pairs
+#     for fname in sorted(os.listdir(strength_dir)):
+#         match = pattern.match(fname)
+#         if match:
+#             beta_str, alpha_str = match.groups()
+#             fmt_data.append((beta_str, alpha_str))
+
+#     # Load data based on the collected pairs
+#     strength = []
+#     alphaD   = []
+#     for beta_str, alpha_str in fmt_data:
+#         file_strength = os.path.join(
+#             strength_dir, f'strength_{beta_str}_{alpha_str}.out'
+#         )
+#         file_alphaD = os.path.join(
+#             alphaD_dir,   f'alphaD_{beta_str}_{alpha_str}.out'
+#         )
+#         strength.append(np.loadtxt(file_strength))
+#         alphaD.append(np.loadtxt(file_alphaD))
+
+#     return strength, alphaD
+
+'''
+constructing data table for alpha & beta parameters
+'''
+
 
 def data_table(fmt_data):    
     strength_dir = '../dipoles_data_all/total_strength/'
@@ -78,23 +118,15 @@ def data_table(fmt_data):
     strength = []
     alphaD = []
     
-    
-    
     for fname in sorted(os.listdir(strength_dir)):
         match = pattern.match(fname)
         
-        # beta_str = match.group(1)
-        # alpha_str = match.group(2)
-        
-        if match:
-            #fmt_data.append(beta_str, alpha_str)
-            
+        if match:     
             beta_str, alpha_str = match.group(1), match.group(2)
             fmt_data.append((beta_str, alpha_str))
             
-    strength = []
-    alphaD = []
-    
+            #print(beta_str, alpha_str)
+            
     for beta_str, alpha_str in fmt_data:        
         file_strength = os.path.join(strength_dir,
                               f'strength_{beta_str}_{alpha_str}.out')
@@ -107,10 +139,8 @@ def data_table(fmt_data):
     return strength, alphaD
 
 
-'''
-    data table is now constructed for alpha & beta parameters
-'''
-    
+
+
 
 def modified_DS(params, n):
     '''
@@ -161,7 +191,16 @@ def modified_DS(params, n):
     S2_mod = S2_mod + tf.linalg.band_part(tf.transpose(S2_mod), -1, 0) \
         - tf.linalg.diag(tf.linalg.diag_part(S2_mod))
     
+    tf.print("n =", n,
+         "S1_shape =", S1_shape,
+         "len(indices1) =", tf.shape(indices1),
+         "updates1.shape =", tf.shape(params[2*n+4 : 2*n+4 + len(indices1)]))
+    
+    
     return eta0, p1, p2, p3, v0_mod, D_mod, S1_mod, S2_mod
+
+
+
 
 
 
@@ -199,7 +238,7 @@ def cost_function(params, n, fmt_data, strength, alphaD, weight):
     
     eta0, p1, p2, p3, v0_mod, D_mod, S1_mod, S2_mod = modified_DS(params, n)
         
-    total_cost = tf.constant(0.0, dtype = tf.float64)
+    cost = tf.constant(0.0, dtype = tf.float64)
     
     idx = 0
     
@@ -226,18 +265,18 @@ def cost_function(params, n, fmt_data, strength, alphaD, weight):
 
         # Use tf.map_fn to apply the give_me_Lorentzian function over the x values
         Lor = give_me_Lorentzian(omega, eigvals, B, eta)
-        total_cost += tf.reduce_sum((Lor - Lor_true) ** 2)
+        cost += tf.reduce_sum((Lor - Lor_true) ** 2)
         
         val_true = alphaD[idx][2]
         val = calculate_alphaD(eigvals, B)
         
-        total_cost += (val_true - val)**2*weight
+        cost += (val_true - val)**2*weight
         
         alphaD_calc.append(val)
 
         idx+=1
             
-    return total_cost, Lor, Lor_true, omega, alphaD_calc
+    return cost, Lor, Lor_true, omega, alphaD_calc
 
 
 
