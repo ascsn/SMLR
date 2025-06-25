@@ -30,10 +30,6 @@ rn.seed(42)
 
 
 
-
-
-
-
 '''
 The values of parameters should be read directly from the file name
 '''
@@ -43,88 +39,83 @@ alphaD_dir = '../dipoles_data_all/total_alphaD/'
 # Pattern for strength files: strength_beta_alpha.out
 pattern = re.compile(r'strength_([0-9.]+)_([0-9.]+)\.out')
 
-formatted_alpha_values = []
-formatted_beta_values = []
+# formatted_alpha_values = []
+# formatted_beta_values = []
 
-all_points = []
-
+all_pairs = []
 for fname in os.listdir(strength_dir):
     match = pattern.match(fname)
     if match:
         beta_val = match.group(1)
         alpha_val = match.group(2)
-        all_points.append((alpha_val, beta_val))
+        all_pairs.append((beta_val, alpha_val))
         
-        if ((float(beta_val) <= 4.0 and float(beta_val) >= 1.5)
-            and (float(alpha_val) <= 1.8 and float(alpha_val) >= 0.8)):
-            #print(alpha_val, beta_val)
-            formatted_alpha_values.append(alpha_val)
-            formatted_beta_values.append(beta_val)
+filtered = [
+    (beta, alpha) for (beta, alpha) in all_pairs
+    if 0.5 <= float(alpha_val := alpha) <= 0.8
+]
 
-
-# Example lists
-alpha = formatted_alpha_values
-beta = formatted_beta_values
-
-# Combine the lists into pairs
-# combined = [(x, y) for x in alpha for y in beta]
-combined = []
-for i in range(len(alpha)):
-    combined.append((alpha[i], beta[i]))
-# Shuffle the combined list
-rn.shuffle(combined)
-
-# Define split ratios (e.g., 60% train, 20% cv, 20% test)
-train_ratio = 0.9
-cv_ratio = 0.1
-test_ratio = 0.0
-
-# Calculate the number of elements for each set
-n = len(combined)
-n_train = int(n * train_ratio)
-n_cv = int(n * cv_ratio)
-n_test = 0 #n - n_train - n_cv  # Ensure all elements are used
-
-# Split the combined list
-train_set = combined[:n_train]
-cv_set = combined[n_train:n_train + n_cv]
-test_set = combined[n_train + n_cv:]
+for beta, alpha in filtered:
+    fstr = os.path.join(strength_dir, f'strength_{beta}_{alpha}.out')
+    data = np.loadtxt(fstr)
+    mask = data[:,0] > 1.0
+    plt.plot(data[mask, 0], data[mask, 1], alpha=0.1, color='black')
+    print(f"Plotted strength for beta = {beta}, alpha={alpha}")
 
 
 
-print("test_set length:", len(test_set),
-      "cv_set length:", len(cv_set),
-      "train_set:", len(train_set))
+plt.xlim(3, 25)
+plt.xlabel('$\omega$ (MeV)', size = 16)
+plt.ylabel('$S$ ($e^2$fm$^2$/MeV)', size = 16)
+plt.tight_layout()
+plt.show()
+
+rn.shuffle(filtered)
+n_total = len(filtered)
+n_train = int(0.9*n_total)
+n_cv = n_total - n_train
+
+train_set = filtered[:n_train]
+cv_set = filtered[n_train:]
+
+print(f"train_set length: {len(train_set)},"
+      f"cv_set length: {len(cv_set)}"
+      )
 
 
 
 
-#sys.exit(-1)
 
+x_all = [float(alpha) for beta, alpha in all_pairs]
+y_all = [float(beta)  for beta, alpha in all_pairs]
 
+x_tr = [float(alpha) for beta, alpha in train_set]
+y_tr = [float(beta)  for beta, alpha in train_set]
 
-x_train = [float(x) for x, y in train_set]
-y_train = [float(y) for x, y in train_set]
-x_test = [float(x) for x, y in test_set]
-y_test = [float(y) for x, y in test_set]
-x_cv = [float(x) for x, y in cv_set]
-y_cv = [float(y) for x, y in cv_set]
-x_all = [float(x) for x, y in all_points]
-y_all = [float(y) for x, y in all_points]
+x_cv = [float(alpha) for beta, alpha in cv_set]
+y_cv = [float(beta)  for beta, alpha in cv_set]
 
-# Scatter plot
-plt.figure(figsize=(6, 4))
-plt.scatter(x_train, y_train, color='blue', marker='o', label = 'train('+str(len(train_set))+')')
-#plt.scatter(x_test, y_test, color='red', marker='o', label = 'test('+str(len(test_set))+')')
-plt.scatter(x_cv, y_cv, color='green', marker='o', label = 'cv('+str(len(cv_set))+')')
-plt.scatter(x_all, y_all, color='green', marker='x', label = 'cv('+str(len(cv_set))+')')
-plt.xlabel(r"$\alpha (d_{tv}$)", size = 18)
-plt.ylabel(r"$\beta (b_{tv})$", size = 18)
-
+plt.figure(figsize=(6,4))
+plt.scatter(x_all, y_all,
+            c='lightgray', marker='.',
+            label=f'all ({len(all_pairs)})')
+plt.scatter(x_tr, y_tr,
+            c='C0', marker='o',
+            label=f'train ({len(train_set)})')
+plt.scatter(x_cv, y_cv,
+            c='C2', marker='s',
+            label=f'cv    ({len(cv_set)})')
+plt.xlabel(r'$\alpha$ (dtv)', fontsize=14)
+plt.ylabel(r'$\beta$ (btv)', fontsize=14)
 plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
-            ncol=3, fancybox=True, shadow=True)
+           ncol=3, frameon=False)
+plt.tight_layout()
+plt.show()
 
-#sys.exit(-1)
+
+
+
+# sys.exit(-1)
 
 
 
@@ -134,9 +125,9 @@ plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
 '''
 How many parameters you want ?
 '''
-n = 20
+# n = 20
 weight=100.0
-fold=0.8
+#fold=0.8
 
 D, S1, S2 = helper.initial_matrix(n)
 print(D.shape, S1.shape, S2.shape)
@@ -145,119 +136,104 @@ print(D.shape, S1.shape, S2.shape)
 # initialize the external field vector
 v0 = np.random.rand(n)
 
-'''
-    data table is now constructed for alpha & beta parameters
-'''
 
-strength, alphaD = helper.data_table(train_set)
+strength_train, alphaD_train = helper.data_table(train_set)
 strength_cv, alphaD_cv = helper.data_table(cv_set)
 
-alphaD = np.vstack(alphaD)
+alphaD_train = np.vstack(alphaD_train)
 alphaD_cv = np.vstack(alphaD_cv)
 
-parameter_num = 4 + n + n + 2*int(n*(n+1)/2)
-print('Number of parameters: ', parameter_num)
+param_count = 4 + n + n + 2*int(n*(n+1)/2)
+print('Number of parameters: ', param_count)
 
 
-random_initial_guess = np.random.uniform(0, 1, parameter_num)
-random_initial_guess[0] = fold
+random_initial_guess = np.random.uniform(0, 1, param_count)
 
 params_shape = [D.shape, S1.shape, S2.shape]
 
-params = tf.Variable(random_initial_guess, dtype=tf.float64)
+params = tf.Variable(
+    random_initial_guess,
+    dtype=tf.float64
+)
 
 
 
-#sys.exit(-1)
 
+
+num_iterations = 40000
+early_stop_rel = 5e-4
+num_check =  300
 
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
-
-# Optimization step function
-@tf.function
-def optimization_step():
+def optimization_for_n(n,
+                       train_set, strength_train, alphaD_train,
+                       cv_set, strength_cv, alphaD_cv,
+                       weight,
+                       num_iterations,
+                       early_stop_rel,
+                       num_check):
+    
     with tf.GradientTape() as tape:
         cost, Lor, Lor_true, omega, alphaD_train = helper.cost_function(
-            params, n, train_set, strength, alphaD, weight
+            params, n,
+            train_set, strength_train, alphaD_train,
+            weight
         )
     grads = tape.gradient(cost, [params])
     optimizer.apply_gradients(zip(grads, [params]))
     return cost, Lor, Lor_true, omega, alphaD_train
 
+    def cv_step():
+        cost_cv, Lor, Lor_true, omega, alphaD_cv = helper.cost_function(
+            params, n,
+            cv_set, strength_cv, alphaD_cv,
+            weight
+        )
+    
+    final_cost = None
+    for i in range(num_iterations):
+        cost, _, _, _, _ = optimization_for_n() #####
+        cost_cv, alphaD_pred_cv = cv_step()
+        
+        rel = tf.abs(alphaD_pred_cv - alphaD_cv[:,2]) / alphaD_cv[:,2]
+        if tf.reduce_mean(rel) < early_stop_rel:
+            final_cost = cost.numpy()
+            break
+        
+        final_cost = cost.numpy()
+        
+        if i % num_check ==0:
+            mean_rel = tf.reduce_mean(rel).numpy()
+            print(f"[n={n}] iter={i}, train cost={cost.numpy():.4e}, cv cost={cost_cv.numpy():.4e}, mean rel.err={mean_rel:.4e}")
 
+    return final_cost
 
+# Sweep over n = 1…20
+ns = list(range(1, 21))
+costs = []
 
-@tf.function
-def cv_step():
-    '''
-        Loss function for cross-validation
-    '''
-    cost, Lor, Lor_true, omega, alphaD_train = helper.cost_function(
-        params, n, cv_set, strength_cv, alphaD_cv, weight
+for n in ns:
+    print(f"=== Running optimization for n = {n} ===")
+    c = optimization_for_n(
+        n,
+        train_set, strength_train, alphaD_train,
+        cv_set, strength_cv, alphaD_cv,
+        weight,
+        num_iterations,
+        early_stop_rel,
+        num_check
     )
-  
-    return cost, alphaD_train
+    costs.append(c)
 
-
-
-
-# Run the optimization
-num_iterations = 40000 # Total number of optimization iterations
-num_check = 300 #Print output after this many steps
-cost_loop = []
-cost_loop_cv = []
-for i in range(num_iterations):
-    cost, Lor, Lor_true, omega, alphaD_train = optimization_step()
-    current_learning_rate = optimizer.learning_rate.numpy()
-    cost_loop.append(cost.numpy())
-    
-    cost_cv, alphaD_check_cv = cv_step()
-    cost_loop_cv.append(cost_cv.numpy())
-    rel =  np.abs(np.array(alphaD_check_cv)-np.array(alphaD_cv[:,2]))/np.array(alphaD_cv[:,2])
-    if ( np.mean(rel)< 0.0005): # was 0.00015
-        print('Stopped iterations at: ', np.mean(rel))
-        break
-    
-    
-    
-    
-    if i % num_check == 0:  # Print cost every 100 iterations
-        
-        
-        print(f"Iteration {i}, Cost: {cost.numpy()}, Rate: {current_learning_rate}")
-        print('CV cost: ', cost_cv.numpy())
-        print('r: ', np.mean(rel))
-        plt.figure(i)
-        plt.subplot(121)
-        rel =  np.abs(np.array(alphaD_check_cv)-np.array(alphaD_cv[:,2]))/np.array(alphaD_cv[:,2])
-        plt.plot([j for j in range(len(cv_set))],rel, marker = '.', label = 'QRPA calc', ls = '--') 
-        plt.axhline(np.mean(rel), marker = '.', label = 'QRPA calc', ls = '--', color = 'black') 
-        plt.yscale('log')
-        plt.title('iter = '+str(i))
-        
-        
-        plt.subplot(122)
-        plt.plot(omega, Lor)
-        plt.plot(omega, Lor_true)
-        plt.show()
-        
-        # plot CV half-lives 
-
-
-
-
-
-
-
-
-plt.plot(range(len(cost_loop)), cost_loop, label = 'Training set')
-plt.plot(range(len(cost_loop_cv)), cost_loop_cv, label = 'Cross-validation set')
-plt.yscale('log')
-print('Final: ', cost.numpy())
-plt.xlabel('Number of training iterations', size = 16)
-plt.legend()
-plt.ylabel('Cost function', size = 16)
+# Plotting
+plt.figure(figsize=(8,5))
+plt.plot(ns, costs, 'o-')
+plt.xlabel('Number of Lorentzians $n$')
+plt.ylabel('Final training cost')
+plt.title('Optimization cost vs. number of Lorentzians')
+plt.grid(True)
+plt.show()
 
 
 
