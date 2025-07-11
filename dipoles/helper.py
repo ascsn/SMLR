@@ -31,14 +31,13 @@ if __name__ == "____":
 hqc = 197.33
 
 # Seed for reproducibility
-#np.random.seed(42)
+np.random.seed(42)
 
 @tf.function
 def give_me_Lorentzian(energy, poles, strength, width):
     if isinstance(energy, np.ndarray):
         energy = tf.convert_to_tensor(energy, dtype=tf.float64)
     
-    #energy = tf.convert_to_tensor(energy, dtype=tf.float64)
     poles = tf.convert_to_tensor(poles, dtype=tf.float64)
     strength = tf.convert_to_tensor(strength, dtype=tf.float64)
     width = tf.convert_to_tensor(width, dtype=tf.float64)
@@ -49,13 +48,13 @@ def give_me_Lorentzian(energy, poles, strength, width):
     energy_expanded = tf.expand_dims(energy, axis=-1)
 
     numerator = strength * (width / 2 / np.pi)
-    denominator = ((energy_expanded - poles) ** 2 + (width ** 2 / 4))
+    denominator = ((energy_expanded - poles)**2 + (width**2 / 4))
     
     lorentzian = numerator / denominator
 
-    value = tf.reduce_sum(lorentzian, axis=-1)
+    #value = tf.reduce_sum(lorentzian, axis=-1)
     
-    return value
+    return tf.reduce_sum(lorentzian, axis=-1)
 
 
 # nec_mat for M_true(a) = D + a * S1 + b * S2
@@ -65,12 +64,6 @@ def initial_matrix(n):
     S1 = np.abs(A + A.T) / 2
     S2 = np.abs(A + A.T) / 2
     return D, S1, S2
-
-
-
-
-import os, re
-import numpy as np
 
 
 # def data_table(fmt_data):
@@ -142,7 +135,7 @@ def data_table(fmt_data):
 
 
 
-def modified_DS(params, n):
+def emulator_params(params, n, alpha, beta):
     '''
     
     Parameters:
@@ -159,13 +152,23 @@ def modified_DS(params, n):
     params: tf.Variable, randomized
     
     '''
+    # eta0 = params[0]
+    # p1, p2, p3 = params[1], params[2], params[3]
+    
+    eta0 = tf.cast(params[0], dtype=tf.float64)
+    p1 = tf.cast(params[1], dtype=tf.float64)
+    p2 = tf.cast(params[2], dtype=tf.float64)
+    p3 = tf.cast(params[3], dtype=tf.float64)
+    
+    alpha_t = tf.cast(alpha, dtype=tf.float64)
+    beta_t = tf.cast(beta,  dtype=tf.float64)
+    term = p1 + p2 * alpha_t + p3 * beta_t
+    width = tf.sqrt(eta0**2 + term**2)
     
     D_shape = (n,n)
     S1_shape = (n,n)
     S2_shape = (n,n)
     
-    eta0 = params[0]
-    p1, p2, p3 = params[1], params[2], params[3]
     
     v0_mod = tf.convert_to_tensor(params[4 : n+4], dtype = tf.float64)
     
@@ -191,13 +194,13 @@ def modified_DS(params, n):
     S2_mod = S2_mod + tf.linalg.band_part(tf.transpose(S2_mod), -1, 0) \
         - tf.linalg.diag(tf.linalg.diag_part(S2_mod))
     
-    tf.print("n =", n,
-         "S1_shape =", S1_shape,
-         "len(indices1) =", tf.shape(indices1),
-         "updates1.shape =", tf.shape(params[2*n+4 : 2*n+4 + len(indices1)]))
+    # tf.print("n =", n,
+    #      "S1_shape =", S1_shape,
+    #      "len(indices1) =", tf.shape(indices1),
+    #      "updates1.shape =", tf.shape(params[2*n+4 : 2*n+4 + len(indices1)]))
     
     
-    return eta0, p1, p2, p3, v0_mod, D_mod, S1_mod, S2_mod
+    return eta0, p1, p2, p3, width, v0_mod, D_mod, S1_mod, S2_mod
 
 
 
@@ -208,8 +211,6 @@ def modified_DS(params, n):
 def calculate_alphaD(eigvals, B):
     
     mask = tf.cast((eigvals > 3) & (eigvals < 40), dtype=tf.float64)
-
-    # Apply the mask to zero out B where eigenvalue is negative
     B = B * mask
     
     fac = tf.constant(8.0*np.pi*(7.29735e-3)*hqc/9.0 , dtype = tf.float64)
@@ -235,8 +236,6 @@ def cost_function(params, n, fmt_data, strength, alphaD, weight):
     and also alphaD
     
     '''
-    
-    eta0, p1, p2, p3, v0_mod, D_mod, S1_mod, S2_mod = modified_DS(params, n)
         
     cost = tf.constant(0.0, dtype = tf.float64)
     
@@ -248,33 +247,34 @@ def cost_function(params, n, fmt_data, strength, alphaD, weight):
         beta = float(beta_str)
         alpha = float(alpha_str)
         
-        eta = tf.sqrt(eta0**2 + (p1 + p2*beta + p3*alpha)**2)
+        eta0, p1, p2, p3, width, v0_mod, D_mod, S1_mod, S2_mod = \
+            emulator_params(params, n, alpha, beta)
+        
+        
         M_true = D_mod + beta*S1_mod + alpha*S2_mod
     
         eigvals, eigvecs = tf.linalg.eigh(M_true)
         
         # Compute dot product of each eigenvector (columns) with v0_mod
         proj = tf.linalg.matvec(tf.transpose(eigvecs), v0_mod)
-        B = tf.square(proj)
+        strengths = tf.square(proj)
         mask = tf.cast((eigvals > 3) & (eigvals < 40), dtype=tf.float64)
-        B = B * mask
+        #B = B * mask
 
         # values from QFAM
         omega = tf.constant(strength[idx][:,0], dtype=tf.float64)
         Lor_true = tf.constant(strength[idx][:,1], dtype=tf.float64)
 
         # Use tf.map_fn to apply the give_me_Lorentzian function over the x values
-        Lor = give_me_Lorentzian(omega, eigvals, B, eta)
+        Lor = give_me_Lorentzian(omega, eigvals, strengths, width)
         cost += tf.reduce_sum((Lor - Lor_true) ** 2)
         
         val_true = alphaD[idx][2]
-        val = calculate_alphaD(eigvals, B)
-        
+        val = calculate_alphaD(eigvals, strengths)
         cost += (val_true - val)**2*weight
-        
         alphaD_calc.append(val)
 
-        idx+=1
+        #idx+=1
             
     return cost, Lor, Lor_true, omega, alphaD_calc
 
@@ -291,113 +291,175 @@ def generalized_eigen(D, S1, S2, alpha):
 
 
 
-def plot_Lorentzian_for_idx(idx, test_set,n,params):
+def plot_Lorentzian_for_idx(idx, train_set, n, params):
 
-    alpha = float(test_set[idx][0])
-    beta = float(test_set[idx][1])
+    # beta = float(train_set[idx][0])
+    # alpha = float(train_set[idx][1])
+    
+    beta, alpha = map(float, train_set[idx])
+    
+    Lor_train, alphaD_train = data_table(train_set)
+    omega_fom, S_fom = Lor_train[idx][:,0], Lor_train[idx][:,1]
     
     
-    Lors_test, alphaD_test = data_table(test_set)
-    Lors_orig = Lors_test[idx]
     
-    opt_D, opt_S1, opt_S2, opt_v0, fold = modified_DS(params, n)
-    opt_eigvals, opt_eigvecs = generalized_eigen(opt_D.numpy(), opt_S1.numpy(), opt_S2.numpy(), test_set[idx])
+    #Lors_orig = Lors_train[idx]
     
-    projections = tf.linalg.matvec(tf.transpose(opt_eigvecs), opt_v0)
+    #opt_D, opt_S1, opt_S2, opt_v0, fold = modified_DS(params, n)
+    eta0, p1, p2, p3, width, v0_mod, D_mod, S1_mod, S2_mod = emulator_params(params, n, alpha, beta)
     
-    # Square each projection
-    B = tf.square(projections)
+    eigvals, eigvecs = generalized_eigen(
+        D_mod.numpy(), S1_mod.numpy(), S2_mod.numpy(), (beta, alpha)
+    )
     
-    mask = tf.cast((opt_eigvals > 3) & (opt_eigvals < 40), dtype=tf.float64)
-
-    # Apply the mask to zero out B where eigenvalue is negative
-    opt_dot_products = B #* mask
+    proj = tf.linalg.matvec(tf.transpose(eigvecs), v0_mod)
+    strengths = tf.square(proj)
+    mask = tf.cast((eigvals > 3) & (eigvals < 40), dtype=tf.float64)
+    #B = strengths #* mask; are we still doing this mask?
     
-    
-    fig, ax = plt.subplots()
+    #fig, ax = plt.subplots()
     
     # plot the Lorentzian for the original data
-    omega = Lors_orig[:,0]
-        
-    opt_Lor = give_me_Lorentzian(omega, opt_eigvals, opt_dot_products, fold)
-    
-    plt.plot(omega, Lors_orig[:,1], 'b--',label='FAM QRPA calculation')    
-    plt.plot(omega, opt_Lor, 'r-',label='emulated Lorentzian')
-        
-    ax.set_title(r'$b_{TV}$ = '+str(round(alpha,1))+r', $d_{TV} = $'+str(round(beta,1)), size = 18)
-    ax.legend(frameon = False)
+    #omega = Lors_orig[:,0]
     
     
-    plt.xlabel('$\omega$ (MeV)', size = 18)
-    plt.ylabel('$S$ (e$^2$ fm$^2$/MeV)', size = 18)
+    emu_Lor = give_me_Lorentzian(
+        omega_fom,
+        eigvals,
+        strengths,
+        width
+    )
     
-    plt.annotate('${}^{180}$Yb', (0.7,0.7), xycoords='axes fraction', size = 18)
+#     #beta, alpha = train_set[idx]
 
-    plt.gca().tick_params(axis="y",direction="in", which = 'both', labelsize = 12)
-    plt.gca().tick_params(axis="x",direction="in", which = 'both', labelsize = 12)
+# # Unpack emulator parameters including computed width
+#     eta0, p1, p2, p3, width, v0_mod, D_mod, S1_mod, S2_mod = emulator_params(params, n, alpha, beta)
     
-    plt.gca().yaxis.set_minor_locator(ticker.MultipleLocator(0.5))
-    plt.gca().xaxis.set_minor_locator(ticker.MultipleLocator(1))
+#     # Solve the generalized eigenproblem
+#     eigvals, eigvecs = generalized_eigen(
+#         D_mod.numpy(), S1_mod.numpy(), S2_mod.numpy(), train_set[idx]
+#     )
+    
+#     # Compute transition strengths
+#     projections = tf.linalg.matvec(tf.transpose(eigvecs), v0_mod)
+#     strengths = tf.square(projections) * tf.cast((eigvals > 3) & (eigvals < 40), tf.float64)
+    
+#     # Retrieve original QRPA data
+#     Lors_train, alphaD_train = data_table(train_set)
+#     omega_orig = Lors_train[idx][:,0]
+#     S_orig     = Lors_train[idx][:,1]
+    
+#     # Generate emulated Lorentzian
+#     emu_L = give_me_Lorentzian(omega_orig, eigvals, strengths, width)
+    
+    # Plot
+    fig, ax = plt.subplots(figsize=(6,4))
+    ax.plot(omega_fom, S_fom, 'b--', label='FAM QRPA calculation')
+    ax.plot(omega_fom, emu_Lor.numpy(), 'r-', label='Emulated Lorentzian')
+    ax.set_title(r'$b_{{TV}}={:.1f},\; d_{{TV}}={:.1f}$'.format(alpha, beta), size=14)
+    ax.set_xlabel(r'$\omega$ (MeV)', size=12)
+    ax.set_ylabel(r'$S$ (e$^2$ fm$^2$/MeV)', size=12)
+    ax.legend(frameon=False)
+    ax.yaxis.set_minor_locator(ticker.MultipleLocator(0.5))
+    ax.xaxis.set_minor_locator(ticker.MultipleLocator(1))
+    ax.set_xlim(0, 40)
+    ax.set_ylim(0, 20)
+    plt.show()
+
+    
+    
+    
+    
+    # plt.plot(omega, Lors_orig[:,1], 'b--',label='FAM QRPA calculation')
+    
+    # plt.plot(omega, opt_Lor, 'r-',label='emulated Lorentzian')    
+    # ax.set_title(r'$b_{TV}$ = '+str(round(alpha,1))+r', $d_{TV} = $'+str(round(beta,1)), size = 18)
+    # ax.legend(frameon = False)
         
-    plt.xlim(0,40)
-    plt.ylim(0,10)
+    # plt.xlabel('$\omega$ (MeV)', size = 18)
+    # plt.ylabel('$S$ (e$^2$ fm$^2$/MeV)', size = 18)
+    # plt.annotate('${}^{180}$Yb', (0.7,0.7), xycoords='axes fraction', size = 18)
+
+    # plt.gca().tick_params(axis="y",direction="in", which = 'both', labelsize = 12)
+    # plt.gca().tick_params(axis="x",direction="in", which = 'both', labelsize = 12)
+    
+    # plt.gca().yaxis.set_minor_locator(ticker.MultipleLocator(0.5))
+    # plt.gca().xaxis.set_minor_locator(ticker.MultipleLocator(1))
+        
+    # plt.xlim(0, 40)
+    # plt.ylim(0, 10)
     
     return
 
 
 
 
-def data_Lorentzian_for_idx(idx, test_set,n,params):
-    alpha = float(test_set[idx][0])
-    beta = float(test_set[idx][1])
+def data_Lorentzian_for_idx(idx, train_set, n, params):
+    # alpha = float(test_set[idx][0])
+    # beta = float(test_set[idx][1])
     
-    Lors_test, alphaD_test = data_table(test_set)
-    Lors_orig = Lors_test[idx]
-    opt_D, opt_S1, opt_S2, opt_v0, fold = modified_DS(params, n)
-    opt_eigvals, opt_eigvecs = generalized_eigen(opt_D.numpy(), opt_S1.numpy(), opt_S2.numpy(), test_set[idx])
-    projections = tf.linalg.matvec(tf.transpose(opt_eigvecs), opt_v0)
+    beta, alpha = map(float, train_set[idx])
     
-    # Square each projection
-    B = tf.square(projections)
+    Lor_train, alphaD_train = data_table(train_set)
+    omega_fom, S_fom = Lor_train[idx][:,0], Lor_train[idx][:,1]
+    #opt_D, opt_S1, opt_S2, opt_v0, fold = modified_DS(params, n)
+    eta0, p1, p2, p3, width, v0_mod, D_mod, S1_mod, S2_mod = emulator_params(params, n, alpha, beta)
+    eigvals, eigvecs = generalized_eigen(
+        D_mod.numpy(), S1_mod.numpy(), S2_mod.numpy(), (beta, alpha)
+    )
+    #opt_eigvals, opt_eigvecs = generalized_eigen(opt_D.numpy(), opt_S1.numpy(), opt_S2.numpy(), test_set[idx])
     
-    mask = tf.cast((opt_eigvals > 3) &  (opt_eigvals < 40), dtype=tf.float64)
+    proj = tf.linalg.matvec(tf.transpose(eigvecs), v0_mod)
+    strengths = tf.square(proj)    
+    mask = tf.cast((eigvals > 3) &  (eigvals < 40), dtype=tf.float64)
 
     # Apply the mask to zero out B where eigenvalue is negative
-    opt_dot_products = B #* mask
+    #opt_dot_products = B #* mask
     
-
-   
-    omega = Lors_orig[:,0]
+    #omega = Lors_orig[:,0]
         
-    opt_Lor = give_me_Lorentzian(omega, opt_eigvals, opt_dot_products, fold)
+    emu_Lor = give_me_Lorentzian(
+        omega_fom,
+        eigvals,
+        strengths,
+        width
+    )
     
-    return omega, Lors_orig[:,1], opt_Lor
+    return omega_fom, S_fom, emu_Lor
     
 
 
 
 
  
-def plot_alphaD(test_set,params,n): 
-    alphaD_guess = []
+def plot_alphaD(idx, train_set, params, n): 
+    emu_alphaD = []
     times = []
     
-    Lors_test, alphaD_test = data_table(test_set)
-    alphaD_test = np.vstack(alphaD_test)
+    beta, alpha = map(float, train_set[idx])
     
-    for idx in range(len(test_set)):
+    Lor_train, alphaD_train = data_table(train_set)
+    alphaD_train = np.vstack(alphaD_train)
+    alphaD_train = alphaD_train[:,2]
+    
+    for idx in range(len(train_set)):
         start = time.time()  # Start time
-        opt_D, opt_S1, opt_S2, opt_v0, fold = modified_DS(params, n)
-        M_true = opt_D + float(test_set[idx][0]) * opt_S1 + float(test_set[idx][1]) * opt_S2
-        opt_eigvals, opt_eigvecs = tf.linalg.eigh(M_true)
+        #opt_D, opt_S1, opt_S2, opt_v0, fold = modified_DS(params, n)
+        eta0, p1, p2, p3, width, v0_mod, D_mod, S1_mod, S2_mod = emulator_params(params, n, alpha, beta)
+        
+        # M_true = D_mod + float(train_set[idx][0]) * S1_mod + float(train_set[idx][1]) * S2_mod
+        # opt_eigvals, opt_eigvecs = tf.linalg.eigh(M_true)
+        
+        eigvals, eigvecs = generalized_eigen(
+            D_mod.numpy(), S1_mod.numpy(), S2_mod.numpy(), (beta, alpha)
+        )
+        
         #opt_eigenvalues, opt_eigenvectors = generalized_eigen(opt_D.numpy(), opt_S1.numpy(), opt_S2.numpy(), test_set[idx])
-        projections = tf.linalg.matvec(tf.transpose(opt_eigvecs), opt_v0)
-        # Square each projection
-        B = tf.square(projections)
+        proj = tf.linalg.matvec(tf.transpose(eigvecs), v0_mod)
+        strengths = tf.square(proj)
         #mask = tf.cast((opt_eigenvalues > 1) &  (opt_eigenvalues < 30), dtype=tf.float64)
-        # Apply the mask to zero out B where eigenvalue is negative
         #B = B * mask
         end = time.time()  # Start time
-        alphaD_guess.append(calculate_alphaD(opt_eigvals, B))
-        times.append(end-start)
-    return alphaD_guess, alphaD_test[:,2], times
+        emu_alphaD.append(calculate_alphaD(eigvals, strengths))
+        times.append(end - start)
+    return emu_alphaD, alphaD_train, times
