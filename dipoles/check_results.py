@@ -17,8 +17,7 @@ import matplotlib.ticker as ticker
 
 
 
-n = 10
-# fold=1.8
+n = 20
 
 params = np.loadtxt('params_'+str(n)+'.txt')
 
@@ -32,7 +31,7 @@ print(train_set)
 
 
 
-idx = 60
+idx = 71
 
 helper_mod.plot_Lorentzian_for_idx(idx, train_set, n, params)
 
@@ -74,13 +73,13 @@ plt.title('n = '+str(n))
 plt.xlim(15.8, 19)
 plt.ylim(15.8, 19)
 
-#plt.axhline(np.mean(rel), marker = '.', label = 'QRPA calc', ls = '--', color = 'black') 
-#plt.axhline(np.std(rel)+np.mean(rel), marker = '.', label = 'QRPA calc', ls = '--', color = 'black') 
-#plt.yscale('log')
+plt.axhline(np.mean(rel), marker = '.', label = 'QRPA calc', ls = '--', color = 'black') 
+plt.axhline(np.std(rel)+np.mean(rel), marker = '.', label = 'QRPA calc', ls = '--', color = 'black') 
+plt.yscale('log')
 
-# plt.xlabel(r'FAM QRPA $\alpha_D$', size = 16)
-# plt.ylabel(r'Emulated $\alpha_D$', size = 16)
-#plt.savefig('dipole_polarizability_reconstruction.pdf', bbox_inches='tight')
+plt.xlabel(r'FAM QRPA $\alpha_D$', size = 16)
+plt.ylabel(r'Emulated $\alpha_D$', size = 16)
+plt.savefig('dipole_polarizability_reconstruction.pdf', bbox_inches='tight')
 
 
 

@@ -41,7 +41,7 @@ def give_me_Lorentzian(energy, poles, strength, width):
     
     poles = tf.convert_to_tensor(poles, dtype=tf.float64)
     strength = tf.convert_to_tensor(strength, dtype=tf.float64)
-    #width = tf.convert_to_tensor(width, dtype=tf.float64) #####
+    width = tf.convert_to_tensor(width, dtype=tf.float64) #####
     
     mask = tf.cast((poles > 3) & (poles < 40), dtype=tf.float64)
     strength = strength * mask
@@ -58,6 +58,7 @@ def give_me_Lorentzian(energy, poles, strength, width):
     return value
 
 
+
 # nec_mat for M_true(a) = D + a * S1 + b * S2
 def initial_matrix(n):
     D = np.diag(rng.uniform(1, 10, n))
@@ -71,37 +72,6 @@ def initial_matrix(n):
 '''
 constructing data table for alpha & beta parameters
 '''
-#strength_list, alphaD_list = data_table()
-
-# def data_table(fmt_data):    
-#     strength_dir = '../dipoles_data_all/total_strength/'
-#     alphaD_dir = '../dipoles_data_all/total_alphaD/'
-#     pattern = re.compile(r'strength_([0-9.]+)_([0-9.]+)\.out')
-        
-#     strength = []
-#     alphaD = []
-    
-#     for fname in sorted(os.listdir(strength_dir)):
-#         match = pattern.match(fname)
-        
-#         if match:     
-#             beta_str, alpha_str = match.group(1), match.group(2)
-#             fmt_data.append((beta_str, alpha_str))
-            
-#             #print(beta_str, alpha_str)
-            
-#     for beta_str, alpha_str in fmt_data:        
-#         file_strength = os.path.join(strength_dir,
-#                               f'strength_{beta_str}_{alpha_str}.out')
-#         file_alphaD = os.path.join(alphaD_dir,
-#                               f'alphaD_{beta_str}_{alpha_str}.out')
-
-#         strength.append(np.loadtxt(file_strength))
-#         alphaD.append(np.loadtxt(file_alphaD))
-        
-#     return strength, alphaD
-
-
 
 _strength_dir = Path("../dipoles_data_all/total_strength")
 _alphaD_dir   = Path("../dipoles_data_all/total_alphaD")
@@ -109,14 +79,7 @@ _pattern      = re.compile(r"strength_([0-9.]+)_([0-9.]+)\.out")
 
 def beta_alpha_pairs(min_beta=None, max_beta=None,
                      min_alpha=None, max_alpha=None):
-    """
-    Discover all (beta, alpha) filename pairs in the data directories,
-    optionally filtering by numeric ranges.
-
-    Returns
-    -------
-    List of tuples of strings: [(beta_str, alpha_str), ...]
-    """
+    
     pairs = []
     for fname in sorted(os.listdir(_strength_dir)):
         m = _pattern.match(fname)
@@ -129,19 +92,8 @@ def beta_alpha_pairs(min_beta=None, max_beta=None,
     return pairs
 
 
+
 def data_table(pairs=None):
-    """
-    Load dipole strength and alphaD data arrays for each (beta, alpha) pair.
-
-    Parameters
-    ----------
-    pairs : list of (beta_str, alpha_str) tuples; if None, loads all.
-
-    Returns
-    -------
-    strength_list : list of ndarray
-    alphaD_list   : list of ndarray
-    """
     if pairs is None:
         pairs = beta_alpha_pairs()
     strength_list, alphaD_list = [], []
@@ -151,6 +103,7 @@ def data_table(pairs=None):
         strength_list.append(np.loadtxt(f1))
         alphaD_list.append(np.loadtxt(f2))
     return strength_list, alphaD_list
+
 
 
 def load_omega_and_strength(max_files=None):
@@ -172,6 +125,7 @@ def load_omega_and_strength(max_files=None):
     return omega, strength
 
 
+
 def emulator_params(params, n, alpha, beta):
     '''
     
@@ -189,17 +143,13 @@ def emulator_params(params, n, alpha, beta):
     params: tf.Variable, randomized
     
     '''
+    idx = 0
     
-    eta0 = tf.cast(params[0], dtype=tf.float64)
-    p1 = tf.cast(params[1], dtype=tf.float64)
-    p2 = tf.cast(params[2], dtype=tf.float64)
-    p3 = tf.cast(params[3], dtype=tf.float64)
-    
-    alpha_t = tf.cast(alpha, dtype=tf.float64)
-    beta_t = tf.cast(beta,  dtype=tf.float64)
-    term = p1 + p2 * alpha_t + p3 * beta_t
-    width = tf.sqrt(eta0**2 + term**2)
-    
+    eta0 = tf.cast(params[idx], dtype=tf.float64); idx += 1
+    p1 = tf.cast(params[idx], dtype=tf.float64); idx += 1
+    p2 = tf.cast(params[idx], dtype=tf.float64); idx += 1
+    p3 = tf.cast(params[idx], dtype=tf.float64); idx += 1
+        
     D_shape = (n,n)
     S1_shape = (n,n)
     S2_shape = (n,n)
@@ -234,7 +184,8 @@ def emulator_params(params, n, alpha, beta):
     #      "updates1.shape =", tf.shape(params[2*n+4 : 2*n+4 + len(indices1)]))
     
     
-    return eta0, p1, p2, p3, width, v0_mod, D_mod, S1_mod, S2_mod
+    return eta0, p1, p2, p3, v0_mod, D_mod, S1_mod, S2_mod
+
 
 
 @tf.function
@@ -268,7 +219,6 @@ def cost_function(params, n, pairs, strength_list, alphaD_list, weight):
         
     #cost = tf.constant(0.0, dtype = tf.float64)
     cost = 0
-    
     idx = 0
     
     alphaD_calc = []
@@ -277,24 +227,20 @@ def cost_function(params, n, pairs, strength_list, alphaD_list, weight):
         beta = float(beta_str)
         alpha = float(alpha_str)
         
-        # print(f"idx={idx},"
-        #       f"β={beta}, α={alp"ha},"
-        #       f"strength_list[idx].shape={strength_list[idx].shape},"
-        #       f"alphaD_list[idx].shape={alphaD_list[idx].shape}")
-        
-        
-        eta0, p1, p2, p3, width, v0_mod, D_mod, S1_mod, S2_mod = \
+        eta0, p1, p2, p3, v0_mod, D_mod, S1_mod, S2_mod = \
             emulator_params(params, n, alpha, beta)
         
+        width = tf.sqrt(eta0**2 + (p1 + p2*alpha + p3*beta)**2)
+
         M_true = D_mod + alpha*S1_mod + beta*S2_mod
-    
+
         eigvals, eigvecs = tf.linalg.eigh(M_true)
         
         # Compute dot product of each eigenvector (columns) with v0_mod
         proj = tf.linalg.matvec(tf.transpose(eigvecs), v0_mod)
         strengths = tf.square(proj)
         mask = tf.cast((eigvals > 3) & (eigvals < 40), dtype=tf.float64)
-        #strengths = strengths * mask
+        strengths = strengths * mask
 
         # values from QFAM
         omega = tf.constant(strength_list[idx][:,0], dtype=tf.float64)
@@ -306,13 +252,13 @@ def cost_function(params, n, pairs, strength_list, alphaD_list, weight):
         
         val_true = alphaD_list[idx][2]
         val = calculate_alphaD(eigvals, strengths)
+        
         cost += (val_true - val)**2*weight
         alphaD_calc.append(val)
 
         idx+=1
             
     return cost, Lor, Lor_true, omega, alphaD_calc
-
 
 
 
@@ -325,15 +271,17 @@ def generalized_eigen(D, S1, S2, alpha):
 
 
 
-
 def plot_Lorentzian_for_idx(idx, train_set, n, params):
-
-    beta, alpha = map(float, train_set[idx])
+    # beta = float(beta_str)
+    # alpha = float(alpha_str)
+    alpha, beta = map(float, train_set[idx])
     
     Lor_train, alphaD_train = data_table(train_set)
     omega_fom, S_fom = Lor_train[idx][:,0], Lor_train[idx][:,1]
     
-    eta0, p1, p2, p3, width, v0_mod, D_mod, S1_mod, S2_mod = emulator_params(params, n, alpha, beta)
+    eta0, p1, p2, p3, v0_mod, D_mod, S1_mod, S2_mod = emulator_params(params, n, alpha, beta)
+    
+    width = tf.sqrt(eta0**2 + (p1 + p2 * alpha + p3 * beta)**2)
     
     eigvals, eigvecs = generalized_eigen(
         D_mod.numpy(), S1_mod.numpy(), S2_mod.numpy(), (beta, alpha)
@@ -381,7 +329,6 @@ def plot_Lorentzian_for_idx(idx, train_set, n, params):
 
 
 
-
 def data_Lorentzian_for_idx(idx, train_set, n, params):
 
     beta, alpha = map(float, train_set[idx])
@@ -389,7 +336,13 @@ def data_Lorentzian_for_idx(idx, train_set, n, params):
     Lor_train, alphaD_train = data_table(train_set)
     omega_fom, S_fom = Lor_train[idx][:,0], Lor_train[idx][:,1]
 
-    eta0, p1, p2, p3, width, v0_mod, D_mod, S1_mod, S2_mod = emulator_params(params, n, alpha, beta)
+    eta0, p1, p2, p3, v0_mod, D_mod, S1_mod, S2_mod = emulator_params(
+        params, n,
+        alpha, beta
+    )
+    
+    width = tf.sqrt(eta0**2 + (p1 + p2*alpha + p3*beta)**2)
+    
     eigvals, eigvecs = generalized_eigen(
         D_mod.numpy(), S1_mod.numpy(), S2_mod.numpy(), (beta, alpha)
     )
@@ -410,24 +363,25 @@ def data_Lorentzian_for_idx(idx, train_set, n, params):
     return omega_fom, S_fom, emu_Lor
     
 
-
-
-
  
 def plot_alphaD(idx, train_set, params, n): 
     emu_alphaD = []
     times = []
-    
-    beta, alpha = map(float, train_set[idx])
-    
+        
     Lor_train, alphaD_train = data_table(train_set)
     alphaD_train = np.vstack(alphaD_train)
     alphaD_train = alphaD_train[:,2]
     
     for idx in range(len(train_set)):
-        start = time.time()  # Start time
+        beta, alpha = map(float, train_set[idx])
+        
+        start = time.time()
 
-        eta0, p1, p2, p3, width, v0_mod, D_mod, S1_mod, S2_mod = emulator_params(params, n, alpha, beta)
+        eta0, p1, p2, p3, v0_mod, D_mod, S1_mod, S2_mod = emulator_params(
+            params, n, alpha, beta
+        )
+        
+        M_true = D_mod + alpha * S1_mod + beta * S2_mod
         
         eigvals, eigvecs = generalized_eigen(
             D_mod.numpy(), S1_mod.numpy(), S2_mod.numpy(), (beta, alpha)
@@ -437,8 +391,10 @@ def plot_alphaD(idx, train_set, params, n):
         strengths = tf.square(proj)
         #mask = tf.cast((opt_eigenvalues > 1) &  (opt_eigenvalues < 30), dtype=tf.float64)
         #B = B * mask
-        end = time.time()  # Start time
+        
         emu_alphaD.append(calculate_alphaD(eigvals, strengths))
+        
+        end = time.time()  # Start time
         times.append(end - start)
         
     return emu_alphaD, alphaD_train, times

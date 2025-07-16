@@ -125,7 +125,7 @@ plt.show()
 '''
 How many parameters you want ?
 '''
-n = 8
+n = 20
 weight=100.0
 #fold=0.8
 
