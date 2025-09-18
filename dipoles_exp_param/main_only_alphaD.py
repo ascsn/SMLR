@@ -117,7 +117,7 @@ print('Central data point in train set:', central_point)
 '''
 How many parameters you want ?
 '''
-n = 7
+n = 10
 
 
 D, S1, S2 = helper.nec_mat(n)

@@ -177,10 +177,10 @@ np.random.seed(42)
 '''
 How many parameters you want ?
 '''
-n = 14
-retain = 0.6
+n = 7
+retain = 0.9
 weight= 1000
-width = 1.0
+width = 2.0
 
 D, S1, S2 = helper.nec_mat(n)
 print(D.shape, S1.shape, S2.shape)
@@ -207,26 +207,26 @@ random_initial_guess = np.random.uniform(0, 1, nec_num_param)
 '''
 Here also re-initialize matrix elements of M0 and v0 !
 '''
-keep = round(retain*n)
-data = np.loadtxt(strength_dir+'lorm_'+nucnam+'_'+central_point[1]+'_'+central_point[0]+'.out')
-data = data[data[:,0]>-10]
-data = data[data[:,0]<0.782]
-omega = data[:,0]
-y = data[:,1]
-omega_tf = tf.convert_to_tensor(omega, dtype=tf.float64)
-y_tf = tf.convert_to_tensor(y, dtype=tf.float64)
-eta_tf = tf.convert_to_tensor(width, dtype=tf.float64)
-E_hat, B_hat, y_hat = helper.fit_strength_with_tf_lorentzian(omega_tf, y_tf, keep, eta_tf, min_spacing=0.01)
+# keep = round(retain*n)
+# data = np.loadtxt(strength_dir+'lorm_'+nucnam+'_'+central_point[1]+'_'+central_point[0]+'.out')
+# data = data[data[:,0]>-10]
+# data = data[data[:,0]<0.782]
+# omega = data[:,0]
+# y = data[:,1]
+# omega_tf = tf.convert_to_tensor(omega, dtype=tf.float64)
+# y_tf = tf.convert_to_tensor(y, dtype=tf.float64)
+# eta_tf = tf.convert_to_tensor(width, dtype=tf.float64)
+# E_hat, B_hat, y_hat = helper.fit_strength_with_tf_lorentzian(omega_tf, y_tf, keep, eta_tf, min_spacing=0.01)
 
-plt.plot(data[:,0], y_hat)
-plt.stem(E_hat, B_hat)
-plt.plot(data[:,0], data[:,1])
-
-
+# plt.plot(data[:,0], y_hat)
+# plt.stem(E_hat, B_hat)
+# plt.plot(data[:,0], data[:,1])
 
 
 
-initial_guess = helper.encode_initial_guess(random_initial_guess, E_hat, B_hat, n, retain)
+
+
+initial_guess = random_initial_guess #helper.encode_initial_guess(random_initial_guess, E_hat, B_hat, n, retain)
 
 params_shape = [D.shape, S1.shape, S2.shape]
 

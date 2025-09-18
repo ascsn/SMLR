@@ -812,7 +812,7 @@ def cost_function_batched_mixed(
         + alpha_shift[:, None, None] * S1_mod[None, :, :]
         + beta_shift[:,  None, None] * S2_mod[None, :, :]
         + beta_shift[:,  None, None] * exp1[:, None, None] * S3_mod[None, :, :]
-    )
+    ) 
 
     # η_new per sample
     eta_b = tf.broadcast_to(eta, tf.shape(alpha_tensor))  # (B,)
@@ -1102,117 +1102,272 @@ def data_Lorentzian_for_idx(idx, test_set,n,params, central_point):
     return x, Lors_orig[:,1], opt_Lor
     
  
-def plot_alphaD(test_set,params,n, central_point, retain): 
-    alphaD_guess = []
-    times = []
+# def plot_alphaD(test_set,params,n, central_point, retain): 
+#     alphaD_guess = []
+#     times = []
     
-    Lors_test, alphaD_test = data_table(test_set)
-    alphaD_test = np.vstack(alphaD_test)
+#     Lors_test, alphaD_test = data_table(test_set)
+#     alphaD_test = np.vstack(alphaD_test)
     
     
     
-    for idx in range(len(test_set)):
+#     for idx in range(len(test_set)):
         
-        alpha = float(test_set[idx][0])
-        beta = float(test_set[idx][1])
+#         alpha = float(test_set[idx][0])
+#         beta = float(test_set[idx][1])
         
-        alpha_tensor = tf.constant(alpha, dtype=tf.float32)  # (batch,)
-        beta_tensor  = tf.constant(beta, dtype=tf.float32)
+#         alpha_tensor = tf.constant(alpha, dtype=tf.float32)  # (batch,)
+#         beta_tensor  = tf.constant(beta, dtype=tf.float32)
         
-        start = time.time()  # Start time
+#         start = time.time()  # Start time
         
         
         
-        opt_D, opt_S1, opt_S2,opt_S3,opt_S4, opt_v0,opt_v1, opt_v2, fold, x1, x2, x3, x4 = modified_DS_affine_v(params, n)
+#         opt_D, opt_S1, opt_S2,opt_S3,opt_S4, opt_v0,opt_v1, opt_v2, fold, x1, x2, x3, x4 = modified_DS_affine_v(params, n)
 
-        exp1 = tf.exp( -(alpha_tensor- float(central_point[0])) * x1)
+#         exp1 = tf.exp( -(alpha_tensor- float(central_point[0])) * x1)
 
         
-        M_true = opt_D + (alpha_tensor- float(central_point[0])) * opt_S1 \
-                     + (beta_tensor- float(central_point[1])) * opt_S2 \
-                     + (beta_tensor- float(central_point[1])) * exp1 * opt_S3  \
-                     #+ beta_tensor * exp2 * opt_S4
+#         M_true = opt_D + (alpha_tensor- float(central_point[0])) * opt_S1 \
+#                      + (beta_tensor- float(central_point[1])) * opt_S2 \
+#                      + (beta_tensor- float(central_point[1])) * exp1 * opt_S3  \
+#                      #+ beta_tensor * exp2 * opt_S4
                      
-        opt_eigenvalues, opt_eigenvectors = tf.linalg.eigh(M_true)
+#         opt_eigenvalues, opt_eigenvectors = tf.linalg.eigh(M_true)
          
-        n_i = opt_eigenvalues.shape[0]
-        k_keep = int(round(retain * n_i))         # how many eigenvalues to keep
-        k_keep = max(1, min(k_keep, n_i))         # safety: clamp between 1 and n
+#         n_i = opt_eigenvalues.shape[0]
+#         k_keep = int(round(retain * n_i))         # how many eigenvalues to keep
+#         k_keep = max(1, min(k_keep, n_i))         # safety: clamp between 1 and n
         
-        left  = (n_i - k_keep) // 2               # starting index of the centered block
-        right = left + k_keep                     # ending index (exclusive)
+#         left  = (n_i - k_keep) // 2               # starting index of the centered block
+#         right = left + k_keep                     # ending index (exclusive)
         
-        opt_eigenvalues  = opt_eigenvalues[left:right]
-        opt_eigenvectors = opt_eigenvectors[:, left:right]
+#         opt_eigenvalues  = opt_eigenvalues[left:right]
+#         opt_eigenvectors = opt_eigenvectors[:, left:right]
 
          
-        v_eff = opt_v0 \
-              + (alpha_tensor- float(central_point[0])) * opt_v1 \
-              + (beta_tensor- float(central_point[1])) * opt_v2 
+#         v_eff = opt_v0 \
+#               + (alpha_tensor- float(central_point[0])) * opt_v1 \
+#               + (beta_tensor- float(central_point[1])) * opt_v2 
               
-        projections = tf.linalg.matvec(tf.transpose(opt_eigenvectors), v_eff)
+#         projections = tf.linalg.matvec(tf.transpose(opt_eigenvectors), v_eff)
         
-        # Square each projection
-        B = tf.square(projections)
+#         # Square each projection
+#         B = tf.square(projections)
+        
+        
         
 
         
-        alphaD_guess.append(calculate_alphaD(opt_eigenvalues, B))
+#         alphaD_guess.append(calculate_alphaD(opt_eigenvalues, B))
         
-        end = time.time()  # Start time
-        
-        
+#         end = time.time()  # Start time
         
         
-        times.append(end-start)
         
         
-    return alphaD_guess, alphaD_test[:,2], times
+        
+        
+#         times.append(end-start)
+        
+        
+#     return alphaD_guess, alphaD_test[:,2], times
 
+def plot_alphaD(test_set, params, n, central_point, retain, *, reps=5, warmup=1):
+    import time
+    import numpy as np
+    import tensorflow as tf
 
-def plot_alphaD_simple(test_set,params,n, central_point): 
+    def robust_time(fn, reps=50, warmup=1):
+        # Warm-up (excluded)
+        for _ in range(warmup):
+            out = fn()
+            try:
+                _ = float(out.numpy())
+            except Exception:
+                _ = float(out)
+        # Timed reps
+        ts = []
+        last_out = None
+        for _ in range(reps):
+            t0 = time.perf_counter()
+            out = fn()
+            # Materialize to block until kernels finish
+            try:
+                last_out = float(out.numpy())
+            except Exception:
+                last_out = float(out)
+            t1 = time.perf_counter()
+            ts.append(t1 - t0)
+        return float(np.median(ts)), last_out
+
     alphaD_guess = []
     times = []
-    
+
+    # Ground truth (unchanged)
     Lors_test, alphaD_test = data_table(test_set)
     alphaD_test = np.vstack(alphaD_test)
-    
+
+    # Precompute constants once
+    a0 = float(central_point[0])
+    b0 = float(central_point[1])
+
+    # Build model parts once (move inside loop if you want to include build cost)
+    opt_D, opt_S1, opt_S2, opt_S3, opt_S4, opt_v0, opt_v1, opt_v2, fold, x1, x2, x3, x4 = \
+        modified_DS_affine_v(params, n)
+
+    # Per-point evaluation (with robust timing)
     for idx in range(len(test_set)):
-        
-        start = time.time()  # Start time
-        
-        opt_D, opt_S1, opt_S2, opt_S3, x1 = modified_DS_simple(params, n)
-        
-        exp1 = tf.exp( -(float(test_set[idx][0]) - float(central_point[0])) * x1 )
+        a = float(test_set[idx][0])
+        b = float(test_set[idx][1])
 
-        M_true = opt_D + (float(test_set[idx][0]) - float(central_point[0]))  * opt_S1 \
-                       + (float(test_set[idx][1]) - float(central_point[1]))  * opt_S2 \
-                       +  (float(test_set[idx][1]) - float(central_point[1])) * exp1 * opt_S3
+        def eval_point():
+            a_t = tf.constant(a, dtype=tf.float32)
+            b_t = tf.constant(b, dtype=tf.float32)
 
-        opt_eigenvalues, opt_eigenvectors = tf.linalg.eigh(M_true)
-        
-        #M_true = opt_D + float(test_set[idx][0]) * opt_S1 + float(test_set[idx][1]) * opt_S2
+            exp1 = tf.exp(-(a_t - a0) * x1)
+            M_true = (opt_D
+                      + (a_t - a0) * opt_S1
+                      + (b_t - b0) * opt_S2
+                      + (b_t - b0) * exp1 * opt_S3)
 
-       # opt_eigenvalues, opt_eigenvectors = generalized_eigen(opt_D.numpy(), opt_S1.numpy(), opt_S2.numpy(), test_set[idx])#tf.linalg.eigh(M_true)
-        
-        end = time.time()  # Start time
-        
-        #alphaD_guess.append(opt_eigenvalues[1])
-        # val = 0.0
-        # for i in range(n):
-        #     # val += tf.sqrt(eigenvalues[i]**2)
-        #     val += opt_eigenvalues[i]**2
-        #     # val += eigenvalues[i]
-        val = opt_eigenvalues[int(n/2)]
-            
+            eigvals, eigvecs = tf.linalg.eigh(M_true)
+
+            n_i = eigvals.shape[0]
+            k_keep = int(round(retain * n_i))
+            k_keep = max(1, min(k_keep, n_i))
+            left  = (n_i - k_keep) // 2
+            right = left + k_keep
+
+            eigvals  = eigvals[left:right]
+            eigvecs  = eigvecs[:, left:right]
+
+            v_eff = opt_v0 + (a_t - a0) * opt_v1 + (b_t - b0) * opt_v2
+            proj = tf.linalg.matvec(tf.transpose(eigvecs), v_eff)
+            B = tf.square(proj)
+
+            return calculate_alphaD(eigvals, B)  # tf.Tensor or scalar
+
+        med_time, val = robust_time(eval_point, reps=reps, warmup=warmup)
         alphaD_guess.append(val)
+        times.append(med_time)
+
+    return alphaD_guess, alphaD_test[:, 2], times
+
+
+
+
+# def plot_alphaD_simple(test_set,params,n, central_point): 
+#     alphaD_guess = []
+#     times = []
+    
+#     Lors_test, alphaD_test = data_table(test_set)
+#     alphaD_test = np.vstack(alphaD_test)
+    
+#     for idx in range(len(test_set)):
+        
+#         start = time.time()  # Start time
+        
+#         opt_D, opt_S1, opt_S2, opt_S3, x1 = modified_DS_simple(params, n)
+        
+#         exp1 = tf.exp( -(float(test_set[idx][0]) - float(central_point[0])) * x1 )
+
+#         M_true = opt_D + (float(test_set[idx][0]) - float(central_point[0]))  * opt_S1 \
+#                        + (float(test_set[idx][1]) - float(central_point[1]))  * opt_S2 \
+#                        +  (float(test_set[idx][1]) - float(central_point[1])) * exp1 * opt_S3
+
+#         opt_eigenvalues, opt_eigenvectors = tf.linalg.eigh(M_true)
+        
+#         #M_true = opt_D + float(test_set[idx][0]) * opt_S1 + float(test_set[idx][1]) * opt_S2
+
+#        # opt_eigenvalues, opt_eigenvectors = generalized_eigen(opt_D.numpy(), opt_S1.numpy(), opt_S2.numpy(), test_set[idx])#tf.linalg.eigh(M_true)
+        
+#         end = time.time()  # Start time
+        
+#         #alphaD_guess.append(opt_eigenvalues[1])
+#         # val = 0.0
+#         # for i in range(n):
+#         #     # val += tf.sqrt(eigenvalues[i]**2)
+#         #     val += opt_eigenvalues[i]**2
+#         #     # val += eigenvalues[i]
+#         val = opt_eigenvalues[int(n/2)]
+            
+#         alphaD_guess.append(val)
         
         
         
-        times.append(end-start)
+#         times.append(end-start)
         
         
-    return alphaD_guess, alphaD_test[:,2], times
+#     return alphaD_guess, alphaD_test[:,2], times
+
+def plot_alphaD_simple(test_set, params, n, central_point, *, reps=5, warmup=1):
+    import time
+    import numpy as np
+    import tensorflow as tf
+
+    def robust_time(fn, reps=50, warmup=1):
+        # Warm-up (excluded)
+        for _ in range(warmup):
+            out = fn()
+            try:
+                _ = float(out.numpy())
+            except Exception:
+                _ = float(out)
+        # Timed reps
+        ts = []
+        last_out = None
+        for _ in range(reps):
+            t0 = time.perf_counter()
+            out = fn()
+            try:
+                last_out = float(out.numpy())
+            except Exception:
+                last_out = float(out)
+            t1 = time.perf_counter()
+            ts.append(t1 - t0)
+        return float(np.median(ts)), last_out
+
+    alphaD_guess = []
+    times = []
+
+    # Ground truth (unchanged)
+    Lors_test, alphaD_test = data_table(test_set)
+    alphaD_test = np.vstack(alphaD_test)
+
+    # Precompute constants once
+    a0 = float(central_point[0])
+    b0 = float(central_point[1])
+
+    # Build model parts once (move inside loop if you want to include build cost)
+    opt_D, opt_S1, opt_S2, opt_S3, x1 = modified_DS_simple(params, n)
+
+    for idx in range(len(test_set)):
+        a = float(test_set[idx][0])
+        b = float(test_set[idx][1])
+
+        def eval_point():
+            a_t = tf.constant(a, dtype=tf.float32)
+            b_t = tf.constant(b, dtype=tf.float32)
+
+            exp1 = tf.exp(-(a_t - a0) * x1)
+            M_true = (opt_D
+                      + (a_t - a0) * opt_S1
+                      + (b_t - b0) * opt_S2
+                      + (b_t - b0) * exp1 * opt_S3)
+
+            eigvals, eigvecs = tf.linalg.eigh(M_true)
+
+            # keep original behavior: middle eigenvalue as proxy
+            mid_idx = int(n/2)
+            mid_idx = max(0, min(mid_idx, int(eigvals.shape[0]) - 1))
+            return eigvals[mid_idx]
+
+        med_time, val = robust_time(eval_point, reps=reps, warmup=warmup)
+        alphaD_guess.append(val)
+        times.append(med_time)
+
+    return alphaD_guess, alphaD_test[:, 2], times
 
 
 

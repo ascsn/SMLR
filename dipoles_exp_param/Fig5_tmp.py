@@ -271,7 +271,7 @@ ax[1].annotate('${}^{180}$Yb', (0.7, 0.5), xycoords='axes fraction', size = 26)
 
 plt.subplots_adjust(hspace = 0.25)
 
-plt.savefig('../figs/fig5_dipole_temp.pdf', bbox_inches='tight')
+#plt.savefig('../figs/fig5_dipole_temp.pdf', bbox_inches='tight')
 
 
 

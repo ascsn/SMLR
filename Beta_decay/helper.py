@@ -585,6 +585,8 @@ def cost_function(params, n, fmt_data, Lors_true, HLs_true,coeffs,g_A, weight, c
         
 
         total_cost += tf.reduce_sum((Lor - Lor_true) ** 2)
+        ''' Total cost modified to match previous definitions'''
+        
         
         ''' Add half-lives to optimization as well'''
 
@@ -805,96 +807,255 @@ def data_Lorentzian_for_idx(idx, test_set,n,params, coeffs, g_A):
     return x, Lors_orig[:,1], opt_Lor
     
  
-def plot_half_lives(test_set,params,n, coeffs, g_A, central_point, nucnam, retain):
-    '''
-    Calculate half-lives for type 1 alg
-    '''
+# def plot_half_lives(test_set,params,n, coeffs, g_A, central_point, nucnam, retain):
+#     '''
+#     Calculate half-lives for type 1 alg
+#     '''
+#     hl_guess = []
+#     times = []
+    
+#     Lors_test, HLs_test = data_table(test_set, coeffs, g_A, nucnam)
+    
+#     D_mod, S1_mod, S2_mod, v0_mod, eta, x1, x2, x3 = modified_DS(params, n)
+    
+    
+#     for idx in range(len(test_set)):
+        
+#         start = time.time()  # Start time
+        
+#         M_true = D_mod + (float(test_set[idx][0])-float(central_point[0])) * S1_mod \
+#             + (float(test_set[idx][1]) - float(central_point[1])) * S2_mod
+        
+
+#         eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
+        
+#         n_i = eigenvalues.shape[0]
+#         k_keep = int(round(retain * n_i))         # how many eigenvalues to keep
+#         k_keep = max(1, min(k_keep, n_i))         # safety: clamp between 1 and n
+        
+#         left  = (n_i - k_keep) // 2               # starting index of the centered block
+#         right = left + k_keep                     # ending index (exclusive)
+        
+#         eigenvalues  = eigenvalues[left:right]
+#         eigenvectors = eigenvectors[:, left:right]
+        
+#         projections = tf.linalg.matvec(tf.transpose(eigenvectors), v0_mod)
+        
+#         # Square each projection
+#         B = tf.square(projections)
+        
+#         mask = tf.cast((eigenvalues > -10) & (eigenvalues < 15), dtype=tf.float64)
+
+#         # Apply the mask to zero out B where eigenvalue is negative
+#         B = B * mask
+        
+
+#         hls = half_life_loss(eigenvalues, B, coeffs, g_A)
+        
+        
+#         end = time.time()  # Start time
+        
+#         times.append(end-start)
+#         hl_guess.append(hls)
+        
+        
+#     return hl_guess, HLs_test, times
+
+
+# def plot_half_lives_only_HL(test_set,params,n, coeffs, g_A, central_point, nucnam):
+#     '''
+#     Note that this function is for type 2 Alg in the paper
+#     '''
+#     hl_guess = []
+#     times = []
+    
+#     HLs_test = data_table_only_HL(test_set,coeffs,g_A, nucnam)
+    
+#     D_mod, S1_mod, S2_mod = modified_DS_only_HL(params,n)
+    
+#     for idx in range(len(test_set)):
+        
+#         start = time.time()  # Start time
+        
+        
+        
+#         M_true = D_mod + (float(test_set[idx][0]) - float(central_point[0])) * S1_mod \
+#                        + (float(test_set[idx][1]) - float(central_point[1])) * S2_mod
+        
+        
+
+#         eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
+
+
+        
+#         ''' Add half-lives to optimization as well'''
+#         log_hls = eigenvalues[int(n/2)]#tf.reduce_sum(tf.square(eigenvalues))
+        
+
+        
+#         end = time.time()  # Start time
+        
+#         times.append(end-start)
+#         hl_guess.append(10**log_hls)
+        
+        
+#     return hl_guess, HLs_test, times
+
+def plot_half_lives(test_set, params, n, coeffs, g_A, central_point, nucnam, retain, *, reps=5, warmup=1):
+    """
+    Calculate half-lives for type 1 algorithm, with robust per-point timing.
+    Returns: hl_guess (list[float]), HLs_test (as returned by data_table), times (list[float])
+    """
+    import time
+    import numpy as np
+    import tensorflow as tf
+
+    def robust_time(fn, reps=20, warmup=1):
+        # Warm-up (excluded)
+        for _ in range(warmup):
+            out = fn()
+            try:
+                _ = float(out.numpy())
+            except Exception:
+                _ = float(out)
+        # Timed reps
+        ts = []
+        last_out = None
+        for _ in range(reps):
+            t0 = time.perf_counter()
+            out = fn()
+            try:
+                last_out = float(out.numpy())
+            except Exception:
+                last_out = float(out)
+            t1 = time.perf_counter()
+            ts.append(t1 - t0)
+        return float(np.median(ts)), last_out
+
     hl_guess = []
     times = []
-    
+
+    # Ground truth (unchanged)
     Lors_test, HLs_test = data_table(test_set, coeffs, g_A, nucnam)
-    
+
+    # Precompute constants once
+    a0 = float(central_point[0])
+    b0 = float(central_point[1])
+
+    # Build model parts once (move inside the loop if you want to include build cost per point)
     D_mod, S1_mod, S2_mod, v0_mod, eta, x1, x2, x3 = modified_DS(params, n)
-    
-    
+
     for idx in range(len(test_set)):
-        
-        start = time.time()  # Start time
-        
-        M_true = D_mod + (float(test_set[idx][0])-float(central_point[0])) * S1_mod \
-            + (float(test_set[idx][1]) - float(central_point[1])) * S2_mod
-        
+        a = float(test_set[idx][0])
+        b = float(test_set[idx][1])
 
-        eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
-        
-        n_i = eigenvalues.shape[0]
-        k_keep = int(round(retain * n_i))         # how many eigenvalues to keep
-        k_keep = max(1, min(k_keep, n_i))         # safety: clamp between 1 and n
-        
-        left  = (n_i - k_keep) // 2               # starting index of the centered block
-        right = left + k_keep                     # ending index (exclusive)
-        
-        eigenvalues  = eigenvalues[left:right]
-        eigenvectors = eigenvectors[:, left:right]
-        
-        projections = tf.linalg.matvec(tf.transpose(eigenvectors), v0_mod)
-        
-        # Square each projection
-        B = tf.square(projections)
-        
-        mask = tf.cast((eigenvalues > -10) & (eigenvalues < 15), dtype=tf.float64)
+        def eval_point():
+            # Build matrix
+            M_true = (D_mod
+                      + (a - a0) * S1_mod
+                      + (b - b0) * S2_mod)
 
-        # Apply the mask to zero out B where eigenvalue is negative
-        B = B * mask
-        
+            # Eigendecomposition
+            eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
 
-        hls = half_life_loss(eigenvalues, B, coeffs, g_A)
-        
-        
-        end = time.time()  # Start time
-        
-        times.append(end-start)
-        hl_guess.append(hls)
-        
-        
+            # Keep centered block (retain fraction)
+            n_i = eigenvalues.shape[0]
+            k_keep = int(round(retain * n_i))
+            k_keep = max(1, min(k_keep, n_i))
+            left  = (n_i - k_keep) // 2
+            right = left + k_keep
+
+            eigenvalues  = eigenvalues[left:right]
+            eigenvectors = eigenvectors[:, left:right]
+
+            # Projections and strengths
+            projections = tf.linalg.matvec(tf.transpose(eigenvectors), v0_mod)
+            B = tf.square(projections)
+
+            # Mask eigenvalues (dtype-safe)
+            mask = tf.cast((eigenvalues > -10) & (eigenvalues < 15), dtype=eigenvalues.dtype)
+            B = B * mask
+
+            # Half-life (may return tf.Tensor)
+            return half_life_loss(eigenvalues, B, coeffs, g_A)
+
+        med_time, hls_val = robust_time(eval_point, reps=reps, warmup=warmup)
+        hl_guess.append(hls_val)   # numeric float
+        times.append(med_time)
+
     return hl_guess, HLs_test, times
 
 
-def plot_half_lives_only_HL(test_set,params,n, coeffs, g_A, central_point, nucnam):
-    '''
-    Note that this function is for type 2 Alg in the paper
-    '''
+def plot_half_lives_only_HL(test_set, params, n, coeffs, g_A, central_point, nucnam, *, reps=5, warmup=1):
+    """
+    Type 2 algorithm (only HL) with robust per-point timing.
+    Returns: hl_guess (list[float]), HLs_test, times (list[float])
+    """
+    import time
+    import numpy as np
+    import tensorflow as tf
+
+    def robust_time(fn, reps=20, warmup=1):
+        # Warm-up (excluded)
+        for _ in range(warmup):
+            out = fn()
+            try:
+                _ = float(out.numpy())
+            except Exception:
+                _ = float(out)
+        # Timed reps
+        ts = []
+        last_out = None
+        for _ in range(reps):
+            t0 = time.perf_counter()
+            out = fn()
+            try:
+                last_out = float(out.numpy())
+            except Exception:
+                last_out = float(out)
+            t1 = time.perf_counter()
+            ts.append(t1 - t0)
+        return float(np.median(ts)), last_out
+
     hl_guess = []
     times = []
-    
-    HLs_test = data_table_only_HL(test_set,coeffs,g_A, nucnam)
-    
-    D_mod, S1_mod, S2_mod = modified_DS_only_HL(params,n)
-    
+
+    # Ground truth (unchanged)
+    HLs_test = data_table_only_HL(test_set, coeffs, g_A, nucnam)
+
+    # Precompute constants once
+    a0 = float(central_point[0])
+    b0 = float(central_point[1])
+
+    # Build model parts once (move inside the loop if you want to include build cost per point)
+    D_mod, S1_mod, S2_mod = modified_DS_only_HL(params, n)
+
     for idx in range(len(test_set)):
-        
-        start = time.time()  # Start time
-        
-        
-        
-        M_true = D_mod + (float(test_set[idx][0]) - float(central_point[0])) * S1_mod \
-                       + (float(test_set[idx][1]) - float(central_point[1])) * S2_mod
-        
-        
+        a = float(test_set[idx][0])
+        b = float(test_set[idx][1])
 
-        eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
+        def eval_point():
+            M_true = (D_mod
+                      + (a - a0) * S1_mod
+                      + (b - b0) * S2_mod)
 
+            eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
 
-        
-        ''' Add half-lives to optimization as well'''
-        log_hls = eigenvalues[int(n/2)]#tf.reduce_sum(tf.square(eigenvalues))
-        
+            # Original behavior: take the middle eigenvalue (as log(T1/2))
+            mid_idx = int(n/2)
+            mid_idx = max(0, min(mid_idx, int(eigenvalues.shape[0]) - 1))
+            log_hls = eigenvalues[mid_idx]
 
-        
-        end = time.time()  # Start time
-        
-        times.append(end-start)
-        hl_guess.append(10**log_hls)
-        
-        
+            # Return 10**log_hls (half-life)
+            # Ensure we return a Tensor/number suitable for robust_time materialization
+            try:
+                return tf.pow(tf.constant(10.0, dtype=log_hls.dtype), log_hls)
+            except Exception:
+                # Fallback if dtype mismatch (shouldn't happen)
+                return 10.0 ** log_hls
+
+        med_time, hls_val = robust_time(eval_point, reps=reps, warmup=warmup)
+        hl_guess.append(hls_val)   # numeric float
+        times.append(med_time)
+
     return hl_guess, HLs_test, times

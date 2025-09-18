@@ -194,6 +194,7 @@ plt.gca().tick_params(axis="x",direction="in", which = 'both', labelsize = 12)
 
 #plt.ylim(1e-6,1e-1)
 plt.xlim(.5,2.0)
+plt.show()
 #plt.xscale('log')
 #plt.savefig('CAT_dipole.pdf', bbox_inches='tight')
 

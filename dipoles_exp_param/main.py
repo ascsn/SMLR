@@ -168,7 +168,7 @@ print(len(test_set), len(cv_set), len(train_set))
 - ratio of spectrum retained
 
 '''
-n = 8
+n = 7
 retain = 0.6
 
 

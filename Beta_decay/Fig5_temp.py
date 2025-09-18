@@ -47,9 +47,10 @@ poly = helper.fit_phase_space(0, Z, A, 15)
 coeffs = Polynomial(poly).coef
 
 
-n = 14
+n = 16
+retain = 0.9
 
-params = np.loadtxt('params_'+str(n)+'.txt')
+params = np.loadtxt('params_'+str(n)+'_'+str(retain)+'.txt')
 
 
 train_set = []
@@ -126,6 +127,16 @@ for idx in range(len(combined)):
     
 
     eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
+    
+    n_i = eigenvalues.shape[0]
+    k_keep = int(round(retain * n_i))         # how many eigenvalues to keep
+    k_keep = max(1, min(k_keep, n_i))         # safety: clamp between 1 and n
+    
+    left  = (n_i - k_keep) // 2               # starting index of the centered block
+    right = left + k_keep                     # ending index (exclusive)
+    
+    eigenvalues  = eigenvalues[left:right]
+    eigenvectors = eigenvectors[:, left:right]
     
     projections = tf.linalg.matvec(tf.transpose(eigenvectors), opt_v0)
     
@@ -215,14 +226,15 @@ This here plots the Lorentzians
 '''
 idx =  [4, 98, 61]
 
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
 for i in range(len(idx)):
     
     alpha = float(combined[idx[i]][0])
     beta  = float(combined[idx[i]][1])
     
 
-    ax[0].scatter(alpha,beta,
-            s=200, facecolors='none', edgecolors='red', linewidths=2)
+    ax[0].scatter(alpha, beta, ec = colors[i], s = 300, fc = 'none',linewidths=3.5)
     
     
     
@@ -235,6 +247,16 @@ for i in range(len(idx)):
     
     
     eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
+    
+    n_i = eigenvalues.shape[0]
+    k_keep = int(round(retain * n_i))         # how many eigenvalues to keep
+    k_keep = max(1, min(k_keep, n_i))         # safety: clamp between 1 and n
+    
+    left  = (n_i - k_keep) // 2               # starting index of the centered block
+    right = left + k_keep                     # ending index (exclusive)
+    
+    eigenvalues  = eigenvalues[left:right]
+    eigenvectors = eigenvectors[:, left:right]
     
     projections = tf.linalg.matvec(tf.transpose(eigenvectors), opt_v0)
     

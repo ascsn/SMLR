@@ -155,7 +155,7 @@ print('Central data point in train set:', central_point)
 '''
 How many parameters you want ?
 '''
-n = 7
+n = 14
 
 D, S1, S2 = helper.nec_mat(n)
 print(D.shape, S1.shape, S2.shape)
@@ -192,7 +192,7 @@ def optimization_step():
 
 
 # Run the optimization
-num_iterations = 40000 # Total number of optimization iterations
+num_iterations = 20000 # Total number of optimization iterations
 num_check = 300 #Print output after this many steps
 cost_loop = []
 train_cost_min = 1e10

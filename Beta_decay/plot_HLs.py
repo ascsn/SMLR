@@ -181,27 +181,14 @@ params = np.loadtxt('params_'+str(n)+'_only_HL.txt')
 D_mod, S1_mod, S2_mod = helper.modified_DS_only_HL(params, n)
 
 
-hls_em2 = []
+'''
+Get data from helper module
+'''
+
+hls_em2, HLs_test, times = helper.plot_half_lives_only_HL(combined,params,n, coeffs, g_A, central_point, nucnam)
 
 
-for idx, alpha_p in enumerate(combined):
 
-    M_true = D_mod + (float(alpha_p[0]) - float(central_point[0])) * S1_mod \
-                   + (float(alpha_p[1]) - float(central_point[1])) * S2_mod
-    
-    
-
-    eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
-
-
-    
-    ''' Add half-lives to optimization as well'''
-    hls = 0.0
-    # for i in range(n):
-    #     hls += eigenvalues[i]**2
-    hls = eigenvalues[int(n/2)]
-        
-    hls_em2.append(10**hls)
 
 x_em2 = []
 y_em2 = []
@@ -225,55 +212,16 @@ emulator2 = np.concatenate((x_em2, y_em2, z_em2), axis = 1)
 Emulator 1
 '''
 
-n = 12
-params = np.loadtxt('params_'+str(n)+'.txt')
-hls_em1 = []
-for idx in range(len(combined)):
-
+n = 16
+retain = 0.9
+params = np.loadtxt('params_'+str(n)+'_'+str(retain)+'.txt')
+'''
+Just use helper functions
+'''
+hl_guess, HLs_test, times = helper.plot_half_lives(combined,params,n, coeffs, g_A, central_point, nucnam, retain)
     
 
-    alpha_tensor = tf.constant(float(combined[idx][0]), dtype=tf.float64)  # (batch,)
-    beta_tensor  = tf.constant(float(combined[idx][1]), dtype=tf.float64)
-
-    
-    D_mod, S1_mod, S2_mod, v0_mod, eta, x1, x2, x3 = helper.modified_DS(params, n)
-    
-    M_true = D_mod + (alpha_tensor-float(central_point[0])) * S1_mod \
-        + (beta_tensor - float(central_point[1])) * S2_mod
-    
-
-    eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
-    
-    projections = tf.linalg.matvec(tf.transpose(eigenvectors), v0_mod)
-    
-    # Square each projection
-    B = tf.square(projections)
-    
-    mask = tf.cast((eigenvalues > -10) & (eigenvalues < 15), dtype=tf.float64)
-
-    # Apply the mask to zero out B where eigenvalue is negative
-    B = B * mask
-    
-
-    #B = [tf.square(tf.tensordot(eigenvectors[:, i], v0_mod, axes=1)) for i in range(eigenvectors.shape[1])]
-    Lor_true = tf.constant(Lors[idx][:,1], dtype=tf.float64)
-
-    #Generate the x values
-    x = tf.constant(Lors[idx][:,0], dtype=tf.float64)
-    
-    width = tf.sqrt(tf.square(eta) + tf.square(x1 + x2*float(alpha[0]) + x3*float(alpha[1])))
-    
-
-    # Use tf.map_fn to apply the give_me_Lorentzian function over the x values
-    Lor = helper.give_me_Lorentzian(x, eigenvalues, B, width)
-    
-    
-
-    hls = helper.half_life_loss(eigenvalues, B, coeffs, g_A)
-    hls_em1.append(hls)
-    
-
-hls_em1 = np.array(hls_em1)
+hls_em1 = np.array(hl_guess)
 
 x_em1 = []
 y_em1 = []
@@ -340,7 +288,6 @@ for i in range(len(unique)):
     #plt.scatter(data_tmp[:,0], data_tmp[:,2],color='k')
 
 
-
 '''
 Emulator 1 data
 '''
@@ -374,7 +321,7 @@ for i in range(len(np.unique(x))):
     plt.plot(data_tmp[:,0], data_tmp[:,2], color = colors[i], lw = 2.5, alpha = 0.8)
     #plt.scatter(data_tmp[:,1], data_tmp[:,2],color='k')
 #plt.legend(loc = 'upper right', bbox_to_anchor=(1.2, 1))
-norm = Normalize(vmin=np.min(x), vmax=np.max(x))
+norm = Normalize(vmin=np.min(y), vmax=np.max(y))
 sm = ScalarMappable(cmap='Spectral', norm=norm)
 sm.set_array([])  # for compatibility
 
