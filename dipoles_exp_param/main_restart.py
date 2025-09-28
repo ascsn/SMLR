@@ -117,7 +117,7 @@ def set_all_seeds(seed: int):
     rn.seed(seed); np.random.seed(seed); tf.random.set_seed(seed)
 
 # Multi-start
-N_RESTARTS    = 10
+N_RESTARTS    = 30
 SEED0         = 42
 SAVE_DIR      = "runs_dipole"
 os.makedirs(SAVE_DIR, exist_ok=True)
