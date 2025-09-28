@@ -1,1 +1,1 @@
-seed 174 | train 175 | test total 4.714e-01 | S 4.594e-01 | m-1 1.203e-02 | m+1 0.000e+00 | mean|rel| 5.04e-04
+seed 174 | train 175 | test total 4.632e-01 | S 4.555e-01 | m-1 7.673e-03 | m+1 0.000e+00 | mean|rel| 3.31e-04 | selected R10 by train

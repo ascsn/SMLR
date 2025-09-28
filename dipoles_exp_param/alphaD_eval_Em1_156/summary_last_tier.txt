@@ -1,1 +1,1 @@
-seed 156 | train 175 | test total 4.818e-01 | S 4.777e-01 | m-1 4.142e-03 | m+1 0.000e+00 | mean|rel| 2.80e-04
+seed 156 | train 175 | test total 4.579e-01 | S 4.545e-01 | m-1 3.403e-03 | m+1 0.000e+00 | mean|rel| 2.60e-04 | selected R3 by train

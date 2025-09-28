@@ -1,1 +1,1 @@
-seed 153 | train 175 | test total 4.042e-02 | mean|rel| 1.03e-03 (median 5.77e-04)
+seed 153 | train 175 | best train 3.121e-02 | best test 6.061e-02 | mean|rel| 1.05e-03 (median 5.02e-04) | best restart 1

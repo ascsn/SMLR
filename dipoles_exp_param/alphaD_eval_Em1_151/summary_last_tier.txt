@@ -1,1 +1,1 @@
-seed 151 | train 175 | test total 4.977e-01 | S 4.620e-01 | m-1 3.568e-02 | m+1 0.000e+00 | mean|rel| 8.37e-04
+seed 151 | train 175 | test total 4.550e-01 | S 4.521e-01 | m-1 2.867e-03 | m+1 0.000e+00 | mean|rel| 2.56e-04 | selected R5 by train

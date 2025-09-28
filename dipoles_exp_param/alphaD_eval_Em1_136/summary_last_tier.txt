@@ -1,1 +1,1 @@
-seed 136 | train 175 | test total 4.656e-01 | S 4.552e-01 | m-1 1.036e-02 | m+1 0.000e+00 | mean|rel| 4.54e-04
+seed 136 | train 175 | test total 4.642e-01 | S 4.595e-01 | m-1 4.643e-03 | m+1 0.000e+00 | mean|rel| 3.01e-04 | selected R8 by train
