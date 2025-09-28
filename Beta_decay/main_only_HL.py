@@ -21,7 +21,7 @@ from numpy.polynomial.polynomial import Polynomial
 import random as rn
 import os
 import re
-
+ 
 
 '''
 Main data regarding the decay

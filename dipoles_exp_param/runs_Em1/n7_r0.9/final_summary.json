@@ -1,0 +1,244 @@
+{
+  "n": 7,
+  "retain": 0.9,
+  "iters": 20000,
+  "lr": 0.01,
+  "fold": 2.0,
+  "alpha_min": 0.4,
+  "alpha_max": 1.8,
+  "beta_min": 1.5,
+  "beta_max": 4.0,
+  "strength_dir": "/mnt/ffs24/home/ravlican/Lauren_emulator_me/dipoles_data_all/total_strength",
+  "central_point": [
+    "1.1000",
+    "2.7500"
+  ],
+  "bounds": {
+    "alpha_min": 0.457,
+    "alpha_max": 1.743,
+    "beta_min": 1.5,
+    "beta_max": 4.0
+  },
+  "seed_global": 30,
+  "restart_seed_base": 1234,
+  "restarts": 30,
+  "winner": {
+    "restart_index": 16,
+    "restart_seed": 1250,
+    "best_iter": 19998,
+    "best_cost": 0.18442395329475403,
+    "dir": "runs_Em1/n7_r0.9/restart_16"
+  },
+  "all_restarts": [
+    {
+      "restart_index": 0,
+      "restart_seed": 1234,
+      "best_iter": 19987,
+      "best_cost": 0.1926996260881424,
+      "dir": "runs_Em1/n7_r0.9/restart_00"
+    },
+    {
+      "restart_index": 1,
+      "restart_seed": 1235,
+      "best_iter": 19995,
+      "best_cost": 0.18505680561065674,
+      "dir": "runs_Em1/n7_r0.9/restart_01"
+    },
+    {
+      "restart_index": 2,
+      "restart_seed": 1236,
+      "best_iter": 19999,
+      "best_cost": 0.18739524483680725,
+      "dir": "runs_Em1/n7_r0.9/restart_02"
+    },
+    {
+      "restart_index": 3,
+      "restart_seed": 1237,
+      "best_iter": 19961,
+      "best_cost": 0.3939828872680664,
+      "dir": "runs_Em1/n7_r0.9/restart_03"
+    },
+    {
+      "restart_index": 4,
+      "restart_seed": 1238,
+      "best_iter": 19999,
+      "best_cost": 0.18838845193386078,
+      "dir": "runs_Em1/n7_r0.9/restart_04"
+    },
+    {
+      "restart_index": 5,
+      "restart_seed": 1239,
+      "best_iter": 19999,
+      "best_cost": 0.19019649922847748,
+      "dir": "runs_Em1/n7_r0.9/restart_05"
+    },
+    {
+      "restart_index": 6,
+      "restart_seed": 1240,
+      "best_iter": 19968,
+      "best_cost": 0.1915142685174942,
+      "dir": "runs_Em1/n7_r0.9/restart_06"
+    },
+    {
+      "restart_index": 7,
+      "restart_seed": 1241,
+      "best_iter": 19982,
+      "best_cost": 0.39400118589401245,
+      "dir": "runs_Em1/n7_r0.9/restart_07"
+    },
+    {
+      "restart_index": 8,
+      "restart_seed": 1242,
+      "best_iter": 19958,
+      "best_cost": 0.3919020891189575,
+      "dir": "runs_Em1/n7_r0.9/restart_08"
+    },
+    {
+      "restart_index": 9,
+      "restart_seed": 1243,
+      "best_iter": 19999,
+      "best_cost": 0.18773412704467773,
+      "dir": "runs_Em1/n7_r0.9/restart_09"
+    },
+    {
+      "restart_index": 10,
+      "restart_seed": 1244,
+      "best_iter": 19912,
+      "best_cost": 0.19506427645683289,
+      "dir": "runs_Em1/n7_r0.9/restart_10"
+    },
+    {
+      "restart_index": 11,
+      "restart_seed": 1245,
+      "best_iter": 19999,
+      "best_cost": 0.1910601109266281,
+      "dir": "runs_Em1/n7_r0.9/restart_11"
+    },
+    {
+      "restart_index": 12,
+      "restart_seed": 1246,
+      "best_iter": 19999,
+      "best_cost": 0.3946898281574249,
+      "dir": "runs_Em1/n7_r0.9/restart_12"
+    },
+    {
+      "restart_index": 13,
+      "restart_seed": 1247,
+      "best_iter": 19997,
+      "best_cost": 0.18654632568359375,
+      "dir": "runs_Em1/n7_r0.9/restart_13"
+    },
+    {
+      "restart_index": 14,
+      "restart_seed": 1248,
+      "best_iter": 19999,
+      "best_cost": 0.19616788625717163,
+      "dir": "runs_Em1/n7_r0.9/restart_14"
+    },
+    {
+      "restart_index": 15,
+      "restart_seed": 1249,
+      "best_iter": 19926,
+      "best_cost": 0.3916013240814209,
+      "dir": "runs_Em1/n7_r0.9/restart_15"
+    },
+    {
+      "restart_index": 16,
+      "restart_seed": 1250,
+      "best_iter": 19998,
+      "best_cost": 0.18442395329475403,
+      "dir": "runs_Em1/n7_r0.9/restart_16"
+    },
+    {
+      "restart_index": 17,
+      "restart_seed": 1251,
+      "best_iter": 19998,
+      "best_cost": 0.19658127427101135,
+      "dir": "runs_Em1/n7_r0.9/restart_17"
+    },
+    {
+      "restart_index": 18,
+      "restart_seed": 1252,
+      "best_iter": 19902,
+      "best_cost": 0.39268168807029724,
+      "dir": "runs_Em1/n7_r0.9/restart_18"
+    },
+    {
+      "restart_index": 19,
+      "restart_seed": 1253,
+      "best_iter": 19943,
+      "best_cost": 0.3942444622516632,
+      "dir": "runs_Em1/n7_r0.9/restart_19"
+    },
+    {
+      "restart_index": 20,
+      "restart_seed": 1254,
+      "best_iter": 19995,
+      "best_cost": 0.19016723334789276,
+      "dir": "runs_Em1/n7_r0.9/restart_20"
+    },
+    {
+      "restart_index": 21,
+      "restart_seed": 1255,
+      "best_iter": 19886,
+      "best_cost": 0.3942509889602661,
+      "dir": "runs_Em1/n7_r0.9/restart_21"
+    },
+    {
+      "restart_index": 22,
+      "restart_seed": 1256,
+      "best_iter": 19999,
+      "best_cost": 0.18763390183448792,
+      "dir": "runs_Em1/n7_r0.9/restart_22"
+    },
+    {
+      "restart_index": 23,
+      "restart_seed": 1257,
+      "best_iter": 19953,
+      "best_cost": 0.19137254357337952,
+      "dir": "runs_Em1/n7_r0.9/restart_23"
+    },
+    {
+      "restart_index": 24,
+      "restart_seed": 1258,
+      "best_iter": 19977,
+      "best_cost": 0.19365431368350983,
+      "dir": "runs_Em1/n7_r0.9/restart_24"
+    },
+    {
+      "restart_index": 25,
+      "restart_seed": 1259,
+      "best_iter": 19999,
+      "best_cost": 0.3943134844303131,
+      "dir": "runs_Em1/n7_r0.9/restart_25"
+    },
+    {
+      "restart_index": 26,
+      "restart_seed": 1260,
+      "best_iter": 19953,
+      "best_cost": 0.19067373871803284,
+      "dir": "runs_Em1/n7_r0.9/restart_26"
+    },
+    {
+      "restart_index": 27,
+      "restart_seed": 1261,
+      "best_iter": 19995,
+      "best_cost": 0.19446472823619843,
+      "dir": "runs_Em1/n7_r0.9/restart_27"
+    },
+    {
+      "restart_index": 28,
+      "restart_seed": 1262,
+      "best_iter": 19998,
+      "best_cost": 0.18609364330768585,
+      "dir": "runs_Em1/n7_r0.9/restart_28"
+    },
+    {
+      "restart_index": 29,
+      "restart_seed": 1263,
+      "best_iter": 19999,
+      "best_cost": 0.1871863752603531,
+      "dir": "runs_Em1/n7_r0.9/restart_29"
+    }
+  ]
+}

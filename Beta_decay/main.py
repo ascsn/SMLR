@@ -177,9 +177,9 @@ np.random.seed(42)
 '''
 How many parameters you want ?
 '''
-n = 7
+n = 15
 retain = 0.9
-weight= 1000
+weight= 1
 width = 2.0
 
 D, S1, S2 = helper.nec_mat(n)

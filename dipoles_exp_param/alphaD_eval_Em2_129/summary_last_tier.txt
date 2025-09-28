@@ -1,1 +1,1 @@
-seed 129 | train 175 | best train 3.922e-02 | best test 6.855e-02 | mean|rel| 1.35e-03 (median 6.97e-04) | best restart 0
+seed 129 | train 175 | best train 1.658e-02 | best test 5.206e-02 | mean|rel| 1.02e-03 (median 4.35e-04) | best restart 19

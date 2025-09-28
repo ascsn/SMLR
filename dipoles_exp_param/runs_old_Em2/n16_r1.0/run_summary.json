@@ -1,0 +1,22 @@
+{
+  "emulator": "em2_alphaD_only",
+  "n": 16,
+  "iters": 71980,
+  "base_iters": 40000,
+  "base_lr": 0.05,
+  "best_iter": 71971,
+  "best_cost": 0.000188783451449126,
+  "best_alphaD_mean": 5.522616430511912e-05,
+  "retain": 1.0,
+  "central_point": [
+    "1.1000",
+    "2.7500"
+  ],
+  "bounds": {
+    "alpha_min": 0.457,
+    "alpha_max": 1.743,
+    "beta_min": 1.5,
+    "beta_max": 4.0
+  },
+  "strength_dir": "/mnt/ffs24/home/ravlican/Lauren_emulator_me/dipoles_data_all/total_strength"
+}

@@ -521,83 +521,157 @@ def modified_DS(params, n):
     return D_mod, S1_mod, S2_mod, v0_mod, eta, x1, x2, x3
 
 # cost_function
-def cost_function(params, n, fmt_data, Lors_true, HLs_true,coeffs,g_A, weight, central_point, retain):
+# def cost_function(params, n, fmt_data, Lors_true, HLs_true,coeffs,g_A, weight, central_point, retain):
     
-    '''
-    params: tf.Variable
-    D_shape, S1_shape, S2_shape : int
-    alpha_values, beta_values: list
-    data_table: pd.DataFrame
+#     '''
+#     params: tf.Variable
+#     D_shape, S1_shape, S2_shape : int
+#     alpha_values, beta_values: list
+#     data_table: pd.DataFrame
     
-    calculates the cost function by subtracting two Lorentzians
+#     calculates the cost function by subtracting two Lorentzians
     
-    '''
+#     '''
     
-    D_mod, S1_mod, S2_mod, v0_mod, eta, x1, x2, x3 = modified_DS(params, n)
+#     D_mod, S1_mod, S2_mod, v0_mod, eta, x1, x2, x3 = modified_DS(params, n)
     
     
-    total_cost = 0
+#     total_cost = 0
     
-    count = 0
-    HLs_calc = []
-    for idx, alpha in enumerate(fmt_data):
+#     count = 0
+#     HLs_calc = []
+#     for idx, alpha in enumerate(fmt_data):
 
-        M_true = D_mod + (float(alpha[0])-float(central_point[0])) * S1_mod \
-            + (float(alpha[1]) - float(central_point[1])) * S2_mod
+#         M_true = D_mod + (float(alpha[0])-float(central_point[0])) * S1_mod \
+#             + (float(alpha[1]) - float(central_point[1])) * S2_mod
         
+
+#         eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
+        
+#         n_i = eigenvalues.shape[0]
+#         k_keep = int(round(retain * n_i))         # how many eigenvalues to keep
+#         k_keep = max(1, min(k_keep, n_i))         # safety: clamp between 1 and n
+        
+#         left  = (n_i - k_keep) // 2               # starting index of the centered block
+#         right = left + k_keep                     # ending index (exclusive)
+        
+#         eigenvalues  = eigenvalues[left:right]
+#         eigenvectors = eigenvectors[:, left:right]
+        
+#         projections = tf.linalg.matvec(tf.transpose(eigenvectors), v0_mod)
+        
+#         # Square each projection
+#         B = tf.square(projections)
+        
+#         mask = tf.cast((eigenvalues > -10) & (eigenvalues < 15), dtype=tf.float64)
+
+#         # Apply the mask to zero out B where eigenvalue is negative
+#         B = B * mask
+        
+
+#         #B = [tf.square(tf.tensordot(eigenvectors[:, i], v0_mod, axes=1)) for i in range(eigenvectors.shape[1])]
+#         Lor_true = tf.constant(Lors_true[count][:,1], dtype=tf.float64)
+
+#         #Generate the x values
+#         x = tf.constant(Lors_true[count][:,0], dtype=tf.float64)
+        
+#         width = tf.sqrt(tf.square(eta) + tf.square(x1 + x2*float(alpha[0]) + x3*float(alpha[1])))
+        
+
+#         # Use tf.map_fn to apply the give_me_Lorentzian function over the x values
+#         Lor = give_me_Lorentzian(x, eigenvalues, B, width)
+        
+        
+        
+
+#         total_cost += tf.reduce_sum((Lor - Lor_true) ** 2)
+#         ''' Total cost modified to match previous definitions'''
+        
+        
+#         ''' Add half-lives to optimization as well'''
+
+#         hls = half_life_loss(eigenvalues, B, coeffs, g_A)
+#         HLs_calc.append(hls)
+        
+#         total_cost += tf.constant(weight,dtype=tf.float64)*tf.reduce_sum((tf.math.log(hls) - tf.math.log(HLs_true[idx])) ** 2)
+
+#         count+=1
+            
+#     return total_cost, Lor, Lor_true, x, HLs_calc, B, eigenvalues
+
+
+'''
+Changed definition of cost function for strength
+'''
+# helper: trapezoidal integral in TF (float64)
+def tf_trapz(y, x):
+    dx  = x[1:] - x[:-1]                       # (N-1,)
+    avg = 0.5 * (y[:-1] + y[1:])               # (N-1,)
+    return tf.reduce_sum(avg * dx)             # scalar (float64)
+
+# cost_function
+def cost_function(params, n, fmt_data, Lors_true, HLs_true, coeffs, g_A, weight, central_point, retain):
+
+    D_mod, S1_mod, S2_mod, v0_mod, eta, x1, x2, x3 = modified_DS(params, n)
+
+    total_cost = tf.constant(0.0, dtype=tf.float64)
+    HLs_calc   = []
+    count      = 0
+
+    EPS_DEN = tf.constant(1e-16, dtype=tf.float64)  # protect against /0
+
+    for idx, alpha in enumerate(fmt_data):
+        M_true = D_mod \
+                 + (float(alpha[0]) - float(central_point[0])) * S1_mod \
+                 + (float(alpha[1]) - float(central_point[1])) * S2_mod
 
         eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
-        
-        n_i = eigenvalues.shape[0]
-        k_keep = int(round(retain * n_i))         # how many eigenvalues to keep
-        k_keep = max(1, min(k_keep, n_i))         # safety: clamp between 1 and n
-        
-        left  = (n_i - k_keep) // 2               # starting index of the centered block
-        right = left + k_keep                     # ending index (exclusive)
-        
+
+        # keep centered fraction of spectrum
+        n_i    = eigenvalues.shape[0]
+        k_keep = int(round(retain * n_i))
+        k_keep = max(1, min(k_keep, n_i))
+        left   = (n_i - k_keep) // 2
+        right  = left + k_keep
         eigenvalues  = eigenvalues[left:right]
         eigenvectors = eigenvectors[:, left:right]
-        
+
+        # projections and strengths (B >= 0)
         projections = tf.linalg.matvec(tf.transpose(eigenvectors), v0_mod)
-        
-        # Square each projection
         B = tf.square(projections)
-        
+
+        # mask eigenvalues outside window
         mask = tf.cast((eigenvalues > -10) & (eigenvalues < 15), dtype=tf.float64)
-
-        # Apply the mask to zero out B where eigenvalue is negative
         B = B * mask
-        
 
-        #B = [tf.square(tf.tensordot(eigenvectors[:, i], v0_mod, axes=1)) for i in range(eigenvectors.shape[1])]
-        Lor_true = tf.constant(Lors_true[count][:,1], dtype=tf.float64)
+        # true spectrum (E grid x, values S_true)
+        Lor_true = tf.constant(Lors_true[count][:, 1], dtype=tf.float64)
+        x        = tf.constant(Lors_true[count][:, 0], dtype=tf.float64)
 
-        #Generate the x values
-        x = tf.constant(Lors_true[count][:,0], dtype=tf.float64)
-        
+        # width(E; alpha) and predicted spectrum
         width = tf.sqrt(tf.square(eta) + tf.square(x1 + x2*float(alpha[0]) + x3*float(alpha[1])))
-        
+        Lor   = give_me_Lorentzian(x, eigenvalues, B, width)
 
-        # Use tf.map_fn to apply the give_me_Lorentzian function over the x values
-        Lor = give_me_Lorentzian(x, eigenvalues, B, width)
-        
-        
-        
+        # ---------- normalized L2(E) loss ----------
+        diff = Lor - Lor_true
+        numer = tf_trapz(tf.square(diff), x)          # ∫ (Ŝ - S)^2 dE
+        denom = tf_trapz(tf.square(Lor_true), x)      # ∫ S^2 dE
+        spec_loss = numer / (denom + EPS_DEN)
+        total_cost += spec_loss
+        # ------------------------------------------
 
-        total_cost += tf.reduce_sum((Lor - Lor_true) ** 2)
-        ''' Total cost modified to match previous definitions'''
-        
-        
-        ''' Add half-lives to optimization as well'''
-
+        # ---------- half-life term (unchanged) ----------
         hls = half_life_loss(eigenvalues, B, coeffs, g_A)
         HLs_calc.append(hls)
-        
-        total_cost += tf.constant(weight,dtype=tf.float64)*tf.reduce_sum((tf.math.log(hls) - tf.math.log(HLs_true[idx])) ** 2)
+        total_cost += tf.constant(weight, dtype=tf.float64) * \
+                      tf.reduce_sum((tf.math.log(hls) - tf.math.log(HLs_true[idx])) ** 2)
+        # -----------------------------------------------
 
-        count+=1
-            
+        count += 1
+
     return total_cost, Lor, Lor_true, x, HLs_calc, B, eigenvalues
+
+
 
 
 

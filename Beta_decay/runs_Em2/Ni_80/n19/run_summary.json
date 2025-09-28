@@ -1,0 +1,25 @@
+{
+  "emulator": "em2_hl_only",
+  "n": 19,
+  "iters": 44614,
+  "base_iters": 20000,
+  "base_lr": 0.01,
+  "best_iter": 44552,
+  "best_cost": 1.1218180111602718e-06,
+  "best_mean_rel_T12": 0.0001422827149879185,
+  "nucleus": "Ni_80",
+  "A": 80,
+  "Z": 28,
+  "gA": 1.2,
+  "central_point": [
+    "1.000",
+    "0.500"
+  ],
+  "bounds": {
+    "alpha_min": 0.286,
+    "alpha_max": 1.714,
+    "beta_min": 0.143,
+    "beta_max": 0.857
+  },
+  "data_root": "/mnt/ffs24/home/ravlican/Lauren_emulator_me/beta_decay_data_Ni_80"
+}

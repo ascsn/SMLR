@@ -1,0 +1,11 @@
+{
+  "restart_index": 10,
+  "restart_seed": 1244,
+  "best_iter": 19997,
+  "best_cost": 0.40760254859924316,
+  "iters": 20000,
+  "n": 6,
+  "retain": 0.6,
+  "lr": 0.01,
+  "fold": 2.0
+}
