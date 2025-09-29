@@ -68,7 +68,7 @@ print('Sizes -> test:', len(test_set), 'cv:', len(cv_set), 'train:', len(train_s
 # =========================================================
 # Model/setup (kept as in your script)
 # =========================================================
-n = 16
+n = 17
 retain = 0.5
 fold = 2.0
 
@@ -117,7 +117,7 @@ def set_all_seeds(seed: int):
     rn.seed(seed); np.random.seed(seed); tf.random.set_seed(seed)
 
 # Multi-start
-N_RESTARTS    = 30
+N_RESTARTS    = 10
 SEED0         = 42
 SAVE_DIR      = "runs_dipole"
 os.makedirs(SAVE_DIR, exist_ok=True)
