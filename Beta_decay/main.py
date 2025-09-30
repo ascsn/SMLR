@@ -177,7 +177,7 @@ np.random.seed(42)
 '''
 How many parameters you want ?
 '''
-n = 15
+n = 13
 retain = 0.9
 weight= 1
 width = 2.0

@@ -33,7 +33,7 @@ poly = helper.fit_phase_space(0, Z, A, 15)
 coeffs = Polynomial(poly).coef
 
 
-n = 16
+n = 13
 retain = 0.9
 
 params = np.loadtxt(f'params_best_n{n}_retain{retain}.txt')

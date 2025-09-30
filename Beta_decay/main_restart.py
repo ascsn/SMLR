@@ -106,8 +106,8 @@ print('Sizes -> test:', len(test_set), 'cv:', len(cv_set), 'train:', len(train_s
 # ============================
 np.random.seed(42)  # base seed (dataset is fixed independent of restarts)
 
-n = 17       # model dimension
-retain = 0.9    # fraction of eigenmodes kept (centered)
+n = 13       # model dimension
+retain = 0.6    # fraction of eigenmodes kept (centered)
 weight = 1.0    # initial HL weight (consider calibrating)
 width = 2.0     # (unused unless you re-enable the init fit section)
 

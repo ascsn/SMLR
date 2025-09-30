@@ -25,9 +25,10 @@ plt.rcParams.update({'font.size': 16})
 Read in all the data
 '''
 
-n = 15
+n = 13
+retain = 0.6
 
-params = np.loadtxt('params_'+str(n)+'.txt')
+params = np.loadtxt(f'params_best_n{n}_retain{retain}.txt')
 params = params.astype(np.float32)
 
 train_set = []
@@ -35,16 +36,7 @@ with open("train_set.txt", "r") as f:
     for line in f:
         tup = tuple(map(str, line.strip().split(",")))  # Convert back to tuple of integers
         train_set.append(tup)
-cv_set = []
-with open("cv_set.txt", "r") as f:
-    for line in f:
-        tup = tuple(map(str, line.strip().split(",")))  # Convert back to tuple of integers
-        cv_set.append(tup)
-test_set = []
-with open("test_set.txt", "r") as f:
-    for line in f:
-        tup = tuple(map(str, line.strip().split(",")))  # Convert back to tuple of integers
-        cv_set.append(tup)
+
         
         
 '''
@@ -121,57 +113,102 @@ y_all = [float(b) for (a, b) in combined]
 '''
 Import alpha_D values
 '''
+'''
+This is added to compute a central data point
+'''
+Amin = min(float(a) for a, b in combined)
+Amax = max(float(a) for a, b in combined)
+Bmin = min(float(b) for a, b in combined)
+Bmax = max(float(b) for a, b in combined)
+
+cx = (Amin + Amax) / 2.0
+cy = (Bmin + Bmax) / 2.0
+
+central_point = min(combined, key=lambda t: (float(t[0]) - cx)**2 + (float(t[1]) - cy)**2)
+
+
+print('Central data point in train set:', central_point)
+
 alphaD_opt = []
+opt_strength = []
+opt_eigs = []
+opt_Bs = []
+orig_strength = []
+
 
 for idx in range(len(combined)):
-
+    
     alpha_tensor = tf.constant(float(combined[idx][0]), dtype=tf.float32)  # (batch,)
     beta_tensor  = tf.constant(float(combined[idx][1]), dtype=tf.float32)
+
     
     
-    opt_D, opt_S1, opt_S2,opt_S3, opt_v0,opt_v1, opt_v2, fold, x1, x2, x3 = helper.modified_DS_affine_v(params, n)
+    
+    opt_D, opt_S1, opt_S2,opt_S3,opt_S4, opt_v0,opt_v1, opt_v2, fold, x1, x2, x3, x4 = helper.modified_DS_affine_v(params, n)
     #opt_eigenvalues, opt_eigenvectors = helper.generalized_eigen(opt_D.numpy(), opt_S1.numpy(), opt_S2.numpy(), combined[idx], central_point)
-    exp1 = tf.exp( -(alpha_tensor) * x1 )
-    exp2 = tf.exp( -(alpha_tensor) * x2 )
-    #exp3 = tf.exp( -(alpha_tensor) * x3 )
+    exp1 = tf.exp( -(alpha_tensor- float(central_point[0])) * x1)
+
     
-    M_true = opt_D + (beta_tensor) * exp1 * opt_S1 \
-                + (beta_tensor) * exp2 * opt_S2 \
-                #+ (float(combined[idx][1])) * exp3 * opt_S3 \
-                    
+    M_true = opt_D + (alpha_tensor- float(central_point[0])) * opt_S1 \
+                + (beta_tensor- float(central_point[1])) * opt_S2 \
+                + (beta_tensor- float(central_point[1])) * exp1 * opt_S3  \
+                #+ beta_tensor * exp2 * opt_S4
                 
     opt_eigenvalues, opt_eigenvectors = tf.linalg.eigh(M_true)
     
-    disc = int((1-0.7)*n/2)
-    opt_eigenvalues = opt_eigenvalues[disc:-disc]
-    opt_eigenvectors = opt_eigenvectors[:, disc:-disc]
+    n_i = opt_eigenvalues.shape[0]
+    k_keep = int(round(retain * n_i))         # how many eigenvalues to keep
+    k_keep = max(1, min(k_keep, n_i))         # safety: clamp between 1 and n
     
-    v_eff = opt_v0 #+ float(combined[idx][1]) * exp3 * opt_v1
+    left  = (n_i - k_keep) // 2               # starting index of the centered block
+    right = left + k_keep                     # ending index (exclusive)
+    
+    opt_eigenvalues  = opt_eigenvalues[left:right]
+    opt_eigenvectors = opt_eigenvectors[:, left:right]
+
+
+    
+    v_eff = opt_v0 \
+         + (alpha_tensor- float(central_point[0])) * opt_v1 \
+         + (beta_tensor- float(central_point[1])) * opt_v2 
+            
     projections = tf.linalg.matvec(tf.transpose(opt_eigenvectors), v_eff)
     
     # Square each projection
     B = tf.square(projections)
     
-    #mask = tf.cast((opt_eigenvalues > 5) &  (opt_eigenvalues < 40), dtype=tf.float32)
+    mask = tf.cast((opt_eigenvalues > 1), dtype=tf.float32)
     
     # Apply the mask to zero out B where eigenvalue is negative
-    opt_dot_products = B #* mask
+    opt_dot_products = B * mask
+    
+    
+    
     
     
     
     x = strength[idx][:,0]
     x = x.astype(np.float32)
     orig = strength[idx][:,1]
+    orig_strength.append(orig)
+    
+    eta_new = tf.sqrt(fold**2 + (x2 + x3*(alpha_tensor- float(central_point[0])) + x4*(beta_tensor- float(central_point[1])))**2)
         
-    opt_Lor = helper.give_me_Lorentzian(x, opt_eigenvalues, opt_dot_products, fold)
+    opt_Lor = helper.give_me_Lorentzian(x, opt_eigenvalues, opt_dot_products, eta_new)
+    
+    opt_Bs.append(opt_dot_products)
+    opt_eigs.append(opt_eigenvalues)
+    
+    opt_strength.append(opt_Lor)
     
     alphaD_opt.append(helper.calculate_alphaD(opt_eigenvalues, B))
     
     #plt.plot(x, opt_Lor, ls = '--')
-    print(combined[idx])
+    #print(combined[idx])
     #plt.plot(x, orig, ls = '-')
 
 alphaD_opt = np.array(alphaD_opt)
+
 alphaD = np.array(alphaD)
 alphaD_error = np.abs(alphaD_opt - alphaD[:, 2]) / alphaD[:, 2]
 
@@ -258,15 +295,15 @@ beta_max  = max(train_beta)
 
 
 # Add rectangle to ax_grid
-# train_rect = patches.Rectangle(
-#     (alpha_min, beta_min),
-#     alpha_max - alpha_min,
-#     beta_max - beta_min,
-#     linewidth=1.5,
-#     edgecolor='black',
-#     facecolor='none'
-# )
-# ax_grid.add_patch(train_rect)
+train_rect = patches.Rectangle(
+    (alpha_min, beta_min),
+    alpha_max - alpha_min,
+    beta_max - beta_min,
+    linewidth=1.5,
+    edgecolor='black',
+    facecolor='none'
+)
+ax_grid.add_patch(train_rect)
 
 
 
@@ -287,37 +324,57 @@ def animate(i):
     alpha_tensor = tf.constant(float(alpha), dtype=tf.float32)  # (batch,)
     beta_tensor  = tf.constant(float(beta), dtype=tf.float32)
 
-    opt_D, opt_S1, opt_S2,opt_S3, opt_v0,opt_v1, opt_v2, fold, x1, x2, x3 = helper.modified_DS_affine_v(params, n)
-    # eigvals, eigvecs = helper.generalized_eigen(
-    #     opt_D.numpy(), opt_S1.numpy(), opt_S2.numpy(), (alpha, beta), central_point
-    # )
+    opt_D, opt_S1, opt_S2,opt_S3,opt_S4, opt_v0,opt_v1, opt_v2, fold, x1, x2, x3, x4 = helper.modified_DS_affine_v(params, n)
+    #opt_eigenvalues, opt_eigenvectors = helper.generalized_eigen(opt_D.numpy(), opt_S1.numpy(), opt_S2.numpy(), combined[idx], central_point)
+    exp1 = tf.exp( -(alpha_tensor- float(central_point[0])) * x1)
+
     
-    exp1 = tf.exp( -alpha_tensor * x1 )
-    exp2 = tf.exp( -alpha_tensor * x2 )
-    exp3 = tf.exp( -alpha_tensor * x3 )
-    
-    M_true = opt_D + (beta_tensor) * exp1 * opt_S1 \
-                + (beta_tensor) * exp2 * opt_S2 \
-                #+ (float(beta)) * exp3 * opt_S3 \
-                    
+    M_true = opt_D + (alpha_tensor- float(central_point[0])) * opt_S1 \
+                + (beta_tensor- float(central_point[1])) * opt_S2 \
+                + (beta_tensor- float(central_point[1])) * exp1 * opt_S3  \
+                #+ beta_tensor * exp2 * opt_S4
                 
-    eigvals, eigvecs = tf.linalg.eigh(M_true)
-    # Save full eigenvalues BEFORE discarding
-    eigvals_full = eigvals
-
-    disc = int((1 - 0.7) * n / 2)
-    eigvals_trunc = eigvals_full[disc:-disc]
-    eigvecs = eigvecs[:, disc:-disc]
-
-    v_eff = opt_v0 #+ float(beta) * exp3 * opt_v1
-    projections = tf.linalg.matvec(tf.transpose(eigvecs), v_eff)
+    opt_eigenvalues, opt_eigenvectors = tf.linalg.eigh(M_true)
+    eigvals_full = opt_eigenvalues
     
-    B = tf.square(projections)
+    n_i = opt_eigenvalues.shape[0]
+    k_keep = int(round(retain * n_i))         # how many eigenvalues to keep
+    k_keep = max(1, min(k_keep, n_i))         # safety: clamp between 1 and n
+    
+    left  = (n_i - k_keep) // 2               # starting index of the centered block
+    right = left + k_keep                     # ending index (exclusive)
+    
+    opt_eigenvalues  = opt_eigenvalues[left:right]
+    opt_eigenvectors = opt_eigenvectors[:, left:right]
 
-    x = strength[idx][:, 0]
+
+    
+    v_eff = opt_v0 \
+         + (alpha_tensor- float(central_point[0])) * opt_v1 \
+         + (beta_tensor- float(central_point[1])) * opt_v2 
+            
+    projections = tf.linalg.matvec(tf.transpose(opt_eigenvectors), v_eff)
+    
+    # Square each projection
+    B = tf.square(projections)
+    
+    mask = tf.cast((opt_eigenvalues > 1), dtype=tf.float32)
+    
+    # Apply the mask to zero out B where eigenvalue is negative
+    opt_dot_products = B * mask
+    
+    
+    
+    
+    
+    
+    x = strength[idx][:,0]
     x = x.astype(np.float32)
-    orig = strength[idx][:, 1]
-    lor = helper.give_me_Lorentzian(x, eigvals_trunc, B, fold)
+    orig = strength[idx][:,1]
+    
+    eta_new = tf.sqrt(fold**2 + (x2 + x3*(alpha_tensor- float(central_point[0])) + x4*(beta_tensor- float(central_point[1])))**2)
+        
+    opt_Lor = helper.give_me_Lorentzian(x, opt_eigenvalues, opt_dot_products, eta_new)
 
     # --- Strength plot ---
     ax_strength.cla()
@@ -327,8 +384,8 @@ def animate(i):
     ax_strength.set_ylabel("Strength")
     ax_strength.set_title(fr"$\alpha = {alpha},\ \beta = {beta}$")
     ax_strength.plot(x, orig, 'k-', label='Original')
-    ax_strength.plot(x, lor, 'r--', label='PMM-Lorentzian')
-    ax_strength.stem(eigvals_trunc, B, basefmt=" ", markerfmt='go', linefmt='g-')
+    ax_strength.plot(x, opt_Lor, 'r--', label='PMM-Lorentzian')
+    ax_strength.stem(opt_eigenvalues, B, basefmt=" ", markerfmt='go', linefmt='g-')
     ax_strength.legend()
 
     # --- Update marker in grid ---
@@ -342,7 +399,7 @@ def animate(i):
     
     param_vals_for_eigs.append(param_val)
     eigenvalues_history_full.append(eigvals_full)
-    eigenvalues_history_trunc.append(eigvals_trunc)
+    eigenvalues_history_trunc.append(opt_eigenvalues)
     
     # Convert to arrays for plotting
     param_array = np.array(param_vals_for_eigs)

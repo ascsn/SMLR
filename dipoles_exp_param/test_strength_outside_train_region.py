@@ -16,8 +16,8 @@ import re
 from matplotlib.colors import LogNorm
 import matplotlib.patches as patches
 
-n = 16
-retain = 0.5
+n = 13
+retain = 0.6
 
 params = np.loadtxt(f'params_best_n{n}_retain{retain}.txt')
 params = params.astype(np.float32)
