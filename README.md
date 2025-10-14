@@ -1,6 +1,6 @@
 # SMLR: Surrogate Model for Linear Response
 
-!(SMLR.png)
+![Logo](SMLR.png)
 
 
 
