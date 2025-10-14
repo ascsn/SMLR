@@ -1,6 +1,6 @@
 # QRPA Emulator
 
-This repository contains the code accompanying the paper *L.Jin et al., "Emulating the Quasiparticle Random Phase Approximation"*.
+This repository contains the code accompanying the paper *L.Jin et al., "Efficient Surrogates for Linear Response Theory"*.
 
 The repository is organized into three main types of folders:
 
