@@ -51,3 +51,10 @@ Contains jupyter notebooks for recreating the figures shown in the paper.
 ## DATA files
 
 Folders which contain the high-fidelity QRPA calculations are stored in `dipoles_data_all` and `beta_decay_data_Ni80`. 
+
+
+## EM1 in action
+
+Performance of the emulator on the training set, reproducing the Gamow-Teller strength in ${}^{80}$Ni.
+
+![animation](Beta_decay/animate_strength_evolution_sweep_beta_fixed_2.000_PMM13.gif)

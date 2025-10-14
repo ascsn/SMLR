@@ -1,19 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Sep 30 10:54:06 2025
-
-@author: anteravlic
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Jun 17 11:38:04 2025
-
-@author: anteravlic
-"""
-
 
 import numpy as np
 import helper
@@ -25,350 +11,271 @@ import re
 from matplotlib.colors import LogNorm
 import matplotlib.patches as patches
 from numpy.polynomial.polynomial import Polynomial
-import matplotlib.animation as animation
+from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
+from scipy.interpolate import CubicSpline  # <- for cubic-spline interpolation
 
+# ------------------ user config ------------------
 A = 80
 Z = 28
 g_A = 1.2
-nucnam='Ni_80'
+nucnam = 'Ni_80'
 
-
-
-
-'''
-Construction of phase space integrals
-'''
-
-poly = helper.fit_phase_space(0, Z, A, 15)
-coeffs = Polynomial(poly).coef
-
-
-n = 13
+n      = 13
 retain = 0.9
 
-params = np.loadtxt(f'params_best_n{n}_retain{retain}.txt')
+# sweep
+mode = 'beta'          # 'alpha' or 'beta'
+fixed_value = '2.000'  # string to match filenames
 
+# animation output + speed controls
+SAVE_AS     = 'gif'     # 'gif' or 'mp4'
+FPS         = 3         # ↓ smaller FPS = slower playback (affects saved file)
+HOLD_FRAMES = 4         # repeat each logical frame this many times
+PAUSE_TAIL  = 20        # extra hold on final frame
+DPI         = 150
+# -------------------------------------------------
+
+# -------- phase space / params / train set --------
+poly   = helper.fit_phase_space(0, Z, A, 15)
+coeffs = Polynomial(poly).coef
+
+params = np.loadtxt(f'../figs/data_beta/params_best_n{n}_retain{retain}.txt')
 
 train_set = []
-with open("train_set.txt", "r") as f:
+with open("../figs/data_beta/train_set.txt", "r") as f:
     for line in f:
-        tup = tuple(map(str, line.strip().split(",")))  # Convert back to tuple of integers
+        tup = tuple(map(str, line.strip().split(",")))
         train_set.append(tup)
-'''
-The values of parameters should be read directly from the file name
-'''
-strength_dir = '../beta_decay_data_'+nucnam+'/'
 
-# Pattern for strength files: strength_beta_alpha.out
-pattern = re.compile(r'lorm_'+nucnam+'_([0-9.]+)_([0-9.]+)\.out')
+# -------- load grid points from strength filenames --------
+strength_dir = f'../beta_decay_data_{nucnam}/'
+pattern = re.compile(r'lorm_' + re.escape(nucnam) + r'_([0-9.]+)_([0-9.]+)\.out')
 
-formatted_alpha_values = []
-formatted_beta_values = []
-
-all_points = []
-
-for fname in os.listdir(strength_dir):
-    match = pattern.match(fname)
-    if match:
-        beta_val = match.group(1)
-        alpha_val = match.group(2)
-        all_points.append((alpha_val, beta_val))
-        
-        formatted_alpha_values.append(alpha_val)
-        formatted_beta_values.append(beta_val)
-
-# Example lists
-alpha = formatted_alpha_values
-beta = formatted_beta_values
-
-# Combine the lists into pairs
 combined = []
-for i in range(len(alpha)):
-    combined.append((alpha[i], beta[i]))
-    
-    
+for fname in os.listdir(strength_dir):
+    m = pattern.match(fname)
+    if m:
+        beta_val  = m.group(1)
+        alpha_val = m.group(2)
+        combined.append((alpha_val, beta_val))
+
+if not combined:
+    raise RuntimeError(f"No files matching {pattern.pattern} in {strength_dir}")
+
 x_all = [float(a) for (a, b) in combined]
 y_all = [float(b) for (a, b) in combined]
 
-'''
-This is added to compute a central data point
-'''
-# Compute centroid
-combined_ar = np.array(combined, dtype = float)
-centroid = combined_ar.mean(axis=0)
-
-# Compute distances from each point to centroid
-distances = np.linalg.norm(combined_ar - centroid, axis=1)
-
-# Find index of closest point
+# --- centroid of grid ---
+combined_ar   = np.array(combined, dtype=float)
+centroid      = combined_ar.mean(axis=0)
+distances     = np.linalg.norm(combined_ar - centroid, axis=1)
 central_index = np.argmin(distances)
 central_point = tuple(combined[central_index])
 print('Central data point in train set:', central_point)
 
-Lors, HLs = helper.data_table(combined, coeffs, g_A, nucnam)
+# -------- true strengths & half-lives at grid points --------
+Lors, HLs = helper.data_table(combined, coeffs, g_A, nucnam)  # Lors[i] is ndarray-like
 
 opt_strength = []
-HLs_opt = []
-
+HLs_opt_list = []
 
 for idx in range(len(combined)):
-    
     alpha = float(combined[idx][0])
     beta  = float(combined[idx][1])
 
-    
-    
     opt_D, opt_S1, opt_S2, opt_v0, fold, x1, x2, x3 = helper.modified_DS(params, n)
 
-
-    
-    M_true = opt_D + (float(alpha)-float(central_point[0])) * opt_S1 \
-        + (float(beta) - float(central_point[1])) * opt_S2
-    
+    M_true = opt_D + (alpha - float(central_point[0])) * opt_S1 \
+                    + (beta  - float(central_point[1])) * opt_S2
 
     eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
-    
-    n_i = eigenvalues.shape[0]
-    k_keep = int(round(retain * n_i))         # how many eigenvalues to keep
-    k_keep = max(1, min(k_keep, n_i))         # safety: clamp between 1 and n
-    
-    left  = (n_i - k_keep) // 2               # starting index of the centered block
-    right = left + k_keep                     # ending index (exclusive)
-    
-    eigenvalues  = eigenvalues[left:right]
-    eigenvectors = eigenvectors[:, left:right]
-    
-    projections = tf.linalg.matvec(tf.transpose(eigenvectors), opt_v0)
-    
-    # Square each projection
+
+    # center-truncate spectrum
+    n_i   = int(eigenvalues.shape[0])
+    k_keep = max(1, min(int(round(retain * n_i)), n_i))
+    left   = (n_i - k_keep) // 2
+    right  = left + k_keep
+
+    ev_trunc  = eigenvalues[left:right]
+    vec_trunc = eigenvectors[:, left:right]
+
+    projections = tf.linalg.matvec(tf.transpose(vec_trunc), opt_v0)
     B = tf.square(projections)
-    
-    mask = tf.cast((eigenvalues > -10) & (eigenvalues < 15), dtype=tf.float64)
 
-    # Apply the mask to zero out B where eigenvalue is negative
+    # window mask
+    mask = tf.cast((ev_trunc > -10) & (ev_trunc < 15), dtype=tf.float64)
     B = B * mask
-    
 
-    #B = [tf.square(tf.tensordot(eigenvectors[:, i], v0_mod, axes=1)) for i in range(eigenvectors.shape[1])]
-    Lor_true = tf.constant(Lors[idx][:,1], dtype=tf.float64)
+    x = tf.constant(Lors[idx][:, 0], dtype=tf.float64)
+    width = tf.sqrt(tf.square(fold) + tf.square(x1 + x2*alpha + x3*beta))
+    Lor   = helper.give_me_Lorentzian(x, ev_trunc, B, width)
 
-    #Generate the x values
-    x = tf.constant(Lors[idx][:,0], dtype=tf.float64)
-    
-    width = tf.sqrt(tf.square(fold) + tf.square(x1 + x2*float(alpha) + x3*float(beta)))
-    
+    hls = helper.half_life_loss(ev_trunc, B, coeffs, g_A)
 
-    # Use tf.map_fn to apply the give_me_Lorentzian function over the x values
-    Lor = helper.give_me_Lorentzian(x, eigenvalues, B, width)
-    
-    
-
-    
-    ''' Add half-lives to optimization as well'''
-
-    hls = helper.half_life_loss(eigenvalues, B, coeffs, g_A)
-    
-   
     opt_strength.append(Lor)
-    
-    HLs_opt.append(hls)
-    
-HLs_opt = np.array(HLs_opt)
-HLs = np.array([i.numpy() for i in HLs])
-HLs_error = np.abs(HLs_opt - HLs) / HLs
+    HLs_opt_list.append(hls)
 
+# numeric arrays
+HLs_np     = np.array([float(v.numpy()) for v in HLs])
+HLs_opt_np = np.array([float(v.numpy()) for v in HLs_opt_list])
 
-#################################################
+HLs_error = np.abs(HLs_opt_np - HLs_np) / np.maximum(HLs_np, 1e-12)
+HLs_error = np.clip(HLs_error, 1e-12, None)
 
-########################################
-# Sweep mode: alpha or beta
-
-mode = 'beta'   # or 'beta'
-fixed_value = '2.000'
-
-# Build sorted sweep list
+# ------------- build a sweep order -------------
 if mode == 'alpha':
-    alpha_beta_filtered = [(a, b) for (a, b) in combined if b == fixed_value]
-    alpha_beta_sorted = sorted(alpha_beta_filtered, key=lambda x: float(x[0]))
+    sweep = sorted([(a, b) for (a, b) in combined if b == fixed_value], key=lambda p: float(p[0]))
+    param_label = r"$\alpha$"
+    param_min = min(float(a) for (a, b) in sweep)
+    param_max = max(float(a) for (a, b) in sweep)
 elif mode == 'beta':
-    alpha_beta_filtered = [(a, b) for (a, b) in combined if a == fixed_value]
-    alpha_beta_sorted = sorted(alpha_beta_filtered, key=lambda x: float(x[1]))
+    sweep = sorted([(a, b) for (a, b) in combined if a == fixed_value], key=lambda p: float(p[1]))
+    param_label = r"$\beta$"
+    param_min = min(float(b) for (a, b) in sweep)
+    param_max = max(float(b) for (a, b) in sweep)
 else:
     raise ValueError(f"Unknown mode {mode}")
-    
-if mode == 'alpha':
-    param_min = min(float(a) for (a, b) in alpha_beta_sorted)
-    param_max = max(float(a) for (a, b) in alpha_beta_sorted)
-else:
-    param_min = min(float(b) for (a, b) in alpha_beta_sorted)
-    param_max = max(float(b) for (a, b) in alpha_beta_sorted)
 
-print(f"Sweeping mode: {mode}, fixed value: {fixed_value}, number of frames: {len(alpha_beta_sorted)}")
-########################################
+if not sweep:
+    raise RuntimeError(f"No sweep points found for mode={mode} and fixed_value={fixed_value}")
 
+print(f"Sweeping mode: {mode}, fixed value: {fixed_value}, frames (unique): {len(sweep)}")
 
-fig, (ax_strength, ax_grid, ax_eigs) = plt.subplots(3, 1, figsize=(8, 14), dpi=150, 
-                                                    gridspec_kw={'height_ratios': [1, 1, 1]})
+# ------------- figure / axes -------------
+fig, (ax_strength, ax_grid, ax_eigs) = plt.subplots(
+    3, 1, figsize=(8, 14), dpi=DPI, gridspec_kw={'height_ratios': [1, 1, 1]}
+)
 
 fig.suptitle(f"PMM dimension n = {n}", fontsize=16, y=0.96)
 fig.subplots_adjust(top=0.92, hspace=0.4)
 
-# For eigenvalues panel:
+# eigenvalue history (as numpy)
 param_vals_for_eigs = []
-eigenvalues_history_full = []  # full eigvals
-eigenvalues_history_trunc = []  # truncated eigvals
+eigs_full_hist  = []   # list of 1D arrays (full)
+eigs_trunc_hist = []   # list of 1D arrays (truncated)
 
-# Prepare first line (not really needed since we clear each time)
-line_eigs, = ax_eigs.plot([], [], 'bo-')
-
-ax_eigs.set_xlabel(r"$\alpha$")
+# ---- eigenvalues panel ----
+ax_eigs.set_xlabel(param_label)
 ax_eigs.set_ylabel("Eigenvalues")
-ax_eigs.set_xlim(min(x_all), max(x_all))
-ax_eigs.set_ylim(0, 40)  # adjust as needed!
+ax_eigs.set_xlim(param_min, param_max)
+ax_eigs.set_ylim(-20, 20)
 ax_eigs.grid(True)
+ax_eigs.set_title("Eigenvalue evolution")
 
-line1, = ax_strength.plot([], [], 'k-', label='Original')
-line2, = ax_strength.plot([], [], 'r--', label='PMM-Lorentzian')
+# ---- strength panel ----
 strength_xlim = (-10, 0.782)
 strength_ylim = (0, 20)
-
-# Static scatter for test set
-sc = ax_grid.scatter(x_all, y_all, c=HLs_error, cmap='Spectral', norm=LogNorm(), marker='s')
-marker_x, = ax_grid.plot([], [], 'kx', markersize=10, markeredgewidth=2)
-
-# Grid setup
-ax_grid.set_xlabel(r"$\alpha$")
-ax_grid.set_ylabel(r"$\beta$")
-ax_grid.set_xlim(min(x_all)-0.1, max(x_all)+0.1)
-ax_grid.set_ylim(min(y_all)-0.1, max(y_all)+0.1)
-fig.colorbar(sc, ax=ax_grid, label=r"Relative error on $\alpha_D$")
-
-# Strength setup
 ax_strength.set_xlim(*strength_xlim)
 ax_strength.set_ylim(*strength_ylim)
 ax_strength.set_xlabel("E [MeV]")
 ax_strength.set_ylabel("Strength")
 ax_strength.legend()
 
-# Convert train_set to float arrays for min/max
+# ---- parameter grid / errors ----
+sc = ax_grid.scatter(x_all, y_all, c=HLs_error, cmap='Spectral', norm=LogNorm(), marker='s')
+marker_x, = ax_grid.plot([], [], 'kx', markersize=10, markeredgewidth=2)
+ax_grid.set_xlabel(r"$\alpha$")
+ax_grid.set_ylabel(r"$\beta$")
+ax_grid.set_xlim(min(x_all)-0.1, max(x_all)+0.1)
+ax_grid.set_ylim(min(y_all)-0.1, max(y_all)+0.1)
+cbar = fig.colorbar(sc, ax=ax_grid, label=r"Relative error on $T_{1/2}$")
+
+# train-set rectangle
 train_alpha = [float(a) for (a, b) in train_set]
 train_beta  = [float(b) for (a, b) in train_set]
-
-alpha_min = min(train_alpha)
-alpha_max = max(train_alpha)
-beta_min  = min(train_beta)
-beta_max  = max(train_beta)
-
-
-# Add rectangle to ax_grid
 train_rect = patches.Rectangle(
-    (alpha_min, beta_min),
-    alpha_max - alpha_min,
-    beta_max - beta_min,
-    linewidth=1.5,
-    edgecolor='black',
-    facecolor='none'
+    (min(train_alpha), min(train_beta)),
+    max(train_alpha)-min(train_alpha),
+    max(train_beta)-min(train_beta),
+    linewidth=1.5, edgecolor='black', facecolor='none'
 )
 ax_grid.add_patch(train_rect)
 
-
-
+# ------------- animation callbacks -------------
 def init():
-    print('initializing')
-    line1.set_data([], [])
-    line2.set_data([], [])
-    return line1, line2
-
-
-
+    return tuple()
 
 def animate(i):
-    alpha, beta = alpha_beta_sorted[i]
-    idx = combined.index((alpha, beta))
-    print(f"Frame {i}: alpha = {alpha}, beta = {beta}")
-    
-    alpha_tensor = tf.constant(float(alpha), dtype=tf.float64)  # (batch,)
-    beta_tensor  = tf.constant(float(beta), dtype=tf.float64)
+    alpha_str, beta_str = sweep[i]  # i comes from frame_indices below
+    idx = combined.index((alpha_str, beta_str))
+    print(f"Frame {i}: alpha={alpha_str}, beta={beta_str}")
+
+    alpha = float(alpha_str)
+    beta  = float(beta_str)
 
     opt_D, opt_S1, opt_S2, opt_v0, fold, x1, x2, x3 = helper.modified_DS(params, n)
 
-
-    
-    M_true = opt_D + (alpha_tensor-float(central_point[0])) * opt_S1 \
-        + (beta_tensor - float(central_point[1])) * opt_S2
-    
+    M_true = opt_D + (alpha - float(central_point[0])) * opt_S1 \
+                    + (beta  - float(central_point[1])) * opt_S2
 
     eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
-    eigvals_full = eigenvalues
-    
-    n_i = eigenvalues.shape[0]
-    k_keep = int(round(retain * n_i))         # how many eigenvalues to keep
-    k_keep = max(1, min(k_keep, n_i))         # safety: clamp between 1 and n
-    
-    left  = (n_i - k_keep) // 2               # starting index of the centered block
-    right = left + k_keep                     # ending index (exclusive)
-    
-    eigenvalues  = eigenvalues[left:right]
-    eigenvectors = eigenvectors[:, left:right]
-    
-    projections = tf.linalg.matvec(tf.transpose(eigenvectors), opt_v0)
-    
-    # Square each projection
-    B = tf.square(projections)
-    
-    mask = tf.cast((eigenvalues > -10) & (eigenvalues < 15), dtype=tf.float64)
 
-    # Apply the mask to zero out B where eigenvalue is negative
+    n_i    = int(eigenvalues.shape[0])
+    k_keep = max(1, min(int(round(retain * n_i)), n_i))
+    left   = (n_i - k_keep) // 2
+    right  = left + k_keep
+
+    ev_full  = eigenvalues.numpy()
+    ev_trunc = eigenvalues[left:right].numpy()
+    vec_trunc = eigenvectors[:, left:right]
+
+    projections = tf.linalg.matvec(tf.transpose(vec_trunc), opt_v0)
+    B = (tf.square(projections)).numpy()
+    mask = ((ev_trunc > -10) & (ev_trunc < 15)).astype(float)
     B = B * mask
-    
 
-    #B = [tf.square(tf.tensordot(eigenvectors[:, i], v0_mod, axes=1)) for i in range(eigenvectors.shape[1])]
-    Lor_true = tf.constant(Lors[idx][:,1], dtype=tf.float64)
+    x = Lors[idx][:, 0]      # NumPy
+    orig = Lors[idx][:, 1]   # NumPy
 
-    #Generate the x values
-    x = tf.constant(Lors[idx][:,0], dtype=tf.float64)
-    
-       
-    
-    orig = Lor_true
-    
-    eta_new =  tf.sqrt(tf.square(fold) + tf.square(x1 + x2*alpha_tensor + x3*beta_tensor))
-        
-    opt_Lor = helper.give_me_Lorentzian(x, eigenvalues, B, eta_new)
+    eta_new = np.sqrt(float(fold.numpy())**2 +
+                      (float(x1.numpy()) + float(x2.numpy())*alpha + float(x3.numpy())*beta)**2)
 
-    # --- Strength plot ---
+    opt_Lor = helper.give_me_Lorentzian(
+        tf.constant(x, dtype=tf.float64),
+        tf.constant(ev_trunc, dtype=tf.float64),
+        tf.constant(B, dtype=tf.float64),
+        tf.constant(eta_new, dtype=tf.float64)
+    ).numpy()
+
+    # ---- Strength panel (with cubic-spline interpolation + legend FOM/EM1) ----
     ax_strength.cla()
     ax_strength.set_xlim(*strength_xlim)
     ax_strength.set_ylim(*strength_ylim)
     ax_strength.set_xlabel("E [MeV]")
     ax_strength.set_ylabel("Strength")
-    ax_strength.set_title(fr"$\alpha = {alpha},\ \beta = {beta}$")
-    ax_strength.plot(x, orig, 'k-', label='Original')
-    ax_strength.plot(x, opt_Lor, 'r--', label='PMM-Lorentzian')
-    ax_strength.stem(eigenvalues, B, basefmt=" ", markerfmt='go', linefmt='g-')
+    ax_strength.set_title(fr"$\alpha = {alpha_str},\ \beta = {beta_str}$")
+
+    # Ensure strictly increasing x for spline
+    sort_idx   = np.argsort(x)
+    x_sorted   = x[sort_idx]
+    fom_sorted = orig[sort_idx]      # Full-order model
+    em1_sorted = opt_Lor[sort_idx]   # Emulator 1
+
+    # Build cubic splines (no extrapolation outside data range)
+    fom_spline = CubicSpline(x_sorted, fom_sorted, extrapolate=False)
+    em1_spline = CubicSpline(x_sorted, em1_sorted, extrapolate=False)
+
+    # Fine grid for smooth lines
+    x_fine = np.linspace(x_sorted[0], x_sorted[-1], 1200)
+    y_fom  = fom_spline(x_fine)
+    y_em1  = em1_spline(x_fine)
+
+    # Plot smooth curves with requested legend labels
+    ax_strength.plot(x_fine, y_fom,  'k-',  label='FOM')  # full-order model
+    ax_strength.plot(x_fine, y_em1, 'r--', label='EM1')   # emulator 1
+
+    # Keep the stem plot for eigenvalue weights
+    ax_strength.stem(ev_trunc, B, basefmt=" ", markerfmt='go', linefmt='g-', label='Weights')
     ax_strength.legend()
 
-    # --- Update marker in grid ---
-    marker_x.set_data([float(alpha)], [float(beta)])
-    
-   # --- Save current parameter and eigenvalues ---
-    if mode == 'alpha':
-        param_val = float(alpha)
-    else:
-        param_val = float(beta)
-    
-    param_vals_for_eigs.append(param_val)
-    eigenvalues_history_full.append(eigvals_full)
-    eigenvalues_history_trunc.append(eigenvalues)
-    
-    # Convert to arrays for plotting
-    param_array = np.array(param_vals_for_eigs)
-    eigen_full_matrix = np.array(eigenvalues_history_full)
-    eigen_trunc_matrix = np.array(eigenvalues_history_trunc)
-    
-    param_label = r"$\alpha$" if mode == 'alpha' else r"$\beta$"
-    
-    # Clear axis
+    # ---- Grid marker ----
+    marker_x.set_data([alpha], [beta])
+
+    # ---- Eigenvalue history ----
+    param_vals_for_eigs.append(alpha if mode == 'alpha' else beta)
+    eigs_full_hist.append(ev_full.copy())
+    eigs_trunc_hist.append(ev_trunc.copy())
+
     ax_eigs.cla()
     ax_eigs.set_xlabel(param_label)
     ax_eigs.set_ylabel("Eigenvalues")
@@ -376,24 +283,37 @@ def animate(i):
     ax_eigs.set_ylim(-20, 20)
     ax_eigs.grid(True)
     ax_eigs.set_title("Eigenvalue evolution")
-    
-    # Plot full in gray
-    for k in range(eigen_full_matrix.shape[1]):
-        ax_eigs.plot(param_array, eigen_full_matrix[:, k], '-', color='gray', linewidth=2, alpha=1)
-    
-    # Plot truncated in blue
-    for k in range(eigen_trunc_matrix.shape[1]):
-        ax_eigs.plot(param_array, eigen_trunc_matrix[:, k], 'o-', markersize=4)
 
+    p = np.array(param_vals_for_eigs)
+    full_mat  = np.vstack(eigs_full_hist)
+    trunc_mat = np.vstack(eigs_trunc_hist)
 
+    for k in range(full_mat.shape[1]):
+        ax_eigs.plot(p, full_mat[:, k], '-', color='gray', linewidth=1, alpha=1.0)
+    for k in range(trunc_mat.shape[1]):
+        ax_eigs.plot(p, trunc_mat[:, k], 'o-', markersize=3)
 
-    return []
+    return tuple()
 
-#Make animation
-ani = animation.FuncAnimation(
+# -------- build repeated frame indices for slower playback --------
+frame_indices = [i for i in range(len(sweep)) for _ in range(max(1, int(HOLD_FRAMES)))]
+frame_indices += [len(sweep)-1] * max(0, int(PAUSE_TAIL))
+
+ani = FuncAnimation(
     fig, animate, init_func=init,
-    frames=len(alpha_beta_sorted), interval=700, repeat=False  # no blit!
+    frames=frame_indices, interval=700, repeat=False
 )
 
-# Save MP4
-ani.save(f"animate_strength_evolution_sweep_{mode}_fixed_{fixed_value}_PMM{n}.mp4", writer='ffmpeg', fps=1.3)
+# -------- save --------
+if SAVE_AS.lower() == 'gif':
+    writer = PillowWriter(fps=max(1, int(FPS)))
+    out = f"animate_strength_evolution_sweep_{mode}_fixed_{fixed_value}_PMM{n}.gif"
+    ani.save(out, writer=writer, dpi=DPI)
+    print(f"Saved GIF: {out}  (FPS={FPS}, HOLD_FRAMES={HOLD_FRAMES}, PAUSE_TAIL={PAUSE_TAIL})")
+elif SAVE_AS.lower() == 'mp4':
+    writer = FFMpegWriter(fps=max(1, int(FPS)))
+    out = f"animate_strength_evolution_sweep_{mode}_fixed_{fixed_value}_PMM{n}.mp4"
+    ani.save(out, writer=writer, dpi=DPI)
+    print(f"Saved MP4: {out}  (FPS={FPS}, HOLD_FRAMES={HOLD_FRAMES}, PAUSE_TAIL={PAUSE_TAIL})")
+else:
+    raise ValueError("SAVE_AS must be 'gif' or 'mp4'")
