@@ -1,8 +1,24 @@
-# QRPA Emulator
+# SMLR: Surrogate Model for Linear Response
+
+!(SMLR.png)
+
+
 
 This repository contains the code accompanying the paper *L.Jin et al., "Efficient Surrogates for Linear Response Theory"*.
 
 The repository is organized into three main types of folders:
+
+---
+
+## `Dipole_polarizability`
+
+Contains scripts to run the emulator for the **like-particle QRPA**. These scripts read input from the `dipole_data_all` folder containing strength functions and relevant observables.
+
+**Main files:**
+
+1. `main.py` — Main script to train EM1
+2. `main_only_alphaD.py` — Main script to train EM2
+3. `helper.py` — Helper subroutines used in training and evaluation  
 
 ---
 
@@ -22,20 +38,16 @@ Contains scripts to run the emulator for the **charge-exchange QRPA**. These scr
 
 ---
 
-## `dipoles`
+## `figs`
 
-Contains scripts to run the emulator for the **like-particle QRPA**. These scripts read input from the `dipole_data` folder containing strength functions and relevant observables.
+---
+Contains jupyter notebooks for recreating the figures shown in the paper.
 
-**Main files:**
 
-1. `main.py` — Main script to train the PMM emulator  
-2. `helper.py` — Helper subroutines used in training and evaluation  
-3. `check_results.py` — Plots strength functions and dipole polarizability \( \alpha_D \) in the test set (Fig. 2)  
-4. `plot_strength.py` — Produces the "rainbow plot" and phase space visualization (Fig. 1)  
-5. `CAT_plot.py` — Plots the CAT (Fig. 6)
+---
 
-**Note:** Files with the `_only_alphaD.py` suffix correspond to Algorithm 2 described in the paper.
+
 
 ## DATA files
 
-Folders which contain the high-fidelity QRPA calculations are stored in `dipoles_data` and `beta_decay_data`. Please ask Ante for details.
+Folders which contain the high-fidelity QRPA calculations are stored in `dipoles_data_all` and `beta_decay_data_Ni80`. 

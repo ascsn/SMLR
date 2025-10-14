@@ -1,1 +1,0 @@
-seed 176 | train 175 | test total 4.682e-01 | S 4.630e-01 | m-1 5.195e-03 | m+1 0.000e+00 | mean|rel| 3.30e-04

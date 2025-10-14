@@ -1,1 +1,0 @@
-seed 127 | train 175 | test total 3.877e-02 | mean|rel| 9.73e-04 (median 4.56e-04)

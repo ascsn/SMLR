@@ -1,7 +1,0 @@
-best_cost=0.011133178967758157
-best_iter=18879
-seed=44
-n=15
-retain=0.9
-weight=1.0
-stopped_at=18999
