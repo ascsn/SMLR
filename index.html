@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surrogate Models for Linear Response</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50; /* Dark Blue/Charcoal */
+            --secondary-color: #3498db; /* Bright Blue */
+            --background-color: #ecf0f1; /* Light Gray */
+            --card-background: #ffffff;
+            --text-color: #34495e;
+            --light-text-color: #ffffff;
+        }
+
+        body {
+            font-family: 'Lato', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.7;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background: var(--primary-color);
+            color: var(--light-text-color);
+            padding: 2rem 0;
+            text-align: center;
+            border-bottom: 4px solid var(--secondary-color);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.8rem;
+            font-weight: 700;
+        }
+
+        header .authors {
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+            opacity: 0.9;
+        }
+
+        main {
+            padding: 2rem 0;
+        }
+
+        .main-layout {
+            display: flex;
+            gap: 2rem;
+            align-items: flex-start;
+        }
+
+        .content-column {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .plot-column {
+            flex: 1.2;
+            position: sticky;
+            top: 2rem;
+        }
+
+        section {
+            background: var(--card-background);
+            margin-bottom: 2rem;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e0e0e0;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-top: 0;
+            border-bottom: 2px solid var(--background-color);
+            padding-bottom: 0.75rem;
+        }
+
+        .plot-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            padding-top: 80%;
+            border-radius: 6px;
+        }
+
+        .plot-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        li {
+            padding: 0.5rem 0;
+        }
+        
+        .resources li {
+             border-bottom: 1px solid var(--background-color);
+        }
+
+        .resources li:last-child {
+             border-bottom: none;
+        }
+        
+        /* NEW STYLE FOR THE FULL SCREEN BUTTON */
+        .fullscreen-link {
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            padding: 0.6rem 1.2rem;
+            background-color: var(--secondary-color);
+            color: var(--light-text-color);
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 700;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .fullscreen-link:hover {
+            background-color: var(--primary-color);
+            color: var(--light-text-color);
+            text-decoration: none;
+            transform: translateY(-2px);
+        }
+
+        a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 700;
+            transition: color 0.2s ease-in-out;
+        }
+
+        a:hover {
+            color: var(--primary-color);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+
+        @media (max-width: 992px) {
+            .main-layout {
+                flex-direction: column;
+            }
+            .plot-column {
+                position: static;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Efficient Surrogates for Linear Response Theory</h1>
+        <p class="authors">L. Jin¹, A. Ravlić¹,², P. Giuliani¹, K. Godbey¹, and W. Nazarewicz¹,³</p>
+    </header>
+
+    <div class="container">
+        <main class="main-layout">
+            <div class="content-column">
+                <section id="introduction">
+                    <h2>Abstract</h2>
+                    <p>Linear response theory is a well-established method for exploring excitations of many-body systems. The Quasiparticle Random-Phase Approximation (QRPA), in particular, provides a powerful microscopic framework but is limited by high computational costs. This work presents two complementary QRPA surrogate models that achieve 0.1%–1% accuracy while offering a six to seven order-of-magnitude speedup over state-of-the-art solvers. These emulators enable large-scale studies and Bayesian calibration of computationally expensive physics models.</p>
+                </section>
+                
+                <section id="challenge">
+                    <h2>The Computational Challenge</h2>
+                    <p>Conventional QRPA calculations, while providing a detailed microscopic description, are computationally intensive. This expense presents a significant bottleneck for model calibration and uncertainty quantification, which require thousands or millions of model evaluations. Such studies are often intractable with high-fidelity QRPA solvers.</p>
+                </section>
+
+                <section id="solution">
+                    <h2>A Surrogate Model Approach</h2>
+                    <p>To address this challenge, we developed emulators that approximate the output of the full-order model with high speed and accuracy. Two distinct approaches were benchmarked:</p>
+                    <ul>
+                        <li><strong>Emulator 1 (EM1):</strong> A hybrid data- and model-driven emulator that preserves the underlying structure of the QRPA eigensystem.</li>
+                        <li><strong>Emulator 2 (EM2):</strong> A fully data-driven model using Parametric Matrix Models (PMMs) to construct a direct map from system parameters to observables.</li>
+                    </ul>
+                </section>
+            </div>
+
+            <div class="plot-column">
+                <section id="interactive-visualization">
+                    <h2>Interactive Visualization</h2>
+                    <p>The 3D plot shows the Gamow-Teller strength function in ⁸⁰Ni as a function of the isoscalar pairing (V₀is) and Landau-Migdal (g₀') coupling parameters. This function is critical for modeling ß-decay processes. The visualization is fully interactive.</p>
+                    <div class="plot-container">
+                        <iframe src="plot.html" title="Interactive 3D plot of Gamow-Teller strength function"></iframe>
+                    </div>
+                </section>
+            </div>
+        </main>
+        
+        <section id="findings">
+            <h2>Key Findings</h2>
+            <p>Both emulators demonstrated high performance in reproducing key nuclear observables—the electric dipole polarizability of ¹⁸⁰Yb and the ß-decay half-life of ⁸⁰Ni. Our models successfully captured highly non-linear system behaviors and variations spanning several orders of magnitude, even in extrapolation regions beyond their training data. The physics-informed EM1 showed more consistent performance between training and testing sets, highlighting the value of incorporating domain knowledge into emulator design.</p>
+        </section>
+
+        <section id="impact">
+            <h2>Significance and Impact</h2>
+            <p>This research provides a viable path for implementing QRPA-based methods in the Bayesian optimization of nuclear Energy Density Functionals and subsequent uncertainty quantification. The dramatic reduction in computational cost opens the door to scalable, large-scale studies of complex physical systems. The agnosticism of our approach suggests it can be straightforwardly extended to other problems in physics and chemistry that rely on linear-response theory.</p>
+        </section>
+
+        <!-- NEW SECTION FOR THE EMULATOR DEMO -->
+        <section id="emulator-demo">
+            <h2>Emulator in Action</h2>
+            <p>This interactive demonstration directly runs our surrogate model in your browser. Use the sliders and controls to see the effect of changing model parameters in real-time.</p>
+            <a href="GT_strength_dual.html" target="_blank" class="fullscreen-link">Open Demo in Full Screen</a>
+            <div class="plot-container">
+                <iframe src="GT_strength_dual.html" title="Interactive emulator comparison demo"></iframe>
+            </div>
+        </section>
+
+        <section id="resources">
+            <h2>Resources</h2>
+            <ul class="resources">
+                <li><a href="TBD" target="_blank">Read the Full Paper</a></li>
+                <li><a href="https://github.com/ascsn/SMLR" target="_blank">Access the Code Repository on GitHub</a></li>
+            </ul>
+        </section>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 L. Jin et al. This website provides a pedagogical overview of research presented in "Efficient surrogates for linear response theory."</p>
+    </footer>
+</body>
+</html>
