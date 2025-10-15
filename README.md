@@ -63,4 +63,4 @@ First sweep is across $g_0$, keeping $V_0^{is}$ constant:
 
 then we keep $g_0$ constant and vary $V_0^{is}$:
 
-![animation2](em1_grid_sweep_alpha_V0_0.500_n13.gif)
+![animation2](Beta_decay/em1_grid_sweep_alpha_V0_0.500_n13.gif)
