@@ -22,8 +22,8 @@ n      = 13
 retain = 0.9
 
 # sweep
-mode = 'beta'          # 'alpha' or 'beta'
-fixed_value = '2.000'  # string to match filenames
+mode = 'alpha'          # 'alpha' or 'beta'
+fixed_value = '0.500'  # string to match filenames
 
 # animation output + speed/size controls
 SAVE_AS     = 'gif'     # 'gif' or 'mp4' 
