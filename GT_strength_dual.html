@@ -72,6 +72,7 @@ const BETA_FAST_DEBOUNCE_MS = 80;   // coarse recompute cadence while dragging
 const BETA_FINE_DELAY_MS    = 120;  // small pause after release
 const AXIS_TITLE_SIZE = 18;
 const TICK_SIZE       = 16;
+const CUTOFF_W        = 0.782; // MeV — green dashed cutoff in S(ω)
 
 // ------- helpers -------
 function dot(a,b) { let s=0.0; for (let i=0;i<a.length;++i) s+=a[i]*b[i]; return s; }
@@ -119,6 +120,21 @@ function rbColor(t) {
   const g=Math.round(a[2]+f*(b[2]-a[2]));
   const bl=Math.round(a[3]+f*(b[3]-a[3]));
   return "rgb("+r+","+g+","+bl+")";
+}
+
+// green dashed cutoff line (top plot)
+function cutoffTrace() {
+  return {
+    x: [CUTOFF_W, CUTOFF_W],
+    y: [0, 30],                       // match top y-range
+    mode: "lines",
+    type: "scatter",
+    line: {color: "#2ca02c", width: 2, dash: "dash"},
+    hoverinfo: "skip",
+    showlegend: false,
+    xaxis: "x",
+    yaxis: "y"
+  };
 }
 
 // Compute S(ω) and also eigenvalue positions + their S(ω) heights
@@ -242,7 +258,7 @@ function buildEigenLines(eigs, heights, k){
 function assembleData(alphaNow, betaNow, topPack, tracksPack){
   const topLine = {
     x: DATA.omega, y: topPack.S, mode: "lines", type: "scattergl",
-    line: {width: 3, color: "black"}, name: "Emulator", xaxis: "x", yaxis: "y"
+    line: {width: 4, color: "black"}, name: "Emulator", xaxis: "x", yaxis: "y"
   };
   const marker = {
     x: [alphaNow, alphaNow], y: [tracksPack.ymin, tracksPack.ymax],
@@ -252,6 +268,7 @@ function assembleData(alphaNow, betaNow, topPack, tracksPack){
   };
   return [
     topLine,
+    cutoffTrace(),  // green dashed cutoff at ω = 0.782 MeV
     ...buildEigenLines(
       topPack.eigs.filter(w => w>=DATA.w_lo && w<=DATA.w_hi),
       topPack.S_eigs,
@@ -316,7 +333,7 @@ Plotly.newPlot(
 
   function setTitle(a,b){
     Plotly.relayout(gd, {
-      title: {text: "S(ω) — V0<sup>is</sup>="+a.toFixed(2)+", g0="+b.toFixed(2), x:0.5}
+      title: {text: " V0<sup>is</sup>="+a.toFixed(2)+", g0="+b.toFixed(2), x:0.5}
     });
   }
 
@@ -328,7 +345,8 @@ Plotly.newPlot(
     lastTopPack = computeStrengthAndEig(a,b); // cache
     const topTraces = [
       { x:DATA.omega, y:lastTopPack.S, mode:"lines", type:"scattergl",
-         line:{width:3, color:"black"}, xaxis:"x", yaxis:"y" },
+         line:{width:4, color:"black"}, xaxis:"x", yaxis:"y" },
+      cutoffTrace(),
       ...buildEigenLines(
         lastTopPack.eigs.filter(w => w>=DATA.w_lo && w<=DATA.w_hi),
         lastTopPack.S_eigs, tracks.k
@@ -380,7 +398,8 @@ Plotly.newPlot(
     lastTopPack = computeStrengthAndEig(a,b);
     const topTraces = [
       { x:DATA.omega, y:lastTopPack.S, mode:"lines", type:"scattergl",
-         line:{width:3, color:"black"}, xaxis:"x", yaxis:"y" },
+         line:{width:4, color:"black"}, xaxis:"x", yaxis:"y" },
+      cutoffTrace(),
       ...buildEigenLines(
         lastTopPack.eigs.filter(w => w>=DATA.w_lo && w<=DATA.w_hi),
         lastTopPack.S_eigs, tracks.k
