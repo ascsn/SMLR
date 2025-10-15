@@ -57,4 +57,10 @@ Folders which contain the high-fidelity QRPA calculations are stored in `dipoles
 
 Performance of the emulator on the training set, reproducing the Gamow-Teller strength in ${}^{80}$Ni.
 
+First sweep is across $g_0$, keeping $V_0^{is}$ constant:
+
 ![animation](Beta_decay/em1_grid_sweep_beta_V0_2.000_n13.gif)
+
+then we keep $g_0$ constant and vary $V_0^{is}$:
+
+![animation2](em1_grid_sweep_alpha_V0_0.500_n13.gif)
