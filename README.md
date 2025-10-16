@@ -55,7 +55,7 @@ python main_only_alphaD.py
 # Customize
 python main_only_alphaD.py --n 9 --n-restarts 5 --seed0 7     --num-iter 40000 --print-every 500     --plots save --save-dir runs_em2
 ```
-More flags: `python dipole_em2_only_alphaD.py --help`
+More flags: `python main_only_alphaD.py --help`
 
 **Outputs (EM2)**
 - Per-seed: `runs_dipole_em2/seed_<SEED>/`  
