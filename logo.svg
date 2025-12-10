@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 50" fill="none">
+  <!-- SMLR Logo with Neobrutalism Design -->
+  <!-- Represents surrogate modeling of strength functions -->
+  
+  <defs>
+    <!-- Neobrutalism color palette -->
+    <style>
+      .neo-black { fill: #1a1a2e; }
+      .neo-white { fill: #fffef7; }
+      .neo-purple { fill: #9b5de5; }
+      .neo-pink { fill: #ff6b9d; }
+      .neo-yellow { fill: #ffd803; }
+      .neo-green { fill: #06d6a0; }
+      .neo-blue { fill: #00b4d8; }
+      .border { stroke: #1a1a2e; stroke-width: 2.5; fill: none; }
+      .border-thin { stroke: #1a1a2e; stroke-width: 1.5; fill: none; }
+      .text-neo { font-family: 'Inter', 'SF Pro Display', system-ui, -apple-system, sans-serif; font-weight: 800; }
+    </style>
+  </defs>
+  
+  <!-- Main container with hard shadow -->
+  <g transform="translate(3, 3)">
+    <!-- Shadow -->
+    <rect x="3" y="3" width="170" height="40" class="neo-black" />
+    
+    <!-- Main background -->
+    <rect x="0" y="0" width="170" height="40" class="neo-purple" />
+    <rect x="0" y="0" width="170" height="40" class="border" />
+    
+    <!-- Left section: Strength function visualization -->
+    <g transform="translate(6, 6)">
+      <!-- Complex function showing multiple peaks/resonances -->
+      <path d="M2,18 Q6,12 10,15 Q14,8 18,12 Q22,16 26,14 Q30,10 34,14 Q38,18 42,16 Q46,12 50,16 Q54,20 58,18" 
+            stroke="#fffef7" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+      
+      <!-- Arrow showing transformation -->
+      <g transform="translate(62, 14)">
+        <path d="M0,0 L6,0 L4,2 M4,-2 L6,0" stroke="#fffef7" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      </g>
+      
+      <!-- Simplified surrogate model - clearer peak representation -->
+      <g transform="translate(72, 0)">
+        <!-- Peak 1 - Small resonance (bar chart style) -->
+        <rect x="3" y="3" width="4" height="4" class="neo-black" />
+        <rect x="2" y="2" width="4" height="4" class="neo-yellow" />
+        <rect x="2" y="2" width="4" height="4" class="border-thin" />
+        
+        <!-- Peak 2 - Large resonance (dominant) -->
+        <rect x="10" y="4" width="5" height="8" class="neo-black" />
+        <rect x="9" y="3" width="5" height="8" class="neo-pink" />
+        <rect x="9" y="3" width="5" height="8" class="border-thin" />
+        
+        <!-- Peak 3 - Medium resonance -->
+        <rect x="18" y="3.5" width="4" height="6" class="neo-black" />
+        <rect x="17" y="2.5" width="4" height="6" class="neo-green" />
+        <rect x="17" y="2.5" width="4" height="6" class="border-thin" />
+        
+        <!-- Peak 4 - Small resonance -->
+        <rect x="25" y="3" width="3" height="4" class="neo-black" />
+        <rect x="24" y="2" width="3" height="4" class="neo-blue" />
+        <rect x="24" y="2" width="3" height="4" class="border-thin" />
+        
+        <!-- Baseline (energy/frequency axis) -->
+        <line x1="0" y1="20" x2="30" y2="20" stroke="#fffef7" stroke-width="1.5"/>
+        
+        <!-- Small tick marks to show discrete sampling -->
+        <line x1="3" y1="19" x2="3" y2="21" stroke="#fffef7" stroke-width="1"/>
+        <line x1="11" y1="19" x2="11" y2="21" stroke="#fffef7" stroke-width="1"/>
+        <line x1="19" y1="19" x2="19" y2="21" stroke="#fffef7" stroke-width="1"/>
+        <line x1="25" y1="19" x2="25" y2="21" stroke="#fffef7" stroke-width="1"/>
+      </g>
+    </g>
+    
+    <!-- Right section: SMLR text -->
+    <g transform="translate(115, 8)">
+      <!-- Text shadow -->
+      <text x="1.5" y="16" class="neo-black text-neo" font-size="18" letter-spacing="1px">SMLR</text>
+      
+      <!-- Main text -->
+      <text x="0" y="14.5" class="neo-yellow text-neo" font-size="18" letter-spacing="1px">SMLR</text>
+      
+      <!-- Compact subtitle -->
+      <g transform="translate(0, 18)">
+        <text x="0.8" y="6.5" class="neo-black text-neo" font-size="5" letter-spacing="0.3px">SURROGATE</text>
+        <text x="0" y="6" class="neo-white text-neo" font-size="5" letter-spacing="0.3px">SURROGATE</text>
+      </g>
+    </g>
+  </g>
+  
+  <!-- Corner accent (smaller) -->
+  <g transform="translate(165, 2)">
+    <rect x="1.5" y="1.5" width="2" height="2" class="neo-black" />
+    <rect x="0" y="0" width="2" height="2" class="neo-pink" />
+    
+    <rect x="4.5" y="2.5" width="2" height="2" class="neo-black" />
+    <rect x="3" y="1" width="2" height="2" class="neo-green" />
+    
+    <rect x="7.5" y="1.5" width="2" height="2" class="neo-black" />
+    <rect x="6" y="0" width="2" height="2" class="neo-yellow" />
+  </g>
+</svg>

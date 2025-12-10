@@ -1,3 +1,16 @@
 .DS_Store
 .ipynb_checkpoints
 __pycache__
+.venv/
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+*.png
+*.pdf
+*.gif
+
+# Generated documentation files
+docs/example_metrics.json
+site/

@@ -1,0 +1,91 @@
+site_name: SMLR
+site_description: Surrogate Models for Linear Response - Fast, accurate emulation of strength functions
+site_url: https://example.com  # update when deploying
+repo_url: https://github.com/ascsn/SMLR
+repo_name: ascsn/SMLR
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Usage Guide: usage.md
+    - Tutorials: tutorials.md
+  - Documentation:
+    - API Reference: api.md
+    - Theory & Background: theory.md
+    - FAQ: faq.md
+  - Reproducibility:
+    - Paper Reproduction: paper_repro.md
+    - Paper Notebook: paper_repro_notebook.ipynb
+  - Development:
+    - Contributing: contributing.md
+    - Development Guide: development.md
+    - Changelog: changelog.md
+
+theme:
+  name: material
+  palette:
+    # Light mode
+    - scheme: default
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - scheme: slate
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - content.code.copy
+    - content.code.annotate
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.arithmatex:
+      generic: true
+  - tables
+  - footnotes
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+plugins:
+  - search
+  - mkdocs-jupyter:
+      execute: false
+      include_source: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ascsn/SMLR
+      name: GitHub Repository
+  version:
+    provider: mike
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+extra_css:
+  - stylesheets/extra.css

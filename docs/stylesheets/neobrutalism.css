@@ -1,0 +1,1284 @@
+/* =============================================================================
+   NEOBRUTALISM THEME FOR SMLR DOCUMENTATION
+   =============================================================================
+   A bold, colorful, visually striking design with:
+   - Hard offset shadows (no blur)
+   - Thick black borders
+   - Vibrant, high-contrast colors
+   - Playful, raw aesthetic
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   CSS CUSTOM PROPERTIES (Color Palette)
+   ----------------------------------------------------------------------------- */
+:root {
+  /* Primary neobrutalism colors */
+  --neo-black: #1a1a2e;
+  --neo-white: #fffef7;
+  --neo-cream: #fef6e4;
+  
+  /* Vibrant accent colors */
+  --neo-yellow: #ffd803;
+  --neo-pink: #ff6b9d;
+  --neo-purple: #9b5de5;
+  --neo-blue: #00b4d8;
+  --neo-green: #06d6a0;
+  --neo-orange: #ff9f1c;
+  --neo-red: #ef476f;
+  --neo-coral: #ff6b6b;
+  
+  /* Border and shadow settings */
+  --neo-border-width: 3px;
+  --neo-shadow-offset: 5px;
+  --neo-shadow: var(--neo-shadow-offset) var(--neo-shadow-offset) 0 var(--neo-black);
+  --neo-shadow-hover: 7px 7px 0 var(--neo-black);
+  --neo-radius: 0px; /* Brutalism uses sharp corners, but 4px can soften slightly */
+}
+
+/* Dark mode adjustments */
+[data-md-color-scheme="slate"] {
+  --neo-white: #0f172a;
+  --neo-cream: #111b2f;
+  --neo-black: #f8fafc;
+  --neo-shadow: var(--neo-shadow-offset) var(--neo-shadow-offset) 0 rgba(255, 255, 255, 0.8);
+  --neo-shadow-hover: 7px 7px 0 rgba(255, 255, 255, 0.9);
+  --md-default-bg-color: #0f172a;
+  --md-default-fg-color: #f8fafc;
+  --md-default-fg-color--light: #e2e8f0;
+  --md-default-fg-color--lighter: #cbd5e1;
+  --md-default-fg-color--lightest: #94a3b8;
+  --md-typeset-color: var(--md-default-fg-color);
+}
+
+/* -----------------------------------------------------------------------------
+   BASE STYLES
+   ----------------------------------------------------------------------------- */
+
+/* Override Material primary colors */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: var(--neo-purple);
+  --md-primary-bg-color: var(--neo-cream);
+  --md-accent-fg-color: var(--neo-pink);
+  --md-default-bg-color: var(--neo-cream);
+  --md-code-bg-color: var(--neo-yellow);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: var(--neo-yellow);
+  --md-primary-bg-color: #0f0f23;
+  --md-accent-fg-color: var(--neo-pink);
+  --md-default-bg-color: #16213e;
+  --md-code-bg-color: #1a1a2e;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* -----------------------------------------------------------------------------
+   HEADER / NAVIGATION
+   ----------------------------------------------------------------------------- */
+
+/* Main header bar */
+.md-header {
+  background: var(--neo-purple) !important;
+  border-bottom: var(--neo-border-width) solid var(--neo-black);
+  box-shadow: 0 var(--neo-shadow-offset) 0 var(--neo-black);
+  overflow: visible !important;
+  min-height: 4rem;
+}
+
+.md-header__inner {
+  padding: 0.5rem 1rem !important;
+  display: flex;
+  align-items: center;
+}
+
+[data-md-color-scheme="slate"] .md-header {
+  background: var(--neo-pink) !important;
+}
+
+.md-header__button.md-logo {
+  padding: 0.25rem !important;
+  margin: 0 0.5rem 0 0 !important;
+  width: 7rem;
+  height: 7rem;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Prevent ugly highlight on logo hover */
+.md-header__button.md-logo:hover {
+  background: transparent !important;
+  transform: none !important;
+}
+
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+}
+
+.md-header__title {
+  font-weight: 800 !important;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--neo-white) !important;
+  padding: 0.5rem 0.5rem 0.5rem 0 !important;
+  margin: 0 !important;
+  line-height: 1.2;
+}
+
+/* Hide site name when custom logo is present */
+.md-header__button.md-logo ~ .md-header__title .md-header__topic:first-child {
+  display: none;
+}
+
+.md-header__ellipsis {
+  margin-left: 0.5rem;
+}
+
+/* Repository stats widget */
+.md-source {
+  background: var(--neo-yellow) !important;
+  border: 3px solid var(--neo-black) !important;
+  border-radius: 8px !important;
+  box-shadow: 4px 4px 0 var(--neo-black) !important;
+  transition: box-shadow 0.15s ease, background 0.15s ease !important;
+  margin: 0 0.5rem !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  height: auto !important;
+  min-height: 2.6rem !important;
+  padding: 0.45rem 0.9rem !important;
+  overflow: visible !important;
+  gap: 0.5rem !important;
+}
+
+.md-source:hover {
+  transform: none !important;
+  box-shadow: 7px 7px 0 var(--neo-black) !important;
+  background: var(--neo-pink) !important;
+}
+
+.md-source__icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--neo-black) !important;
+  width: 2rem !important;
+  height: 2rem !important;
+  min-width: 1.4rem !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  position: relative !important;
+  margin: 0 !important;
+  top: auto !important;
+  left: auto !important;
+}
+
+.md-source__icon svg {
+  width: 1.4rem !important;
+  height: 1.4rem !important;
+  fill: var(--neo-black) !important;
+}
+
+.md-source__repository {
+  color: var(--neo-black) !important;
+  font-weight: 700 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: inline-block !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  font-size: 0.95rem !important;
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+}
+
+.md-source__facts {
+  display: flex !important;
+  color: var(--neo-black) !important;
+  font-weight: 600 !important;
+  background: transparent !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+.md-source__fact {
+  color: var(--neo-black) !important;
+  opacity: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.2rem !important;
+  font-size: 0.75rem !important;
+  line-height: 1 !important;
+}
+
+.md-source__fact::before {
+  opacity: 1 !important;
+  color: var(--neo-black) !important;
+}
+
+[data-md-color-scheme="slate"] .md-source {
+  background: var(--neo-orange) !important;
+}
+
+[data-md-color-scheme="slate"] .md-source:hover {
+  background: var(--neo-yellow) !important;
+}
+
+[data-md-color-scheme="slate"] .md-source__icon,
+[data-md-color-scheme="slate"] .md-source__repository,
+[data-md-color-scheme="slate"] .md-source__facts,
+[data-md-color-scheme="slate"] .md-source__fact,
+[data-md-color-scheme="slate"] .md-source__fact::before {
+  color: #0f172a !important;
+}
+
+/* Header buttons (search, theme toggle) */
+.md-header__button {
+  color: var(--neo-white) !important;
+  transition: all 0.15s ease;
+  opacity: 1;
+  padding: 0.5rem !important;
+  margin: 0 0.25rem;
+}
+
+.md-header__button:hover {
+  background: var(--neo-yellow) !important;
+  border-radius: var(--neo-radius);
+  color: var(--neo-black) !important;
+  transform: scale(1.1);
+}
+
+.md-header__button svg {
+  fill: currentColor;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+[data-md-color-scheme="slate"] .md-header__button {
+  color: var(--neo-white) !important;
+}
+
+[data-md-color-scheme="slate"] .md-header__button:hover {
+  color: var(--neo-black) !important;
+}
+
+/* Navigation tabs */
+.md-tabs {
+  background: var(--neo-yellow) !important;
+  border-bottom: var(--neo-border-width) solid var(--neo-black);
+  border-top: none;
+}
+
+.md-tabs__list {
+  padding: 0 1rem;
+}
+
+.md-tabs__link {
+  color: var(--neo-black) !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.8rem 1.2rem !important;
+  transition: all 0.15s ease;
+}
+
+[data-md-color-scheme="slate"] .md-tabs__link {
+  color: #0f172a !important;
+}
+
+.md-tabs__link:hover,
+.md-tabs__link--active {
+  background: var(--neo-pink) !important;
+  color: var(--neo-black) !important;
+}
+
+/* -----------------------------------------------------------------------------
+   SIDEBAR NAVIGATION
+   ----------------------------------------------------------------------------- */
+
+.md-sidebar {
+  background: var(--neo-cream);
+}
+
+.md-nav__link {
+  font-weight: 600;
+  border-radius: var(--neo-radius);
+  margin: 2px 8px;
+  padding: 8px 12px !important;
+  transition: all 0.15s ease;
+}
+
+[data-md-color-scheme="slate"] .md-nav__link {
+  color: var(--md-default-fg-color) !important;
+}
+
+.md-nav__link:hover {
+  background: var(--neo-yellow);
+  border-left: 4px solid var(--neo-black);
+  transform: translateX(4px);
+}
+
+.md-nav__link--active {
+  background: var(--neo-green) !important;
+  color: var(--neo-black) !important;
+  font-weight: 800;
+  border: 2px solid var(--neo-black);
+  box-shadow: 3px 3px 0 var(--neo-black);
+}
+
+[data-md-color-scheme="slate"] .md-nav__link--active {
+  color: #0f172a !important;
+}
+
+.md-nav__title {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--neo-purple);
+  border-bottom: 3px solid var(--neo-black);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Breadcrumbs */
+.md-path {
+  color: var(--neo-black) !important;
+}
+
+.md-path__link {
+  color: var(--neo-purple) !important;
+  font-weight: 600;
+}
+
+.md-path__link:hover {
+  background: var(--neo-yellow);
+}
+
+[data-md-color-scheme="slate"] .md-path__link {
+  color: var(--neo-yellow) !important;
+}
+
+/* -----------------------------------------------------------------------------
+   MAIN CONTENT
+   ----------------------------------------------------------------------------- */
+
+.md-content {
+  background: var(--neo-white);
+}
+
+[data-md-color-scheme="slate"] .md-content,
+[data-md-color-scheme="slate"] .md-main,
+[data-md-color-scheme="slate"] .md-sidebar,
+[data-md-color-scheme="slate"] .md-content__inner {
+  background: var(--md-default-bg-color);
+}
+
+.md-content__inner {
+  padding: 2rem;
+}
+
+article.md-content__inner {
+  max-width: none;
+}
+
+.md-typeset {
+  color: var(--neo-black);
+}
+
+[data-md-color-scheme="slate"] .md-typeset {
+  color: var(--md-default-fg-color);
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 900 !important;
+  letter-spacing: -0.02em;
+  position: relative;
+}
+
+h1 {
+  font-size: 3rem !important;
+  background: linear-gradient(135deg, var(--neo-purple) 0%, var(--neo-pink) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  padding-bottom: 0.5rem;
+  border-bottom: 4px solid var(--neo-black);
+  margin-bottom: 2rem !important;
+}
+
+[data-md-color-scheme="slate"] h1 {
+  background: linear-gradient(135deg, var(--neo-yellow) 0%, var(--neo-orange) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+h2 {
+  display: inline-block;
+  background: var(--neo-yellow);
+  padding: 0.3rem 1rem;
+  border: 3px solid var(--neo-black);
+  box-shadow: var(--neo-shadow);
+  margin: 2rem 0 1.5rem 0 !important;
+}
+
+h3 {
+  color: var(--neo-purple);
+  border-left: 5px solid var(--neo-pink);
+  padding-left: 1rem;
+  margin: 1.5rem 0 1rem 0 !important;
+}
+
+[data-md-color-scheme="slate"] h3 {
+  color: var(--neo-yellow);
+  border-left-color: var(--neo-orange);
+}
+
+/* Paragraphs */
+p {
+  line-height: 1.8;
+  font-size: 1.05rem;
+}
+
+/* Links */
+a:not(.md-nav__link):not(.md-header__button):not(.md-tabs__link) {
+  color: var(--neo-purple);
+  text-decoration: none;
+  font-weight: 600;
+  background: linear-gradient(transparent 60%, var(--neo-yellow) 60%);
+  transition: all 0.2s ease;
+}
+
+a:not(.md-nav__link):not(.md-header__button):not(.md-tabs__link):hover {
+  background: var(--neo-yellow);
+}
+
+[data-md-color-scheme="slate"] a:not(.md-nav__link):not(.md-header__button):not(.md-tabs__link) {
+  color: var(--neo-pink);
+  background: linear-gradient(transparent 60%, rgba(255, 107, 157, 0.3) 60%);
+}
+
+/* -----------------------------------------------------------------------------
+   CODE BLOCKS
+   ----------------------------------------------------------------------------- */
+
+/* Inline code */
+code:not(pre code) {
+  background: var(--neo-yellow) !important;
+  color: var(--neo-black) !important;
+  border: 2px solid var(--neo-black);
+  border-radius: 0;
+  padding: 0.15em 0.4em !important;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+[data-md-color-scheme="slate"] code:not(pre code) {
+  background: var(--neo-orange) !important;
+  color: #0f172a !important;
+}
+
+/* Code blocks */
+.highlight {
+  border: var(--neo-border-width) solid var(--neo-black) !important;
+  border-radius: var(--neo-radius) !important;
+  box-shadow: var(--neo-shadow);
+  overflow: hidden;
+  margin: 1.5rem 0;
+}
+
+.highlight pre {
+  margin: 0;
+  border-radius: 0 !important;
+}
+
+.highlight code {
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Code block header/language label */
+.highlight .filename {
+  background: var(--neo-purple);
+  color: var(--neo-white);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.5rem 1rem;
+  border-bottom: var(--neo-border-width) solid var(--neo-black);
+}
+
+/* Line numbers */
+.highlight .linenos {
+  background: var(--neo-yellow);
+  color: var(--neo-black);
+  font-weight: 700;
+  border-right: var(--neo-border-width) solid var(--neo-black);
+  padding-right: 1rem;
+}
+
+/* Copy button */
+.md-clipboard {
+  background: var(--neo-pink) !important;
+  color: var(--neo-black) !important;
+  border: 2px solid var(--neo-black);
+  border-radius: 0;
+  box-shadow: 2px 2px 0 var(--neo-black);
+  transition: all 0.15s ease;
+}
+
+.md-clipboard:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--neo-black);
+}
+
+/* -----------------------------------------------------------------------------
+   ADMONITIONS (Callout Boxes)
+   ----------------------------------------------------------------------------- */
+
+.admonition {
+  border: var(--neo-border-width) solid var(--neo-black) !important;
+  border-radius: var(--neo-radius) !important;
+  box-shadow: var(--neo-shadow);
+  margin: 1.5rem 0;
+  overflow: hidden;
+}
+
+[data-md-color-scheme="slate"] .admonition:not(.danger):not(.error) {
+  color: #0f172a !important;
+}
+
+.admonition-title {
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: var(--neo-border-width) solid var(--neo-black) !important;
+  padding: 0.75rem 1rem !important;
+}
+
+[data-md-color-scheme="slate"] .admonition-title {
+  color: #0f172a !important;
+}
+
+/* Note - Blue */
+.admonition.note {
+  background: var(--neo-blue) !important;
+}
+.admonition.note .admonition-title {
+  background: var(--neo-blue) !important;
+  filter: brightness(0.85);
+}
+
+/* Tip - Green */
+.admonition.tip {
+  background: var(--neo-green) !important;
+}
+.admonition.tip .admonition-title {
+  background: var(--neo-green) !important;
+  filter: brightness(0.85);
+}
+
+/* Warning - Orange */
+.admonition.warning {
+  background: var(--neo-orange) !important;
+}
+.admonition.warning .admonition-title {
+  background: var(--neo-orange) !important;
+  filter: brightness(0.85);
+}
+
+/* Danger - Red */
+.admonition.danger, .admonition.error {
+  background: var(--neo-red) !important;
+  color: var(--neo-white) !important;
+}
+.admonition.danger .admonition-title,
+.admonition.error .admonition-title {
+  background: var(--neo-red) !important;
+  filter: brightness(0.85);
+  color: var(--neo-white) !important;
+}
+.admonition.danger p,
+.admonition.error p {
+  color: var(--neo-white) !important;
+}
+.admonition.danger code,
+.admonition.error code {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: var(--neo-white) !important;
+  border-color: var(--neo-white) !important;
+}
+
+/* Info - Purple */
+.admonition.info {
+  background: rgba(155, 93, 229, 0.2) !important;
+}
+.admonition.info .admonition-title {
+  background: var(--neo-purple) !important;
+  color: var(--neo-white);
+}
+
+/* Example - Pink */
+.admonition.example {
+  background: rgba(255, 107, 157, 0.2) !important;
+}
+.admonition.example .admonition-title {
+  background: var(--neo-pink) !important;
+}
+
+/* Abstract/Summary - Yellow */
+.admonition.abstract, .admonition.summary {
+  background: var(--neo-yellow) !important;
+}
+.admonition.abstract .admonition-title,
+.admonition.summary .admonition-title {
+  background: var(--neo-yellow) !important;
+  filter: brightness(0.9);
+}
+
+/* -----------------------------------------------------------------------------
+   TABLES
+   ----------------------------------------------------------------------------- */
+
+table {
+  border-collapse: separate !important;
+  border-spacing: 0;
+  border: var(--neo-border-width) solid var(--neo-black) !important;
+  box-shadow: var(--neo-shadow);
+  margin: 1.5rem 0;
+  overflow: hidden;
+}
+
+table th {
+  background: var(--neo-purple) !important;
+  color: var(--neo-white) !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1rem !important;
+  border-bottom: var(--neo-border-width) solid var(--neo-black) !important;
+  border-right: 2px solid var(--neo-black) !important;
+}
+
+table th:last-child {
+  border-right: none !important;
+}
+
+table td {
+  padding: 0.8rem 1rem !important;
+  border-bottom: 2px solid var(--neo-black) !important;
+  border-right: 2px solid var(--neo-black) !important;
+  background: var(--neo-white);
+}
+
+table td:last-child {
+  border-right: none !important;
+}
+
+table tr:last-child td {
+  border-bottom: none !important;
+}
+
+table tr:nth-child(even) td {
+  background: var(--neo-cream);
+}
+
+table tr:hover td {
+  background: var(--neo-yellow) !important;
+}
+
+/* -----------------------------------------------------------------------------
+   BUTTONS & INTERACTIVE ELEMENTS
+   ----------------------------------------------------------------------------- */
+
+button, .md-button, input[type="submit"] {
+  background: var(--neo-yellow) !important;
+  color: var(--neo-black) !important;
+  border: var(--neo-border-width) solid var(--neo-black) !important;
+  border-radius: var(--neo-radius) !important;
+  box-shadow: var(--neo-shadow);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1.5rem !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+[data-md-color-scheme="slate"] button,
+[data-md-color-scheme="slate"] .md-button,
+[data-md-color-scheme="slate"] input[type="submit"] {
+  color: #0f172a !important;
+}
+
+button:hover, .md-button:hover, input[type="submit"]:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: var(--neo-shadow-hover);
+  background: var(--neo-pink) !important;
+}
+
+button:active, .md-button:active, input[type="submit"]:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--neo-black);
+}
+
+/* Primary button variant */
+.md-button--primary {
+  background: var(--neo-purple) !important;
+  color: var(--neo-white) !important;
+}
+
+.md-button--primary:hover {
+  background: var(--neo-pink) !important;
+  color: var(--neo-black) !important;
+}
+
+/* -----------------------------------------------------------------------------
+   SEARCH
+   ----------------------------------------------------------------------------- */
+
+.md-search__form {
+  border: var(--neo-border-width) solid var(--neo-black) !important;
+  border-radius: var(--neo-radius) !important;
+  box-shadow: 3px 3px 0 var(--neo-black) !important;
+  overflow: hidden;
+  background: var(--neo-white) !important;
+  height: 2.5rem;
+}
+
+.md-search__icon {
+  color: var(--neo-black) !important;
+}
+
+.md-search__icon[for="__search"] {
+  left: 0.75rem !important;
+}
+
+.md-search__input {
+  background: var(--neo-white) !important;
+  font-weight: 600;
+  color: var(--neo-black) !important;
+  padding: 0.75rem 1rem 0.75rem 2.5rem !important;
+  height: 2.5rem;
+  border: none !important;
+}
+
+.md-search__input::placeholder {
+  color: var(--neo-black);
+  opacity: 0.6;
+  font-weight: 600;
+}
+
+.md-search__output {
+  background: var(--neo-white) !important;
+  border: var(--neo-border-width) solid var(--neo-black);
+  box-shadow: var(--neo-shadow);
+}
+
+.md-search__scrollwrap {
+  background: var(--neo-cream) !important;
+}
+
+.md-search-result__item {
+  border: 2px solid var(--neo-black);
+  margin: 0.5rem;
+  border-radius: var(--neo-radius);
+  transition: all 0.15s ease;
+}
+
+.md-search-result__item:hover {
+  box-shadow: 3px 3px 0 var(--neo-black);
+  transform: translate(-2px, -2px);
+}
+
+.md-search-result__link {
+  background: var(--neo-cream) !important;
+}
+
+.md-search-result__link:hover {
+  background: var(--neo-yellow) !important;
+}
+
+/* -----------------------------------------------------------------------------
+   BLOCKQUOTES
+   ----------------------------------------------------------------------------- */
+
+blockquote {
+  background: var(--neo-cream);
+  border: var(--neo-border-width) solid var(--neo-black);
+  border-left: 8px solid var(--neo-purple) !important;
+  box-shadow: var(--neo-shadow);
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  position: relative;
+}
+
+blockquote::before {
+  content: '"';
+  font-size: 4rem;
+  font-weight: 900;
+  color: var(--neo-purple);
+  opacity: 0.3;
+  position: absolute;
+  top: -0.5rem;
+  left: 0.5rem;
+  line-height: 1;
+}
+
+/* -----------------------------------------------------------------------------
+   LISTS
+   ----------------------------------------------------------------------------- */
+
+ul:not(.md-nav__list):not(.md-tabs__list) {
+  list-style: none;
+  padding-left: 0;
+}
+
+ul:not(.md-nav__list):not(.md-tabs__list) > li {
+  position: relative;
+  padding-left: 2rem;
+  margin: 0.75rem 0;
+}
+
+ul:not(.md-nav__list):not(.md-tabs__list) > li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--neo-pink);
+  font-weight: 900;
+  font-size: 1.2em;
+}
+
+ol:not(.md-nav__list) {
+  counter-reset: neo-counter;
+  list-style: none;
+  padding-left: 0;
+}
+
+ol:not(.md-nav__list) > li {
+  counter-increment: neo-counter;
+  position: relative;
+  padding-left: 3rem;
+  margin: 0.75rem 0;
+}
+
+ol:not(.md-nav__list) > li::before {
+  content: counter(neo-counter);
+  position: absolute;
+  left: 0;
+  background: var(--neo-purple);
+  color: var(--neo-white);
+  width: 1.8rem;
+  height: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  border: 2px solid var(--neo-black);
+  box-shadow: 2px 2px 0 var(--neo-black);
+}
+
+/* -----------------------------------------------------------------------------
+   BADGES & TAGS
+   ----------------------------------------------------------------------------- */
+
+.badge, .tag {
+  display: inline-block;
+  padding: 0.35em 0.8em;
+  font-size: 0.8em;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 2px solid var(--neo-black);
+  box-shadow: 2px 2px 0 var(--neo-black);
+  margin: 0 0.3em;
+}
+
+.badge-success, .tag-success {
+  background: var(--neo-green);
+  color: var(--neo-black);
+}
+
+.badge-warning, .tag-warning {
+  background: var(--neo-orange);
+  color: var(--neo-black);
+}
+
+.badge-danger, .tag-danger {
+  background: var(--neo-red);
+  color: var(--neo-white);
+}
+
+.badge-info, .tag-info {
+  background: var(--neo-blue);
+  color: var(--neo-black);
+}
+
+/* -----------------------------------------------------------------------------
+   FOOTER
+   ----------------------------------------------------------------------------- */
+
+.md-footer {
+  background: var(--neo-black) !important;
+  border-top: var(--neo-border-width) solid var(--neo-black);
+}
+
+.md-footer-meta {
+  background: var(--neo-purple) !important;
+  border-top: var(--neo-border-width) solid var(--neo-black);
+}
+
+.md-footer__link {
+  background: var(--neo-yellow) !important;
+  color: var(--neo-black) !important;
+  border: var(--neo-border-width) solid var(--neo-black) !important;
+  border-radius: var(--neo-radius) !important;
+  margin: 1rem;
+  padding: 1rem 2rem !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: all 0.15s ease;
+  box-shadow: var(--neo-shadow);
+}
+
+.md-footer__link:hover {
+  background: var(--neo-pink) !important;
+  transform: translate(-3px, -3px);
+  box-shadow: var(--neo-shadow-hover);
+}
+
+.md-footer__direction {
+  color: var(--neo-black) !important;
+  opacity: 0.7;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.md-footer__title {
+  color: var(--neo-black) !important;
+}
+
+/* -----------------------------------------------------------------------------
+   ANNOUNCEMENT BAR
+   ----------------------------------------------------------------------------- */
+
+.md-banner {
+  background: var(--neo-orange) !important;
+  border-bottom: var(--neo-border-width) solid var(--neo-black) !important;
+  box-shadow: 0 var(--neo-shadow-offset) 0 var(--neo-black);
+}
+
+.md-banner__inner {
+  color: var(--neo-black) !important;
+  font-weight: 700;
+}
+
+/* -----------------------------------------------------------------------------
+   TABLE OF CONTENTS
+   ----------------------------------------------------------------------------- */
+
+.md-nav--secondary .md-nav__link--active {
+  background: var(--neo-pink);
+  color: var(--neo-black);
+  font-weight: 700;
+  padding: 0.5rem;
+  border: 2px solid var(--neo-black);
+}
+
+/* -----------------------------------------------------------------------------
+   HORIZONTAL RULES
+   ----------------------------------------------------------------------------- */
+
+hr {
+  border: none;
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--neo-purple),
+    var(--neo-purple) 10px,
+    var(--neo-pink) 10px,
+    var(--neo-pink) 20px,
+    var(--neo-yellow) 20px,
+    var(--neo-yellow) 30px,
+    var(--neo-green) 30px,
+    var(--neo-green) 40px
+  );
+  margin: 3rem 0;
+}
+
+/* -----------------------------------------------------------------------------
+   SPECIAL EFFECTS & ANIMATIONS
+   ----------------------------------------------------------------------------- */
+
+/* Subtle hover lift effect for content cards */
+.md-typeset .grid > * {
+  border: var(--neo-border-width) solid var(--neo-black);
+  box-shadow: var(--neo-shadow);
+  transition: all 0.15s ease;
+}
+
+.md-typeset .grid > *:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: var(--neo-shadow-hover);
+}
+
+/* Keyboard shortcuts */
+kbd {
+  background: var(--neo-cream) !important;
+  color: var(--neo-black) !important;
+  border: 2px solid var(--neo-black) !important;
+  border-radius: var(--neo-radius);
+  box-shadow: 2px 2px 0 var(--neo-black);
+  padding: 0.2em 0.5em;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 0.85em;
+}
+
+[data-md-color-scheme="slate"] kbd {
+  background: var(--neo-black) !important;
+  color: var(--neo-yellow) !important;
+  border-color: var(--neo-yellow) !important;
+  box-shadow: 2px 2px 0 var(--neo-yellow);
+}
+
+/* Fun selection color */
+::selection {
+  background: var(--neo-yellow);
+  color: var(--neo-black);
+}
+
+/* Focus states for accessibility */
+*:focus-visible {
+  outline: 3px solid var(--neo-pink);
+  outline-offset: 3px;
+}
+
+/* Icon colors */
+.md-icon svg {
+  fill: currentColor;
+}
+
+/* Version selector */
+.md-version__current {
+  background: var(--neo-green) !important;
+  color: var(--neo-black) !important;
+  border: 2px solid var(--neo-black);
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+}
+
+.md-version__list {
+  background: var(--neo-white) !important;
+  border: var(--neo-border-width) solid var(--neo-black);
+  box-shadow: var(--neo-shadow);
+}
+
+.md-version__item {
+  color: var(--neo-black) !important;
+}
+
+.md-version__link {
+  font-weight: 600;
+}
+
+.md-version__link:hover {
+  background: var(--neo-yellow) !important;
+}
+
+/* -----------------------------------------------------------------------------
+   SCROLLBAR STYLING
+   ----------------------------------------------------------------------------- */
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--neo-cream);
+  border-left: 2px solid var(--neo-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neo-purple);
+  border: 2px solid var(--neo-black);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neo-pink);
+}
+
+/* -----------------------------------------------------------------------------
+   CONTENT TABS
+   ----------------------------------------------------------------------------- */
+
+.tabbed-set {
+  border: var(--neo-border-width) solid var(--neo-black);
+  box-shadow: var(--neo-shadow);
+  margin: 1.5rem 0;
+}
+
+.tabbed-labels {
+  background: var(--neo-cream) !important;
+}
+
+.tabbed-labels > label {
+  background: var(--neo-cream) !important;
+  color: var(--neo-black) !important;
+  border-right: 2px solid var(--neo-black);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  transition: all 0.15s ease;
+}
+
+.tabbed-labels > label:hover {
+  background: var(--neo-yellow) !important;
+}
+
+input:checked + .tabbed-labels > label {
+  background: var(--neo-purple) !important;
+  color: var(--neo-white) !important;
+}
+
+.tabbed-content {
+  background: var(--neo-white);
+  padding: 1.5rem;
+  border-top: var(--neo-border-width) solid var(--neo-black);
+}
+
+/* -----------------------------------------------------------------------------
+   RESPONSIVE ADJUSTMENTS
+   ----------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2rem !important;
+  }
+  
+  h2 {
+    font-size: 1.3rem;
+    padding: 0.2rem 0.6rem;
+  }
+  
+  .highlight {
+    box-shadow: 3px 3px 0 var(--neo-black);
+  }
+  
+  .admonition {
+    box-shadow: 3px 3px 0 var(--neo-black);
+  }
+  
+  table {
+    box-shadow: 3px 3px 0 var(--neo-black);
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   CUSTOM COMPONENTS
+   ----------------------------------------------------------------------------- */
+
+/* Hero section styling */
+.hero {
+  background: var(--neo-yellow);
+  border: var(--neo-border-width) solid var(--neo-black);
+  box-shadow: 8px 8px 0 var(--neo-black);
+  padding: 3rem;
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.hero h1 {
+  border: none;
+  -webkit-text-fill-color: var(--neo-black);
+  background: none;
+}
+
+/* Feature cards */
+.feature-card {
+  background: var(--neo-white);
+  border: var(--neo-border-width) solid var(--neo-black);
+  box-shadow: var(--neo-shadow);
+  padding: 1.5rem;
+  margin: 1rem 0;
+  transition: all 0.15s ease;
+}
+
+.feature-card:hover {
+  transform: translate(-4px, -4px);
+  box-shadow: 9px 9px 0 var(--neo-black);
+  background: var(--neo-cream);
+}
+
+.feature-card h3 {
+  color: var(--neo-purple);
+  margin-top: 0 !important;
+  border: none;
+  padding: 0;
+}
+
+/* Stats/metrics display */
+.stat-box {
+  display: inline-block;
+  background: var(--neo-green);
+  border: var(--neo-border-width) solid var(--neo-black);
+  box-shadow: var(--neo-shadow);
+  padding: 1rem 2rem;
+  margin: 0.5rem;
+  text-align: center;
+}
+
+.stat-box .number {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--neo-black);
+  display: block;
+}
+
+.stat-box .label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Callout boxes */
+.callout {
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  border: var(--neo-border-width) solid var(--neo-black);
+  box-shadow: var(--neo-shadow);
+}
+
+.callout-info {
+  background: var(--neo-blue);
+}
+
+.callout-tip {
+  background: var(--neo-green);
+}
+
+.callout-warning {
+  background: var(--neo-orange);
+}
+
+.callout-danger {
+  background: var(--neo-red);
+  color: var(--neo-white);
+}

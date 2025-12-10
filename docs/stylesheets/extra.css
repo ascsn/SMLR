@@ -1,0 +1,145 @@
+/* Custom CSS for SMLR documentation */
+
+/* Improve code block styling */
+.highlight {
+    border-radius: 4px;
+}
+
+/* Better table styling */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+}
+
+table th {
+    background-color: var(--md-primary-fg-color);
+    color: var(--md-primary-bg-color);
+    font-weight: 600;
+    padding: 0.75em 1em;
+}
+
+table td {
+    padding: 0.6em 1em;
+    border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+/* Admonition styling improvements */
+.admonition {
+    margin: 1.5em 0;
+}
+
+/* Better spacing for lists */
+ul, ol {
+    margin: 0.5em 0 1em 0;
+}
+
+li {
+    margin: 0.3em 0;
+}
+
+/* Code inline */
+code {
+    background-color: var(--md-code-bg-color);
+    border-radius: 3px;
+    padding: 0.1em 0.3em;
+    font-size: 0.9em;
+}
+
+/* Improve header anchors */
+.headerlink {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+h1:hover .headerlink,
+h2:hover .headerlink,
+h3:hover .headerlink {
+    opacity: 1;
+}
+
+/* Better footnote styling */
+.footnote {
+    font-size: 0.85em;
+    color: var(--md-default-fg-color--light);
+}
+
+/* Improve search results */
+.md-search-result__article {
+    padding: 1em;
+}
+
+/* Custom badge styles */
+.badge {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    font-size: 0.85em;
+    font-weight: 600;
+    line-height: 1;
+    border-radius: 3px;
+    margin: 0 0.2em;
+}
+
+.badge-success {
+    background-color: #28a745;
+    color: white;
+}
+
+.badge-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Improve blockquote styling */
+blockquote {
+    border-left: 4px solid var(--md-primary-fg-color);
+    padding-left: 1em;
+    margin: 1em 0;
+    font-style: italic;
+    color: var(--md-default-fg-color--light);
+}
+
+/* Better pre/code blocks */
+pre {
+    border-radius: 4px;
+    padding: 1em;
+    overflow-x: auto;
+}
+
+/* Improve navigation tabs */
+.md-tabs {
+    background-color: var(--md-primary-fg-color);
+}
+
+/* Custom container for callouts */
+.callout {
+    padding: 1em;
+    margin: 1em 0;
+    border-left: 4px solid;
+    border-radius: 4px;
+}
+
+.callout-info {
+    border-color: #17a2b8;
+    background-color: rgba(23, 162, 184, 0.1);
+}
+
+.callout-tip {
+    border-color: #28a745;
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.callout-warning {
+    border-color: #ffc107;
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+.callout-danger {
+    border-color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+}

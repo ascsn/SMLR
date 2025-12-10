@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 95 35" fill="none">
+  <!-- SMLR Neobrutalist Logo -->
+  
+  <defs>
+    <style>
+      .neo-black { fill: #1a1a2e; }
+      .neo-yellow { fill: #ffd803; }
+      .neo-purple { fill: #9b5de5; }
+      .neo-pink { fill: #ff6b9d; }
+      .neo-green { fill: #06d6a0; }
+      .neo-blue { fill: #00b4d8; }
+      .border { stroke: #1a1a2e; stroke-width: 2; fill: none; }
+      .text-neo { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 900; }
+    </style>
+  </defs>
+  
+  <!-- Main container with hard shadow -->
+  <g transform="translate(2, 2)">
+    <!-- Shadow -->
+    <rect x="3" y="3" width="87" height="27" class="neo-black" />
+    
+    <!-- Main background -->
+    <rect x="0" y="0" width="87" height="27" class="neo-purple" />
+    <rect x="0" y="0" width="87" height="27" class="border" />
+    
+    <!-- Left: Strength function visualization -->
+    <g transform="translate(6, 6)">
+      <!-- Continuous strength function curve -->
+      <path d="M2,6 Q4,3 6,4 Q8,1 10,3 Q12,5 14,4 Q16,6 18,5" 
+            stroke="#fffef7" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+      
+      <!-- Peak bars below the curve (emulating the function) -->
+      <rect x="3.5" y="9.5" width="2" height="2" class="neo-black" />
+      <rect x="2" y="8" width="2" height="2" class="neo-yellow" />
+      
+      <rect x="7.5" y="10.5" width="2" height="4" class="neo-black" />
+      <rect x="6" y="9" width="2" height="4" class="neo-pink" />
+      
+      <rect x="11.5" y="10" width="2" height="3" class="neo-black" />
+      <rect x="10" y="8.5" width="2" height="3" class="neo-green" />
+      
+      <!-- Baseline -->
+      <line x1="2" y1="13" x2="18" y2="13" stroke="#fffef7" stroke-width="1"/>
+    </g>
+    
+    <!-- Right: SMLR text -->
+    <g transform="translate(26, 6)">
+      <!-- Text shadow -->
+      <text x="1.5" y="16.5" class="neo-black text-neo" font-size="14" letter-spacing="0.5px">SMLR</text>
+      <!-- Main text -->
+      <text x="0" y="15" class="neo-yellow text-neo" font-size="14" letter-spacing="0.5px">SMLR</text>
+    </g>
+  </g>
+  
+  <!-- Corner accent blocks (bigger) -->
+  <g transform="translate(75, 2)">
+    <rect x="1.5" y="1.5" width="2.5" height="2.5" class="neo-black" />
+    <rect x="0" y="0" width="2.5" height="2.5" class="neo-pink" />
+    
+    <rect x="5.5" y="2.5" width="2.5" height="2.5" class="neo-black" />
+    <rect x="4" y="1" width="2.5" height="2.5" class="neo-green" />
+    
+    <rect x="9.5" y="1.5" width="2.5" height="2.5" class="neo-black" />
+    <rect x="8" y="0" width="2.5" height="2.5" class="neo-blue" />
+  </g>
+</svg>
