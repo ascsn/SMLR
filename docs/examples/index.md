@@ -1,61 +1,70 @@
 # Examples Gallery
 
-This section showcases SMLR's capabilities through worked examples.
+This section showcases SMLR's capabilities through **realistic applications** and **pedagogical examples**.
 
-## Executable Notebooks
+## 📊 Realistic Applications
 
-These Jupyter notebooks are executed at documentation build time, showing real outputs
-from the current codebase. Download them to run interactively in your own environment.
+These examples use physics-based models or real experimental data, demonstrating 
+production-ready SMLR workflows.
 
-### [Acoustic Resonance](../notebooks/acoustic_resonance.ipynb)
-Room acoustics and instrument modeling using Lorentzian decomposition.
-Shows how SMLR handles harmonic series and Q-factor variation.
+### [Materials Spectroscopy (XANES)](../notebooks/materials_spectroscopy.ipynb) 🌟
+X-ray absorption near-edge structure emulation for transition metal oxides.
+**Realistic**: Based on actual XANES physics with orbital effects and crystal field splitting.
 
-### [Materials Spectroscopy](../notebooks/materials_spectroscopy.ipynb)
-X-ray absorption and optical spectroscopy emulation.
-Covers band gaps, excitonic peaks, and temperature-dependent broadening.
+### [Structural Vibration Analysis](../notebooks/structural_vibration.ipynb) 🌟
+Frequency response function (FRF) emulation for mechanical design.
+**Realistic**: Uses Euler-Bernoulli beam theory with physical parameter dependencies.
+
+### [Backend Comparison](../notebooks/backend_comparison.ipynb)
+Quantitative comparison of PMM vs regression emulators with metrics.
+**Realistic**: Tests on multiple performance criteria with statistical analysis.
+
+## 🎓 Pedagogical Examples
+
+Simplified tutorials focusing on core concepts with synthetic data.
+
+### [Acoustic Resonance (Toy)](../notebooks/acoustic_resonance.ipynb)
+Introduction to basic workflow with simple Lorentzian peaks.
+**Purpose**: Learning SMLR API and understanding pole-based emulation.
 
 ### [High-Dimensional Emulation](../notebooks/high_dim_emulation.ipynb)
-Demonstrates handling 4+ input parameters with polynomial regression.
-Shows how SMLR scales to complex multi-parameter problems.
+Demonstrates scaling to 4+ parameters with polynomial regression.
+**Purpose**: Understanding parameter space complexity and regression methods.
 
-## Reference Examples
+## 📚 Reference Examples
 
-These markdown-based examples show pre-computed outputs with detailed explanations.
+These markdown-based examples show pre-computed outputs with detailed physics context.
 
 ### [Nuclear Response](nuclear_response.md)
-High-dimensional emulation of nuclear QRPA calculations with 5-15 parameters.
-Demonstrates sum rule preservation and scaling to complex nuclear models.
-
-### [Backend Comparison](backend_comparison.md)
-Side-by-side comparison of PMM vs regression-based emulation.
-Helps you choose the right approach for your problem.
+High-dimensional emulation of nuclear QRPA calculations (5-15 parameters).
+**Application**: Giant resonances in atomic nuclei with sum rule preservation.
 
 ### [β-Decay Comparison](beta_decay_comparison.md)
-Comprehensive comparison using realistic nuclear β-decay data.
-Demonstrates interpolation, extrapolation, and sum rule analysis.
+Comprehensive backend comparison using nuclear β-decay half-life calculations.
+**Application**: Rare isotope physics with extrapolation validation.
+
+---
 
 ## Quick Reference Table
 
-| Example | Type | Parameters | Key Features |
-|---------|------|------------|--------------|
-| [Acoustic Resonance](../notebooks/acoustic_resonance.ipynb) | 📓 Notebook | 2 | Harmonic series, Q-factors |
-| [Materials Spectroscopy](../notebooks/materials_spectroscopy.ipynb) | 📓 Notebook | 2 | Band gaps, excitonic peaks |
-| [High-Dimensional](../notebooks/high_dim_emulation.ipynb) | 📓 Notebook | 4 | Polynomial regression |
-| [Nuclear Response](nuclear_response.md) | 📄 Reference | 5-15 | Sum rules, QRPA |
-| [Backend Comparison](backend_comparison.md) | 📄 Reference | 2 | PMM vs Regression |
-| [β-Decay](beta_decay_comparison.md) | 📄 Reference | 2 | Extrapolation analysis |
+| Example | Type | Domain | Parameters | Realistic? |
+|---------|------|--------|------------|------------|
+| [Materials Spectroscopy](../notebooks/materials_spectroscopy.ipynb) | 📓 Notebook | Physics | 2 | ✅ XANES |
+| [Structural Vibration](../notebooks/structural_vibration.ipynb) | 📓 Notebook | Engineering | 3 | ✅ FEA replacement |
+| [Backend Comparison](../notebooks/backend_comparison.ipynb) | 📓 Notebook | Meta-analysis | 2 | ✅ Benchmarking |
+| [Acoustic Resonance](../notebooks/acoustic_resonance.ipynb) | 📓 Notebook | Tutorial | 2 | 🎓 Pedagogical |
+| [High-Dimensional](../notebooks/high_dim_emulation.ipynb) | 📓 Notebook | Tutorial | 4 | 🎓 Pedagogical |
+| [Nuclear Response](nuclear_response.md) | 📄 Reference | Nuclear | 5-15 | ✅ QRPA |
+| [β-Decay](beta_decay_comparison.md) | 📄 Reference | Nuclear | 2 | ✅ Experimental data |
 
 ---
 
 **Running locally:**
 
 ```bash
-# Run notebooks interactively
+# Execute notebooks interactively
 jupyter notebook docs/notebooks/
 
-# Python scripts
-cd examples/
-python high_dim_emulation.py --help
-python acoustic_resonance.py --n-samples 100
+# Or render with MkDocs
+mkdocs serve
 ```

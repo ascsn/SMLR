@@ -548,13 +548,21 @@ class ParametricMatrixModel(BaseEmulator):
         
         # Optimize
         self._cost_history = []
+        self._iteration_count = [0]  # Use list to allow modification in closure
+        
+        if self.config.verbose:
+            print(f"\nStarting optimization...")
+            print(f"  Initial cost: {self._cost_function(x0, training_data):.6f}")
         
         def callback(xk):
+            self._iteration_count[0] += 1
+            cost = self._cost_function(xk, training_data)
+            self._cost_history.append(cost)
+            
             if self.config.verbose:
-                cost = self._cost_function(xk, training_data)
-                self._cost_history.append(cost)
-                if len(self._cost_history) % 100 == 0:
-                    print(f"  Iter {len(self._cost_history)}: cost = {cost:.6f}")
+                # Print every 50 iterations or on first few
+                if self._iteration_count[0] <= 5 or self._iteration_count[0] % 50 == 0:
+                    print(f"  Iteration {self._iteration_count[0]:4d}: cost = {cost:.6e}")
         
         result = minimize(
             lambda x: self._cost_function(x, training_data),
@@ -576,8 +584,20 @@ class ParametricMatrixModel(BaseEmulator):
         self._is_fitted = True
         
         if self.config.verbose:
-            print(f"Optimization finished: {result.message}")
-            print(f"Final cost: {result.fun:.6f}")
+            print(f"\n{'='*60}")
+            print(f"Optimization Results:")
+            print(f"  Status: {result.message}")
+            print(f"  Total iterations: {result.nit}")
+            print(f"  Function evaluations: {result.nfev}")
+            print(f"  Initial cost: {self._cost_history[0]:.6e}")
+            print(f"  Final cost: {result.fun:.6e}")
+            print(f"  Cost reduction: {(1 - result.fun/self._cost_history[0])*100:.2f}%")
+            print(f"  Optimized parameters:")
+            print(f"    - Width (η): {self.eta:.4f}")
+            print(f"    - D eigenvalues range: [{self.D.min():.2f}, {self.D.max():.2f}]")
+            print(f"    - v0 norm: {np.linalg.norm(self.v0):.4f}")
+            print(f"    - S matrices: {len(self.S)} × ({self.n_poles}×{self.n_poles})")
+            print(f"{'='*60}\n")
         
         return self
     

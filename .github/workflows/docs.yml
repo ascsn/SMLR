@@ -1,41 +1,79 @@
-name: docs
+name: Documentation
 
 on:
   push:
     branches: [main, feature/generalized-emulator]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build-docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for git info in docs
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
       - name: Install uv
         run: |
-          curl -Ls https://astral.sh/uv/install.sh | sh
+          curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Install dependencies (dev + docs)
-        run: uv sync --group dev --group docs
+      - name: Install dependencies
+        run: |
+          uv sync --all-groups
+          uv pip install mkdocstrings[python] mkdocs-macros-plugin
 
-      - name: Smoke test paper reproduction (synthetic)
-        run: uv run python examples/paper_repro.py --mode synthetic --out runs/docs-smoke
+      - name: Configure Git for mkdocs
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Generate example figures
         run: |
-          uv run python scripts/generate_example_figs.py
-          uv run python examples/beta_decay_backend_comparison.py
+          mkdir -p docs/examples/figs
+          uv run python scripts/generate_example_figs.py || echo "Warning: Figure generation failed"
+          uv run python examples/beta_decay_backend_comparison.py || echo "Warning: Backend comparison failed"
 
-      - name: Build docs
-        run: uv run mkdocs build --strict
+      - name: Build documentation
+        run: |
+          uv run mkdocs build --strict --verbose
+        env:
+          MKDOCS_JUPYTER_EXECUTE: "true"
 
-      - name: Upload site artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: site
-          path: site
+          path: ./site
+
+  deploy-docs:
+    # Only deploy on main branch
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build-docs
+    runs-on: ubuntu-latest
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

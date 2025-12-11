@@ -11,10 +11,11 @@ nav:
     - Tutorials: tutorials.md
   - Examples:
     - Gallery: examples/index.md
-    - Acoustic Resonance: notebooks/acoustic_resonance.ipynb
     - XANES Spectroscopy: notebooks/materials_spectroscopy.ipynb
-    - High-Dimensional Emulation: notebooks/high_dim_emulation.ipynb
+    - Structural Vibration: notebooks/structural_vibration.ipynb
     - Backend Comparison: notebooks/backend_comparison.ipynb
+    - Acoustic Resonance (Toy): notebooks/acoustic_resonance.ipynb
+    - High-Dimensional (Toy): notebooks/high_dim_emulation.ipynb
   - Reference Examples:
     - Nuclear Response: examples/nuclear_response.md
     - "β-Decay Comparison": examples/beta_decay_comparison.md
