@@ -2,6 +2,8 @@
 import numpy as np
 import pytest
 
+from smlr import Surrogate
+from smlr.base import EmulatorResult
 from smlr.pmm import ParametricMatrixModel, PMMConfig, PMMResult
 from smlr.backends import get_emulator, list_backends
 from smlr.data import StrengthDataset, StrengthSample
@@ -81,10 +83,10 @@ class TestParametricMatrixModel:
         assert len(pmm.S) == 2
         assert pmm.v0 is not None
         
-        # Test prediction
+        # Test prediction - now returns EmulatorResult
         result = pmm.predict(np.array([0.3, 0.7]), energy)
-        assert isinstance(result, PMMResult)
-        assert len(result.eigenvalues) == 3
+        assert isinstance(result, EmulatorResult)
+        assert len(result.poles) == 3
         assert len(result.strengths) == 3
         assert len(result.spectrum) == len(energy)
     
@@ -134,7 +136,7 @@ class TestParametricMatrixModel:
         
         assert len(results) == 3
         for r in results:
-            assert isinstance(r, PMMResult)
+            assert isinstance(r, EmulatorResult)
 
 
 class TestBackends:
@@ -208,3 +210,31 @@ class TestPMMPhysics:
         
         result = pmm.predict(np.array([0.5, 0.5]), energy)
         assert np.all(result.spectrum >= 0), "Spectrum should be non-negative"
+
+
+class TestSurrogateWrapper:
+    """Test Surrogate wrapper with PMM backend."""
+    
+    def test_surrogate_with_pmm(self):
+        """Test Surrogate wrapper with PMM backend."""
+        dataset = build_test_dataset(n_samples=10)
+        energy = np.linspace(0, 30, 100)
+        
+        model = Surrogate("pmm", n_poles=3, max_iterations=50)
+        model.fit(dataset)
+        
+        result = model.predict(np.array([0.5, 0.5]), energy)
+        assert isinstance(result, EmulatorResult)
+        assert len(result.spectrum) == len(energy)
+        assert np.all(result.spectrum >= 0)
+    
+    def test_surrogate_score(self):
+        """Test that Surrogate.score works."""
+        dataset = build_test_dataset(n_samples=10)
+        
+        model = Surrogate("pmm", n_poles=3, max_iterations=50)
+        model.fit(dataset)
+        
+        score = model.score(dataset)
+        assert isinstance(score, float)
+        assert score >= 0  # normalized_l2 is non-negative

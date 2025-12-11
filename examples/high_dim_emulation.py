@@ -18,8 +18,8 @@ from typing import Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 
-from smlr.data import StrengthDataset, StrengthSample
-from smlr.emulator import StrengthEmulator
+# Use the unified Surrogate API
+from smlr import Surrogate, StrengthDataset, StrengthSample
 from smlr.lorentz import lorentzian_sum
 from smlr.metrics import normalized_l2
 from smlr.plotting import plot_comparison
@@ -115,7 +115,7 @@ def build_high_dim_dataset(
 
 
 def evaluate_emulator(
-    emulator,
+    model: Surrogate,
     test_ds: StrengthDataset,
     energy: np.ndarray,
 ) -> Tuple[float, np.ndarray, np.ndarray]:
@@ -134,12 +134,11 @@ def evaluate_emulator(
     predictions = []
     
     for sample in test_ds.samples:
-        # PMM returns result with .spectrum attribute
-        result = emulator.predict(sample.params, energy)
-        pred = result.spectrum if hasattr(result, 'spectrum') else result
-        err = normalized_l2(pred, sample.strength, energy)
+        # Unified API returns EmulatorResult with .spectrum attribute
+        result = model.predict(sample.params, energy)
+        err = normalized_l2(result.spectrum, sample.strength, energy)
         errors.append(err)
-        predictions.append(pred)
+        predictions.append(result.spectrum)
     
     return float(np.mean(errors)), np.array(errors), np.array(predictions)
 
@@ -163,7 +162,7 @@ def main(
     n_test : int
         Number of test samples.
     n_poles : int
-        Number of poles for PMM backend.
+        Number of poles for the emulator.
     backend : str
         Backend to use: "pmm" or "regression".
     out_dir : Path
@@ -182,15 +181,14 @@ def main(
         seed=42,
     )
     
-    # Fit emulator with PMM backend
-    from smlr.backends import get_emulator
-    emulator = get_emulator(backend, n_poles=n_poles)
-    print("Fitting emulator...")
-    emulator.fit(train_ds)
+    # Create and fit surrogate model
+    model = Surrogate(backend=backend, n_poles=n_poles)
+    print(f"Fitting {backend} emulator with {n_poles} poles...")
+    model.fit(train_ds)
     
     # Evaluate
     energy = train_ds.energy_grids()[0]
-    mean_err, errors, predictions = evaluate_emulator(emulator, test_ds, energy)
+    mean_err, errors, predictions = evaluate_emulator(model, test_ds, energy)
     print(f"\nTest set mean normalized L2 error: {mean_err:.4f}")
     print(f"Min error: {errors.min():.4f}, Max error: {errors.max():.4f}")
     
@@ -211,7 +209,7 @@ def main(
         ax.set_ylim(bottom=0)
         ax.grid(True, alpha=0.3)
     
-    fig.suptitle(f'{n_params}D Parameter Space Emulation (PMM, {n_poles} poles)')
+    fig.suptitle(f'{n_params}D Parameter Space Emulation ({backend}, {n_poles} poles)')
     fig.tight_layout()
     fig.savefig(out_dir / f"high_dim_{n_params}d_comparison.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
@@ -222,7 +220,7 @@ def main(
     ax.axvline(mean_err, color='r', linestyle='--', linewidth=2, label=f'Mean = {mean_err:.4f}')
     ax.set_xlabel('Normalized L2 Error')
     ax.set_ylabel('Count')
-    ax.set_title(f'Error Distribution ({n_params}D, PMM {n_poles} poles)')
+    ax.set_title(f'Error Distribution ({n_params}D, {backend} {n_poles} poles)')
     ax.legend()
     fig.savefig(out_dir / f"high_dim_{n_params}d_errors.png", dpi=150, bbox_inches="tight")
     plt.close(fig)

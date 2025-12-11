@@ -461,7 +461,7 @@ import matplotlib.pyplot as plt
 
 ## Still Need Help?
 
-- **Check documentation**: [Usage Guide](usage.md), [API Reference](api.md), [Tutorials](tutorials.md)
+- **Check documentation**: [Usage Guide](usage.md), [API Reference](api_reference.md), [Tutorials](tutorials.md)
 - **Search issues**: [GitHub Issues](https://github.com/ascsn/SMLR/issues)
 - **Ask a question**: [GitHub Discussions](https://github.com/ascsn/SMLR/discussions)
 - **Report a bug**: [New Issue](https://github.com/ascsn/SMLR/issues/new)

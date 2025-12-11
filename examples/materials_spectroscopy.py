@@ -20,8 +20,7 @@ from typing import List, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 
-from smlr.data import StrengthDataset, StrengthSample
-from smlr.emulator import StrengthEmulator
+from smlr import Surrogate, StrengthDataset, StrengthSample
 from smlr.lorentz import lorentzian_sum
 from smlr.metrics import normalized_l2
 from smlr.observables import SumRule, CustomObservable, ObservableSet
@@ -230,24 +229,25 @@ def main(
     
     for method in methods:
         print(f"\nFitting {method} emulator...")
-        emu = StrengthEmulator(
+        model = Surrogate(
+            "regression",
             n_components=n_components,
             regression_method=method,
             poly_degree=2 if method == "polynomial" else 2,
             width_mode="per_component",
             random_state=42,
         )
-        emu.fit(train_ds)
+        model.fit(train_ds)
         
         # Evaluate
         x_grid = train_ds.energy_grids()[0]
         errors = []
         for sample in test_ds.samples:
-            pred = emu.predict_spectrum(sample.params, x_grid)
+            pred = model.predict(sample.params, x_grid).spectrum
             errors.append(normalized_l2(pred, sample.strength, x_grid))
         
         results[method] = {
-            "emulator": emu,
+            "emulator": model,
             "errors": np.array(errors),
             "mean_error": np.mean(errors),
         }
@@ -257,20 +257,18 @@ def main(
     # PMM backend evaluation
     # -----------------------------------------------------------------
     try:
-        from smlr.backends import get_emulator
         print("\nFitting PMM backend for comparison...")
-        pmm_emulator = get_emulator("pmm", n_poles=21)
-        pmm_emulator.fit(train_ds)
+        pmm_model = Surrogate("pmm", n_poles=21)
+        pmm_model.fit(train_ds)
 
         pmm_errors = []
         x_grid = train_ds.energy_grids()[0]
         for sample in test_ds.samples:
-            res = pmm_emulator.predict(sample.params, x_grid)
-            spec = res.spectrum if hasattr(res, 'spectrum') else res
-            pmm_errors.append(normalized_l2(spec, sample.strength, x_grid))
+            res = pmm_model.predict(sample.params, x_grid)
+            pmm_errors.append(normalized_l2(res.spectrum, sample.strength, x_grid))
 
         results['pmm'] = {
-            "emulator": pmm_emulator,
+            "emulator": pmm_model,
             "errors": np.array(pmm_errors),
             "mean_error": np.mean(pmm_errors),
         }
@@ -286,8 +284,8 @@ def main(
     sample = test_ds.samples[0]
     
     for ax, method in zip(axes, methods):
-        emu = results[method]["emulator"]
-        pred = emu.predict_spectrum(sample.params, x_grid)
+        model = results[method]["emulator"]
+        pred = model.predict(sample.params, x_grid).spectrum
         # Regression/ML emulator prediction
         ax.plot(x_grid, sample.strength, 'b-', label='Reference', linewidth=2)
         ax.plot(x_grid, pred, 'r--', label=f'{method.capitalize()} Emulator', linewidth=1.5)
@@ -295,9 +293,8 @@ def main(
         # If PMM was evaluated, overlay its spectrum for direct backend comparison
         if 'pmm' in results:
             try:
-                pmm_emu = results['pmm']['emulator']
-                pmm_pred = pmm_emu.predict(sample.params, x_grid)
-                pmm_spec = pmm_pred.spectrum if hasattr(pmm_pred, 'spectrum') else pmm_pred
+                pmm_model = results['pmm']['emulator']
+                pmm_spec = pmm_model.predict(sample.params, x_grid).spectrum
                 ax.plot(x_grid, pmm_spec, color='#9b59b6', linestyle=':', label='PMM', linewidth=1.5)
             except Exception:
                 pass
@@ -314,14 +311,14 @@ def main(
     
     # Best method detailed results
     best_method = min(results, key=lambda m: results[m]["mean_error"])
-    best_emu = results[best_method]["emulator"]
+    best_model = results[best_method]["emulator"]
     
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
     for i, ax in enumerate(axes.flat):
         if i >= len(test_ds.samples):
             break
         sample = test_ds.samples[i]
-        pred = best_emu.predict_spectrum(sample.params, x_grid)
+        pred = best_model.predict(sample.params, x_grid).spectrum
         err = normalized_l2(pred, sample.strength, x_grid)
         ax.plot(x_grid, sample.strength, 'b-', label='Reference', linewidth=2)
         ax.plot(x_grid, pred, 'r--', label=f'{best_method.capitalize()} Emulator', linewidth=1.5)
@@ -329,9 +326,8 @@ def main(
         # Overlay PMM prediction if available for direct comparison
         if 'pmm' in results:
             try:
-                pmm_emu = results['pmm']['emulator']
-                pmm_pred = pmm_emu.predict(sample.params, x_grid)
-                pmm_spec = pmm_pred.spectrum if hasattr(pmm_pred, 'spectrum') else pmm_pred
+                pmm_model = results['pmm']['emulator']
+                pmm_spec = pmm_model.predict(sample.params, x_grid).spectrum
                 ax.plot(x_grid, pmm_spec, color='#9b59b6', linestyle=':', label='PMM', linewidth=1.5)
             except Exception:
                 pass

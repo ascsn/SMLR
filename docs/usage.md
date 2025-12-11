@@ -59,8 +59,7 @@ p1,p2,p3,p4,p5,spectrum,label
 ```python
 from pathlib import Path
 import numpy as np
-from smlr.data import StrengthDataset
-from smlr.emulator import StrengthEmulator
+from smlr import Surrogate, StrengthDataset
 
 # Load dataset (works for any parameter dimension: 2D, 5D, 10D, ...)
 meta = Path("metadata.csv")
@@ -71,22 +70,26 @@ ds = StrengthDataset.from_folder(
 		label_column="label",
 )
 
-# Fit emulator with chosen regression method
-emu = StrengthEmulator(
+# Fit emulator with chosen backend and regression method
+model = Surrogate(
+    "regression",                 # Backend: "regression" or "pmm"
     n_components=4,
     width_mode="global",
-    regression_method="ridge",  # or "linear", "polynomial", "gp"
+    regression_method="ridge",    # or "linear", "polynomial", "gp"
     random_state=0,
 )
-emu.fit(ds, verbose=True)
+model.fit(ds, verbose=True)
 
 # Predict on a new parameter point
 energy_grid = np.linspace(-3, 3, 300)
-mix, spectrum = emu.predict(np.array([0.35, 1.1]), energy_grid)
+result = model.predict(np.array([0.35, 1.1]), energy_grid)
+print(f"Spectrum shape: {result.spectrum.shape}")
+print(f"Poles: {result.poles}")
 
 # Batch prediction for multiple points
 params_batch = np.random.rand(100, 2)  # 100 points in 2D space
-mixtures, spectra = emu.predict_batch(params_batch, energy_grid)
+results = model.predict_batch(params_batch, energy_grid)
+spectra = np.array([r.spectrum for r in results])
 ```
 
 ## 4) Synthetic demo (smoke test)

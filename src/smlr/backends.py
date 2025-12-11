@@ -13,26 +13,40 @@ emulation approaches:
 
 Usage
 -----
->>> from smlr.backends import get_emulator
+>>> from smlr import Surrogate
 >>> 
->>> # Regression-based (default, fast)
+>>> # Recommended: unified Surrogate interface
+>>> model = Surrogate(backend="pmm", n_poles=10)
+>>> model.fit(dataset)
+>>> result = model.predict(params, energy)
+>>> 
+>>> # Or use the factory function
+>>> from smlr.backends import get_emulator
 >>> emu = get_emulator("regression", n_components=5)
 >>> emu.fit(dataset)
->>> 
->>> # Parametric Matrix Model (physics-based)
->>> emu = get_emulator("pmm", n_poles=10)
->>> emu.fit(dataset, reference_point=center)
 """
 from __future__ import annotations
 
 from typing import Any, Literal, Optional, Union
 
+from .base import BaseEmulator, EmulatorResult, Surrogate
 from .emulator import StrengthEmulator
 from .pmm import ParametricMatrixModel
 
 
 EmulatorType = Union[StrengthEmulator, ParametricMatrixModel]
 BackendName = Literal["regression", "lorentzian", "pmm", "matrix"]
+
+# Export the key classes
+__all__ = [
+    "get_emulator",
+    "list_backends",
+    "Surrogate",
+    "BaseEmulator",
+    "EmulatorResult",
+    "StrengthEmulator",
+    "ParametricMatrixModel",
+]
 
 
 def get_emulator(

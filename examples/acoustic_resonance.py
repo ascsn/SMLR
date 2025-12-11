@@ -18,8 +18,8 @@ from typing import List, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 
-from smlr.data import StrengthDataset, StrengthSample
-from smlr.emulator import StrengthEmulator
+# Use the unified Surrogate API
+from smlr import Surrogate, StrengthDataset, StrengthSample
 from smlr.lorentz import lorentzian_sum
 from smlr.metrics import normalized_l2
 from smlr.observables import SumRule, CustomObservable, ObservableSet
@@ -172,12 +172,12 @@ def main(
         CustomObservable(spectral_centroid, name="centroid"),
     ])
     
-    # Fit emulator
-    # Fit emulator with PMM backend
-    from smlr.backends import get_emulator
-    emulator = get_emulator("pmm", n_poles=21)
-    print(f"Training on {len(train_ds)} samples...")
-    emulator.fit(train_ds)
+    # Create and fit surrogate model
+    # Using regression backend with polynomial features for this simple 3-pole problem
+    # (PMM is overkill for such a simple spectrum, regression is faster and more accurate here)
+    model = Surrogate(backend="regression", n_poles=3, regression_method="ridge")
+    print(f"Training on {len(train_ds)} samples with regression backend...")
+    model.fit(train_ds)
     
     # Evaluate
     frequency = train_ds.energy_grids()[0]
@@ -185,14 +185,13 @@ def main(
     observable_errors = {"centroid": [], "total_power": []}
     
     for sample in test_ds.samples:
-        result = emulator.predict(sample.params, frequency)
-        pred = result.spectrum if hasattr(result, 'spectrum') else result
-        err = normalized_l2(pred, sample.strength, frequency)
+        result = model.predict(sample.params, frequency)
+        err = normalized_l2(result.spectrum, sample.strength, frequency)
         errors.append(err)
         
         # Compare observables
         true_obs = obs_set.to_dict(frequency, sample.strength)
-        pred_obs = obs_set.to_dict(frequency, pred)
+        pred_obs = obs_set.to_dict(frequency, result.spectrum)
         
         for key in observable_errors:
             rel_err = abs(pred_obs[key] - true_obs[key]) / (abs(true_obs[key]) + 1e-10)
@@ -212,11 +211,10 @@ def main(
         if i >= len(test_ds.samples):
             break
         sample = test_ds.samples[i]
-        result = emulator.predict(sample.params, frequency)
-        pred = result.spectrum if hasattr(result, 'spectrum') else result
+        result = model.predict(sample.params, frequency)
         
         ax.plot(frequency, sample.strength, 'b-', label='Reference', linewidth=2)
-        ax.plot(frequency, pred, 'r--', label='Emulator', linewidth=1.5)
+        ax.plot(frequency, result.spectrum, 'r--', label='Emulator', linewidth=1.5)
         ax.set_xlabel('Frequency (Hz)')
         ax.set_ylabel('Amplitude')
         ax.set_title(f'D={sample.params[0]:.2f}, '
@@ -248,9 +246,8 @@ def main(
             else:  # Coupling
                 params[i] = 0.5 + 1.5 * val
             
-            result = emulator.predict(params, frequency)
-            pred = result.spectrum if hasattr(result, 'spectrum') else result
-            ax.plot(frequency, pred, label=f'{name}={params[i]:.2f}')
+            result = model.predict(params, frequency)
+            ax.plot(frequency, result.spectrum, label=f'{name}={params[i]:.2f}')
         
         ax.set_xlabel('Frequency (Hz)')
         ax.set_ylabel('Amplitude')

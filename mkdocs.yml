@@ -11,13 +11,15 @@ nav:
     - Tutorials: tutorials.md
   - Examples:
     - Gallery: examples/index.md
+    - Acoustic Resonance: notebooks/acoustic_resonance.ipynb
+    - XANES Spectroscopy: notebooks/materials_spectroscopy.ipynb
+    - High-Dimensional Emulation: notebooks/high_dim_emulation.ipynb
+    - Backend Comparison: notebooks/backend_comparison.ipynb
+  - Reference Examples:
     - Nuclear Response: examples/nuclear_response.md
-    - Acoustic Resonance: examples/acoustic_resonance.md
-    - Materials Spectroscopy: examples/materials_spectroscopy.md
-    - Backend Comparison: examples/backend_comparison.md
     - "β-Decay Comparison": examples/beta_decay_comparison.md
   - Documentation:
-    - API Reference: api.md
+    - API Reference: api_reference.md
     - Theory & Background: theory.md
     - FAQ: faq.md
   - Reproducibility:
@@ -83,8 +85,29 @@ markdown_extensions:
 plugins:
   - search
   - mkdocs-jupyter:
-      execute: false
+      execute: true
       include_source: true
+      allow_errors: false
+      kernel_name: python3
+      ignore:
+        - "hooks.py"
+        - "_*.ipynb"
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            docstring_style: numpy
+            docstring_section_style: spacy
+            merge_init_into_class: true
+            show_signature_annotations: true
+            separate_signature: true
+            line_length: 80
   - macros
 
 hooks:

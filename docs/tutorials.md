@@ -58,16 +58,17 @@ print(f"Parameter dimension: {dataset.param_dim}")
 ### Step 3: Train the Emulator
 
 ```python
-from smlr.emulator import StrengthEmulator
+from smlr import Surrogate
 
-# Create and fit emulator
-emu = StrengthEmulator(
+# Create and fit emulator using the Surrogate wrapper
+model = Surrogate(
+    "regression",             # Backend: "regression" or "pmm"  
     n_components=2,           # Number of Lorentzian peaks
     width_mode="global",      # Shared width across resonances
     random_state=42           # Reproducibility
 )
 
-emu.fit(dataset)
+model.fit(dataset)
 print("Emulator trained!")
 ```
 
@@ -76,15 +77,15 @@ print("Emulator trained!")
 ```python
 # Predict at a new parameter point
 new_params = np.array([0.4, 0.5])
-mixture, spectrum = emu.predict(new_params, energy)
+result = model.predict(new_params, energy)
 
 # Ground truth for comparison
 true_spectrum = synthetic_strength(new_params, energy)
 
-print(f"Mixture parameters:")
-print(f"  Energies: {mixture.energies}")
-print(f"  Strengths: {mixture.strengths}")
-print(f"  Widths: {mixture.widths}")
+print(f"Predicted spectrum shape: {result.spectrum.shape}")
+print(f"Pole positions: {result.poles}")
+print(f"Pole strengths: {result.strengths}")
+print(f"Pole widths: {result.widths}")
 ```
 
 ### Step 5: Visualize Results
@@ -94,14 +95,14 @@ from smlr.plotting import plot_comparison
 from smlr.metrics import normalized_l2
 
 # Compute error
-error = normalized_l2(spectrum, true_spectrum, energy)
+error = normalized_l2(result.spectrum, true_spectrum, energy)
 print(f"Normalized L² error: {error:.4f}")
 
 # Plot comparison
 fig = plot_comparison(
     energy, 
     true_spectrum, 
-    spectrum,
+    result.spectrum,
     title=f"Emulator Performance (L² = {error:.3f})",
     labels=("Ground Truth", "Emulator")
 )
@@ -207,8 +208,7 @@ print(f"Normalized strength matrix shape: {strengths.shape}")
 
 ```python
 import numpy as np
-from smlr.data import StrengthDataset
-from smlr.emulator import StrengthEmulator
+from smlr import Surrogate, StrengthDataset
 from smlr.metrics import normalized_l2
 
 def cross_validate(dataset, n_components, n_folds=3, random_state=42):
@@ -235,19 +235,20 @@ def cross_validate(dataset, n_components, n_folds=3, random_state=42):
         val_ds = StrengthDataset(val_samples)
         
         # Train emulator
-        emu = StrengthEmulator(
+        model = Surrogate(
+            "regression",
             n_components=n_components,
             width_mode="global",
             random_state=random_state
         )
-        emu.fit(train_ds)
+        model.fit(train_ds)
         
         # Evaluate on validation set
         energy = val_ds.energy_grids()[0]
         for sample in val_ds.samples:
-            _, pred = emu.predict(sample.params, energy)
+            result = model.predict(sample.params, energy)
             truth = np.interp(energy, sample.energy, sample.strength)
-            error = normalized_l2(pred, truth, energy)
+            error = normalized_l2(result.spectrum, truth, energy)
             errors.append(error)
     
     return np.mean(errors), np.std(errors)
@@ -291,12 +292,13 @@ fig.savefig("model_selection.png", dpi=150, bbox_inches="tight")
 ### Step 4: Train Final Model
 
 ```python
-final_emu = StrengthEmulator(
+final_model = Surrogate(
+    "regression",
     n_components=optimal_K,
     width_mode="global",
     random_state=42
 )
-final_emu.fit(dataset)
+final_model.fit(dataset)
 print(f"Final emulator trained with K={optimal_K}")
 ```
 
@@ -330,13 +332,13 @@ print(f"Total parameter points: {len(param_points)}")
 ### Step 2: Batch Prediction
 
 ```python
-# Assuming emu is already trained
+# Assuming model is already trained
 energy = np.linspace(-5, 5, 300)
 spectra = []
 
 for params in param_points:
-    _, spectrum = emu.predict(params, energy)
-    spectra.append(spectrum)
+    result = model.predict(params, energy)
+    spectra.append(result.spectrum)
 
 spectra = np.array(spectra)
 print(f"Predicted spectra shape: {spectra.shape}")
@@ -386,12 +388,12 @@ fig.savefig("parameter_scan.png", dpi=150, bbox_inches="tight")
 mixture_params = []
 
 for params in param_points:
-    mixture = emu.predict_mixture(params)
+    result = model.predict(params, energy)
     mixture_params.append({
         'params': params,
-        'energies': mixture.energies,
-        'strengths': mixture.strengths,
-        'widths': mixture.widths
+        'energies': result.poles,
+        'strengths': result.strengths,
+        'widths': result.widths
     })
 
 # Example: Track first resonance energy vs. alpha
@@ -467,17 +469,18 @@ dataset = StrengthDataset(samples)
 ### Step 3: Custom Fitting with Per-Component Widths
 
 ```python
-from smlr.emulator import StrengthEmulator
+from smlr import Surrogate
 
 # Use per-component widths for Rydberg series
-emu = StrengthEmulator(
+model = Surrogate(
+    "regression",
     n_components=3,  # Match number of resonances
     width_mode="per_component",  # Each has different width
     random_state=42
 )
 
 # Fit with custom tolerance
-emu.fit(dataset, normalize_strengths=True)
+model.fit(dataset, normalize_strengths=True)
 ```
 
 ### Step 4: Physics-Aware Validation
@@ -488,15 +491,15 @@ test_Z = 2.5
 test_lambda = 0.9
 test_params = np.array([test_Z, test_lambda])
 
-mixture, pred_sigma = emu.predict(test_params, energy)
+result = model.predict(test_params, energy)
 
 # Check sum rule (total oscillator strength)
-f_total = np.trapz(pred_sigma, energy)
+f_total = np.trapz(result.spectrum, energy)
 print(f"Total oscillator strength: {f_total:.3f}")
 
 # Compare resonance positions to theoretical expectation
 E_thresh = 13.6 * test_Z**2 / test_lambda**2
-print(f"Predicted threshold: {mixture.energies[0]:.2f} eV")
+print(f"Predicted threshold: {result.poles[0]:.2f} eV")
 print(f"Theoretical threshold: {E_thresh:.2f} eV")
 ```
 
@@ -508,10 +511,10 @@ n_ensemble = 10
 predictions = []
 
 for seed in range(n_ensemble):
-    emu_i = StrengthEmulator(n_components=3, width_mode="per_component", random_state=seed)
-    emu_i.fit(dataset)
-    _, pred_i = emu_i.predict(test_params, energy)
-    predictions.append(pred_i)
+    model_i = Surrogate("regression", n_components=3, width_mode="per_component", random_state=seed)
+    model_i.fit(dataset)
+    result_i = model_i.predict(test_params, energy)
+    predictions.append(result_i.spectrum)
 
 predictions = np.array(predictions)
 mean_pred = predictions.mean(axis=0)

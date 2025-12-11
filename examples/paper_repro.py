@@ -14,8 +14,7 @@ from pathlib import Path
 import re
 import numpy as np
 from smlr.demo.synthetic import main as demo_main
-from smlr.data import StrengthSample, StrengthDataset
-from smlr.emulator import StrengthEmulator
+from smlr import Surrogate, StrengthDataset, StrengthSample
 from smlr.metrics import normalized_l2
 from smlr.plotting import plot_comparison
 import matplotlib.pyplot as plt
@@ -71,15 +70,15 @@ def main() -> None:
         return StrengthDataset(samples) if samples else None
 
     def fit_one(ds: StrengthDataset, n_components: int = 3):
-        emu = StrengthEmulator(n_components=n_components, width_mode="global", random_state=0)
-        emu.fit(ds)
+        model = Surrogate("regression", n_components=n_components, width_mode="global", random_state=0)
+        model.fit(ds)
         point = ds.parameters().mean(axis=0)
         energy_grid = np.linspace(ds.energy_grids()[0].min(), ds.energy_grids()[0].max(), 300)
-        _, pred = emu.predict(point, energy_grid)
+        result = model.predict(point, energy_grid)
         idx = np.argmin(np.linalg.norm(ds.parameters() - point, axis=1))
         ref = np.interp(energy_grid, ds.samples[idx].energy, ds.samples[idx].strength)
-        err = normalized_l2(pred, ref, energy_grid)
-        return err, energy_grid, pred, ref
+        err = normalized_l2(result.spectrum, ref, energy_grid)
+        return err, energy_grid, result.spectrum, ref
 
     beta_ds = load_beta(args.max_files)
     dipole_ds = load_dipole(args.max_files)

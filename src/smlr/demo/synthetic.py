@@ -39,13 +39,21 @@ def main(out_dir: Path) -> None:
     target_params = np.array([0.3, 0.7])
     energy = dataset.energy_grids()[0]
     true_strength = _synthetic_strength(tuple(target_params), energy)
-    _, pred_strength = emulator.predict(target_params, energy)
+    result = emulator.predict(target_params, energy)
 
-    fig = plot_comparison(energy, true_strength, pred_strength, title="Synthetic demo")
+    fig = plot_comparison(energy, true_strength, result.spectrum, title="Synthetic demo")
     fig.savefig(out_dir / "synthetic_demo.png", dpi=150, bbox_inches="tight")
 
-    mix = emulator.predict_mixture(target_params)
-    np.savez(out_dir / "demo_output.npz", params=target_params, energies=mix.energies, strengths=mix.strengths, widths=mix.widths, energy_grid=energy, pred_strength=pred_strength, true_strength=true_strength)
+    np.savez(
+        out_dir / "demo_output.npz",
+        params=target_params,
+        energies=result.poles,
+        strengths=result.strengths,
+        widths=result.widths,
+        energy_grid=energy,
+        pred_strength=result.spectrum,
+        true_strength=true_strength,
+    )
     print(f"Demo complete. Artifacts written to {out_dir}")
 
 

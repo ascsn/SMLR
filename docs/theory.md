@@ -422,4 +422,4 @@ SMLR combines:
 
 The result is a practical tool that preserves physical interpretability while achieving dramatic computational speedups.
 
-**Next**: See the [Usage Guide](usage.md) for practical applications, or the [API Reference](api.md) for implementation details.
+**Next**: See the [Usage Guide](usage.md) for practical applications, or the [API Reference](api_reference.md) for implementation details.

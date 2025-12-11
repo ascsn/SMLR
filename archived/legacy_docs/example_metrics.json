@@ -1,0 +1,33 @@
+{
+  "high_dim_5d": {
+    "mean_l2_error": 0.2597,
+    "min_error": 0.2111,
+    "max_error": 0.3333,
+    "n_params": 5,
+    "n_train": 80,
+    "n_test": 20
+  },
+  "high_dim_10d": {
+    "mean_l2_error": 0.2927,
+    "min_error": 0.2624,
+    "max_error": 0.3216,
+    "n_params": 10,
+    "n_train": 150,
+    "n_test": 20
+  },
+  "acoustic": {
+    "mean_l2_error": 1.0,
+    "centroid_error": 0.7598,
+    "power_error": 0.9988,
+    "n_train": 150
+  },
+  "materials": {
+    "best_method": "polynomial",
+    "best_l2_error": 0.0121,
+    "methods": {
+      "linear": 0.0123,
+      "ridge": 0.0123,
+      "polynomial": 0.0121
+    }
+  }
+}

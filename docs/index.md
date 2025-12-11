@@ -110,7 +110,7 @@ See [Paper Reproduction](paper_repro.md) for detailed commands and the [interact
 ### For Users
 
 - **[Usage Guide](usage.md)**: Installation, data preparation, training workflows
-- **[API Reference](api.md)**: Complete function and class documentation
+- **[API Reference](api_reference.md)**: Complete function and class documentation
 - **[Paper Reproduction](paper_repro.md)**: Reproduce published results
 
 ### For Developers
@@ -122,7 +122,7 @@ See [Paper Reproduction](paper_repro.md) for detailed commands and the [interact
 
 1. **New to SMLR?** Start with the [Usage Guide](usage.md)
 2. **Ready to train?** Follow the quick example above
-3. **Want details?** Check the [API Reference](api.md)
+3. **Want details?** Check the [API Reference](api_reference.md)
 4. **Reproduce results?** See [Paper Reproduction](paper_repro.md)
 
 ---

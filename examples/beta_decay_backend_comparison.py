@@ -24,8 +24,8 @@ import matplotlib.pyplot as plt
 from time import perf_counter
 from pathlib import Path
 
-# SMLR imports
-from smlr.data import StrengthDataset, StrengthSample
+# Use the unified Surrogate API
+from smlr import Surrogate, StrengthDataset, StrengthSample
 from smlr.lorentz import lorentzian_sum
 from smlr.backends import get_emulator, list_backends
 from smlr.metrics import normalized_l2
@@ -316,7 +316,7 @@ def compare_backends(
     m0_rule = SumRule(k=0, name="m0")  # Just compute, don't enforce
     
     # -----------------------------------------------------------------
-    # Regression Backend
+    # Regression Backend (using unified Surrogate API)
     # -----------------------------------------------------------------
     if verbose:
         print("\n" + "="*60)
@@ -325,8 +325,8 @@ def compare_backends(
     
     # Train
     t0 = perf_counter()
-    reg_emulator = get_emulator("regression", n_poles=n_poles)
-    reg_emulator.fit(train_data)
+    reg_model = Surrogate(backend="regression", n_poles=n_poles, regression_method="ridge")
+    reg_model.fit(train_data)
     reg_train_time = perf_counter() - t0
     
     # Predict on test set (interpolation)
@@ -336,13 +336,13 @@ def compare_backends(
     
     t0 = perf_counter()
     for sample in test_data.samples:
-        # Regression emulator returns (mixture, spectrum) when given energy
-        _, pred_spectrum = reg_emulator.predict(sample.params, sample.energy)
-        error = normalized_l2(pred_spectrum, sample.strength, sample.energy)
+        # Unified API returns EmulatorResult with .spectrum attribute
+        result = reg_model.predict(sample.params, sample.energy)
+        error = normalized_l2(result.spectrum, sample.strength, sample.energy)
         reg_interp_errors.append(error)
         
         m0_true = m0_rule.compute(sample.energy, sample.strength)
-        m0_pred = m0_rule.compute(sample.energy, pred_spectrum)
+        m0_pred = m0_rule.compute(sample.energy, result.spectrum)
         reg_interp_m0_true.append(m0_true)
         reg_interp_m0_pred.append(m0_pred)
     reg_interp_time = perf_counter() - t0
@@ -353,12 +353,12 @@ def compare_backends(
     reg_extrap_m0_pred = []
     
     for sample in extrap_data.samples:
-        _, pred_spectrum = reg_emulator.predict(sample.params, sample.energy)
-        error = normalized_l2(pred_spectrum, sample.strength, sample.energy)
+        result = reg_model.predict(sample.params, sample.energy)
+        error = normalized_l2(result.spectrum, sample.strength, sample.energy)
         reg_extrap_errors.append(error)
         
         m0_true = m0_rule.compute(sample.energy, sample.strength)
-        m0_pred = m0_rule.compute(sample.energy, pred_spectrum)
+        m0_pred = m0_rule.compute(sample.energy, result.spectrum)
         reg_extrap_m0_true.append(m0_true)
         reg_extrap_m0_pred.append(m0_pred)
     
@@ -380,7 +380,7 @@ def compare_backends(
         print(f"m₀ sum rule deviation (extrap): {np.mean(results['regression']['extrap_m0_deviation'])*100:.2f}%")
     
     # -----------------------------------------------------------------
-    # PMM Backend
+    # PMM Backend (using unified Surrogate API)
     # -----------------------------------------------------------------
     if verbose:
         print("\n" + "="*60)
@@ -389,8 +389,8 @@ def compare_backends(
     
     # Train
     t0 = perf_counter()
-    pmm_emulator = get_emulator("pmm", n_poles=pmm_n)
-    pmm_emulator.fit(train_data)
+    pmm_model = Surrogate(backend="pmm", n_poles=pmm_n)
+    pmm_model.fit(train_data)
     pmm_train_time = perf_counter() - t0
     
     # Predict on test set (interpolation)
@@ -400,13 +400,13 @@ def compare_backends(
     
     t0 = perf_counter()
     for sample in test_data.samples:
-        # PMM returns PMMResult with .spectrum attribute
-        pred = pmm_emulator.predict(sample.params, sample.energy)
-        error = normalized_l2(pred.spectrum, sample.strength, sample.energy)
+        # Unified API returns EmulatorResult with .spectrum attribute
+        result = pmm_model.predict(sample.params, sample.energy)
+        error = normalized_l2(result.spectrum, sample.strength, sample.energy)
         pmm_interp_errors.append(error)
         
         m0_true = m0_rule.compute(sample.energy, sample.strength)
-        m0_pred = m0_rule.compute(sample.energy, pred.spectrum)
+        m0_pred = m0_rule.compute(sample.energy, result.spectrum)
         pmm_interp_m0_true.append(m0_true)
         pmm_interp_m0_pred.append(m0_pred)
     pmm_interp_time = perf_counter() - t0
@@ -417,12 +417,12 @@ def compare_backends(
     pmm_extrap_m0_pred = []
     
     for sample in extrap_data.samples:
-        pred = pmm_emulator.predict(sample.params, sample.energy)
-        error = normalized_l2(pred.spectrum, sample.strength, sample.energy)
+        result = pmm_model.predict(sample.params, sample.energy)
+        error = normalized_l2(result.spectrum, sample.strength, sample.energy)
         pmm_extrap_errors.append(error)
         
         m0_true = m0_rule.compute(sample.energy, sample.strength)
-        m0_pred = m0_rule.compute(sample.energy, pred.spectrum)
+        m0_pred = m0_rule.compute(sample.energy, result.spectrum)
         pmm_extrap_m0_true.append(m0_true)
         pmm_extrap_m0_pred.append(m0_pred)
     

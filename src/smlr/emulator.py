@@ -11,6 +11,7 @@ from sklearn.multioutput import MultiOutputRegressor
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.pipeline import Pipeline
 
+from .base import BaseEmulator, EmulatorResult
 from .data import StrengthDataset, StrengthSample
 from .lorentz import LorentzianMixture, fit_lorentzian_mixture
 
@@ -59,7 +60,7 @@ class EmulatorConfig:
     random_state: int = 0
 
 
-class StrengthEmulator:
+class StrengthEmulator(BaseEmulator):
     """Learn a mapping from theory parameters to Lorentzian mixture parameters.
     
     This emulator supports arbitrary parameter dimensions (not limited to 2D).
@@ -95,16 +96,18 @@ class StrengthEmulator:
         
     Examples
     --------
-    >>> from smlr.data import StrengthDataset
-    >>> from smlr.emulator import StrengthEmulator
+    >>> from smlr import Surrogate
     >>> 
-    >>> # Works with any parameter dimension (2, 5, 10, 15, ...)
-    >>> ds = StrengthDataset.from_folder("metadata.csv", param_columns=["p1", "p2", "p3", "p4", "p5"])
+    >>> # Recommended: use the unified Surrogate interface
+    >>> model = Surrogate(backend="regression", n_poles=4)
+    >>> model.fit(dataset)
+    >>> result = model.predict(params, energy)
+    >>> 
+    >>> # Or use StrengthEmulator directly
+    >>> from smlr.emulator import StrengthEmulator
     >>> emu = StrengthEmulator(n_components=4, regression_method="ridge")
     >>> emu.fit(ds)
-    >>> 
-    >>> # Predict at new 5D parameter point
-    >>> mixture = emu.predict_mixture(np.array([0.1, 0.2, 0.3, 0.4, 0.5]))
+    >>> result = emu.predict(params, energy)
     """
 
     def __init__(
@@ -140,12 +143,16 @@ class StrengthEmulator:
         self.strength_reg: Optional[MultiOutputRegressor] = None
         self.width_reg: Optional[LinearRegression | MultiOutputRegressor] = None
         
-        # Track parameter dimension and samples
+        # Track parameter dimension and samples (BaseEmulator interface)
         self.param_dim: Optional[int] = None
         self.n_samples_seen: int = 0
+        self._is_fitted: bool = False
         
         # Store fitted mixtures for diagnostics
         self._fitted_mixtures: List[FittedMixture] = []
+        
+        # Store default energy grid for predictions
+        self._default_energy: Optional[Array] = None
 
     def _create_regressor(self) -> Any:
         """Create a single regression estimator based on configuration."""
@@ -276,6 +283,12 @@ class StrengthEmulator:
             self.width_reg.fit(X, W_targets)
         self._normalize_strengths = normalize_strengths
         
+        # Store default energy grid from training data
+        self._default_energy = dataset.samples[0].energy.copy()
+        
+        # Mark as fitted (BaseEmulator interface)
+        self._is_fitted = True
+        
         if verbose:
             print(f"Emulator fitted: {self.n_samples_seen} samples, {self.param_dim}D parameter space")
         
@@ -346,9 +359,59 @@ class StrengthEmulator:
         return mixture.evaluate(energy_grid)
 
     def predict(
+        self, params: Array, energy: Optional[Array] = None, **kwargs
+    ) -> EmulatorResult:
+        """Predict strength function at a parameter point.
+        
+        This method implements the BaseEmulator interface and returns a
+        unified EmulatorResult object.
+        
+        Parameters
+        ----------
+        params : array-like
+            Parameter vector of shape (param_dim,).
+        energy : array-like, optional
+            Energy grid for spectrum evaluation. If None, uses the grid
+            from training data.
+        **kwargs
+            Ignored (for interface compatibility).
+            
+        Returns
+        -------
+        EmulatorResult
+            Unified result with spectrum, poles, strengths, widths.
+        """
+        self._check_fitted()
+        
+        # Use default energy grid if not provided
+        if energy is None:
+            if self._default_energy is not None:
+                energy = self._default_energy
+            else:
+                raise ValueError("energy grid required (no default available)")
+        
+        energy = np.asarray(energy, dtype=float)
+        mixture = self.predict_mixture(params)
+        spectrum = mixture.evaluate(energy)
+        
+        return EmulatorResult(
+            spectrum=spectrum,
+            energy=energy,
+            poles=np.asarray(mixture.energies),
+            strengths=np.asarray(mixture.strengths),
+            widths=np.asarray(mixture.widths),
+            metadata={
+                "backend": "regression",
+                "regression_method": self.regression_method,
+            },
+        )
+    
+    def predict_legacy(
         self, params: Array, energy_grid: Optional[Array] = None
     ) -> Tuple[LorentzianMixture, Optional[Array]]:
-        """Predict both mixture and spectrum.
+        """Legacy predict method returning (mixture, spectrum) tuple.
+        
+        Deprecated: Use predict() which returns EmulatorResult.
         
         Parameters
         ----------
@@ -370,30 +433,26 @@ class StrengthEmulator:
         return mixture, mixture.evaluate(energy_grid)
     
     def predict_batch(
-        self, params_batch: Array, energy_grid: Optional[Array] = None
-    ) -> Tuple[List[LorentzianMixture], Optional[Array]]:
+        self, params_batch: Array, energy: Optional[Array] = None, **kwargs
+    ) -> List[EmulatorResult]:
         """Predict for multiple parameter points at once.
         
         Parameters
         ----------
         params_batch : array-like
             Parameter matrix of shape (n_points, param_dim).
-        energy_grid : array-like, optional
-            If provided, evaluate spectra on this grid.
+        energy : array-like, optional
+            Energy grid for spectrum evaluation.
+        **kwargs
+            Ignored (for interface compatibility).
             
         Returns
         -------
-        mixtures : list of LorentzianMixture
-            Predicted pole decompositions.
-        spectra : array or None
-            Shape (n_points, len(energy_grid)) if energy_grid provided.
+        list of EmulatorResult
+            Predictions for each parameter point.
         """
         params_batch = np.atleast_2d(params_batch)
-        mixtures = [self.predict_mixture(p) for p in params_batch]
-        if energy_grid is None:
-            return mixtures, None
-        spectra = np.array([m.evaluate(energy_grid) for m in mixtures])
-        return mixtures, spectra
+        return [self.predict(p, energy, **kwargs) for p in params_batch]
     
     def score(self, dataset: StrengthDataset, metric: str = "l2") -> float:
         """Evaluate emulator accuracy on a dataset.
@@ -412,23 +471,29 @@ class StrengthEmulator:
         """
         from .metrics import normalized_l2
         
+        self._check_fitted()
         errors = []
         for sample in dataset.samples:
-            pred = self.predict_spectrum(sample.params, sample.energy)
+            result = self.predict(sample.params, sample.energy)
             if metric == "l2":
-                err = normalized_l2(pred, sample.strength, sample.energy)
+                err = normalized_l2(result.spectrum, sample.strength, sample.energy)
             elif metric == "mse":
-                err = np.mean((pred - sample.strength) ** 2)
+                err = float(np.mean((result.spectrum - sample.strength) ** 2))
             elif metric == "mae":
-                err = np.mean(np.abs(pred - sample.strength))
+                err = float(np.mean(np.abs(result.spectrum - sample.strength)))
             else:
                 raise ValueError(f"Unknown metric: {metric}")
             errors.append(err)
         return float(np.mean(errors))
     
-    def get_training_info(self) -> Dict[str, Any]:
-        """Return information about the fitted emulator."""
+    def get_info(self) -> Dict[str, Any]:
+        """Return information about the fitted emulator.
+        
+        Implements the BaseEmulator interface.
+        """
         return {
+            "backend": "StrengthEmulator",
+            "is_fitted": self._is_fitted,
             "n_components": self.n_components,
             "param_dim": self.param_dim,
             "n_samples_seen": self.n_samples_seen,
@@ -436,6 +501,9 @@ class StrengthEmulator:
             "regression_method": self.regression_method,
             "normalize_strengths": self._normalize_strengths,
         }
+    
+    # Backward compatibility alias
+    get_training_info = get_info
 
 
 def _softplus_single(x: Array) -> Array:

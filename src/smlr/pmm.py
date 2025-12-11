@@ -28,9 +28,7 @@ projecting an external field vector v₀ onto the eigenvectors.
   extrapolation when the linear response matrix structure is known/assumed.
 - Regression: Simpler, faster training, works well with smooth parameter dependence.
 
-References:
-    - Bender et al., "Parametric matrix models", Rev. Mod. Phys. 75, 121 (2003)
-    - Hinohara & Nazarewicz, Phys. Rev. C 105, 014317 (2022)
+
 """
 from __future__ import annotations
 
@@ -41,6 +39,7 @@ import numpy as np
 from scipy.linalg import eigh
 from scipy.optimize import minimize, least_squares
 
+from .base import BaseEmulator, EmulatorResult
 from .data import StrengthDataset
 from .lorentz import lorentzian_sum
 
@@ -90,6 +89,9 @@ class PMMConfig:
 class PMMResult:
     """Container for PMM prediction results.
     
+    Note: This class is deprecated. Use EmulatorResult from smlr.base instead.
+    Kept for backward compatibility.
+    
     Attributes
     ----------
     eigenvalues : array
@@ -110,7 +112,7 @@ class PMMResult:
     energy: Array
 
 
-class ParametricMatrixModel:
+class ParametricMatrixModel(BaseEmulator):
     """Parametric Matrix Model emulator for strength functions.
     
     This emulator learns a reduced-order response matrix whose eigenvalue
@@ -154,15 +156,18 @@ class ParametricMatrixModel:
     
     Examples
     --------
-    >>> from smlr.pmm import ParametricMatrixModel
+    >>> from smlr import Surrogate
     >>> 
-    >>> # Create PMM with 10 poles, keeping middle 90% of eigenvalues
+    >>> # Recommended: use the unified Surrogate interface
+    >>> model = Surrogate(backend="pmm", n_poles=10)
+    >>> model.fit(dataset)
+    >>> result = model.predict(params, energy)
+    >>> 
+    >>> # Or use ParametricMatrixModel directly
+    >>> from smlr.pmm import ParametricMatrixModel
     >>> pmm = ParametricMatrixModel(n_poles=10, retain=0.9)
     >>> pmm.fit(dataset, reference_point=np.array([0.5, 0.5]))
-    >>> 
-    >>> # Predict at new parameter point
     >>> result = pmm.predict(np.array([0.7, 0.3]), energy_grid)
-    >>> plt.plot(result.energy, result.spectrum)
     """
     
     def __init__(
@@ -185,6 +190,11 @@ class ParametricMatrixModel:
         self.retain = self.config.retain
         self.param_dim: Optional[int] = None
         self.reference_point: Optional[Array] = None
+        
+        # BaseEmulator interface
+        self.n_samples_seen: int = 0
+        self._is_fitted: bool = False
+        self._default_energy: Optional[Array] = None
         
         # Learned parameters
         self.D: Optional[Array] = None  # Diagonal (n_poles,)
@@ -560,6 +570,11 @@ class ParametricMatrixModel:
         # Unpack final parameters
         self._unpack_parameters(result.x)
         
+        # Store default energy grid and mark as fitted (BaseEmulator interface)
+        self._default_energy = samples[0].energy.copy()
+        self.n_samples_seen = len(samples)
+        self._is_fitted = True
+        
         if self.config.verbose:
             print(f"Optimization finished: {result.message}")
             print(f"Final cost: {result.fun:.6f}")
@@ -570,65 +585,158 @@ class ParametricMatrixModel:
         self,
         params: Array,
         energy: Optional[Array] = None,
-    ) -> PMMResult:
+        **kwargs,
+    ) -> EmulatorResult:
         """Predict strength function at a new parameter point.
+        
+        Implements the BaseEmulator interface.
         
         Parameters
         ----------
         params : array
             Parameter vector.
         energy : array, optional
-            Energy grid. If not provided, uses a default grid.
+            Energy grid. If not provided, uses the grid from training data
+            or a default grid based on eigenvalue range.
+        **kwargs
+            Ignored (for interface compatibility).
             
         Returns
         -------
-        PMMResult
-            Prediction result with spectrum and pole information.
+        EmulatorResult
+            Unified result with spectrum, poles, and metadata.
         """
-        if self.D is None:
-            raise RuntimeError("Model not fitted. Call fit() first.")
+        self._check_fitted()
         
         params = np.asarray(params, dtype=np.float64)
         
         if energy is None:
-            # Default grid based on eigenvalue range
-            e_min = self.D.min() - 5
-            e_max = self.D.max() + 5
-            energy = np.linspace(e_min, e_max, 200)
+            if self._default_energy is not None:
+                energy = self._default_energy
+            else:
+                # Fallback: default grid based on eigenvalue range
+                e_min = self.D.min() - 5
+                e_max = self.D.max() + 5
+                energy = np.linspace(e_min, e_max, 200)
         
+        energy = np.asarray(energy, dtype=float)
         spectrum, eigenvalues, strengths = self._compute_spectrum(
             params, energy, return_poles=True
         )
         
-        return PMMResult(
-            eigenvalues=eigenvalues,
-            strengths=strengths,
-            width=self.eta,
+        # Get width(s)
+        width = self.eta
+        if np.isscalar(width):
+            widths = np.full(len(eigenvalues), width)
+        else:
+            widths = np.asarray(width)
+            if len(widths) != len(eigenvalues):
+                widths = np.full(len(eigenvalues), float(np.mean(widths)))
+        
+        return EmulatorResult(
             spectrum=spectrum,
             energy=energy,
+            poles=eigenvalues,
+            strengths=strengths,
+            widths=widths,
+            metadata={
+                "backend": "pmm",
+                "reference_point": self.reference_point.tolist() if self.reference_point is not None else None,
+                "n_poles": self.n_poles,
+                "retain": self.retain,
+            },
+        )
+    
+    def predict_legacy(
+        self,
+        params: Array,
+        energy: Optional[Array] = None,
+    ) -> PMMResult:
+        """Legacy predict method returning PMMResult.
+        
+        Deprecated: Use predict() which returns EmulatorResult.
+        
+        Parameters
+        ----------
+        params : array
+            Parameter vector.
+        energy : array, optional
+            Energy grid.
+            
+        Returns
+        -------
+        PMMResult
+            Legacy result object.
+        """
+        result = self.predict(params, energy)
+        return PMMResult(
+            eigenvalues=result.poles,
+            strengths=result.strengths,
+            width=self.eta,
+            spectrum=result.spectrum,
+            energy=result.energy,
         )
     
     def predict_batch(
         self,
-        param_array: Array,
+        params_batch: Array,
         energy: Optional[Array] = None,
-    ) -> List[PMMResult]:
+        **kwargs,
+    ) -> List[EmulatorResult]:
         """Predict for multiple parameter points.
         
         Parameters
         ----------
-        param_array : array of shape (n_samples, param_dim)
+        params_batch : array of shape (n_samples, param_dim)
             Parameter vectors.
         energy : array, optional
             Shared energy grid.
+        **kwargs
+            Ignored (for interface compatibility).
             
         Returns
         -------
-        list of PMMResult
+        list of EmulatorResult
             Predictions for each parameter point.
         """
-        param_array = np.atleast_2d(param_array)
-        return [self.predict(p, energy) for p in param_array]
+        params_batch = np.atleast_2d(params_batch)
+        return [self.predict(p, energy, **kwargs) for p in params_batch]
+    
+    def score(
+        self,
+        dataset: StrengthDataset,
+        metric: str = "l2",
+    ) -> float:
+        """Evaluate emulator accuracy on a dataset.
+        
+        Parameters
+        ----------
+        dataset : StrengthDataset
+            Test dataset.
+        metric : {"l2", "mse", "mae"}
+            Error metric to use.
+            
+        Returns
+        -------
+        float
+            Mean error across all samples.
+        """
+        from .metrics import normalized_l2
+        
+        self._check_fitted()
+        errors = []
+        for sample in dataset.samples:
+            result = self.predict(sample.params, sample.energy)
+            if metric == "l2":
+                err = normalized_l2(result.spectrum, sample.strength, sample.energy)
+            elif metric == "mse":
+                err = float(np.mean((result.spectrum - sample.strength) ** 2))
+            elif metric == "mae":
+                err = float(np.mean(np.abs(result.spectrum - sample.strength)))
+            else:
+                raise ValueError(f"Unknown metric: {metric}")
+            errors.append(err)
+        return float(np.mean(errors))
     
     def get_eigenvalues(self, params: Array) -> Tuple[Array, Array]:
         """Get eigenvalues and strengths without computing full spectrum.
@@ -680,6 +788,27 @@ class ParametricMatrixModel:
             "cost_history_length": len(self._cost_history),
             "final_cost": self._cost_history[-1] if self._cost_history else None,
         }
+    
+    def get_info(self) -> Dict[str, Any]:
+        """Return information about the fitted emulator.
+        
+        Implements the BaseEmulator interface.
+        """
+        info = {
+            "backend": "ParametricMatrixModel",
+            "is_fitted": self._is_fitted,
+            "n_poles": self.n_poles,
+            "param_dim": self.param_dim,
+            "n_samples_seen": self.n_samples_seen,
+            "retain": self.retain,
+            "width_mode": self.config.width_mode,
+        }
+        if self._is_fitted:
+            info.update({
+                "reference_point": self.reference_point.tolist() if self.reference_point is not None else None,
+                "final_cost": self._cost_history[-1] if self._cost_history else None,
+            })
+        return info
 
 
 def compare_emulation_methods(
