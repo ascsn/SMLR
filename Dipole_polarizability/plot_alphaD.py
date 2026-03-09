@@ -135,30 +135,30 @@ alphaD = np.vstack(alphaD)
 '''
 Emulator figures
 '''
-n = 13
-params = np.loadtxt('params_'+str(n)+'_only_alphaD.txt')
-params = params.astype(np.float32)
-alphaD_opt, alphaD_orig, times = helper.plot_alphaD_simple(combined,params,n, central_point)
+# n = 13
+# params = np.loadtxt('params_'+str(n)+'_only_alphaD.txt')
+# params = params.astype(np.float32)
+# alphaD_opt, alphaD_orig, times = helper.plot_alphaD_simple(combined,params,n, central_point)
     
 
-alphaD_opt = np.array(alphaD_opt)
-alphaD_orig = np.array(alphaD_orig)
+# alphaD_opt = np.array(alphaD_opt)
+# alphaD_orig = np.array(alphaD_orig)
 
-x_em = []
-y_em = []
-z_em = []
+# x_em = []
+# y_em = []
+# z_em = []
 
-for i in range(len(combined)):
-    x_em.append(float(combined[i][0]))
-    y_em.append(float(combined[i][1]))
-    z_em.append(alphaD_opt[i])
+# for i in range(len(combined)):
+#     x_em.append(float(combined[i][0]))
+#     y_em.append(float(combined[i][1]))
+#     z_em.append(alphaD_opt[i])
     
-x_em = np.array(x_em).reshape(len(x_em),1)
-y_em = np.array(y_em).reshape(len(y_em),1)
-z_em = np.array(z_em).reshape(len(z_em),1)
+# x_em = np.array(x_em).reshape(len(x_em),1)
+# y_em = np.array(y_em).reshape(len(y_em),1)
+# z_em = np.array(z_em).reshape(len(z_em),1)
 
 
-emulator = np.concatenate((x_em, y_em, z_em), axis = 1)
+# emulator = np.concatenate((x_em, y_em, z_em), axis = 1)
 
 
     
@@ -166,21 +166,15 @@ emulator = np.concatenate((x_em, y_em, z_em), axis = 1)
 Emulator 1
 '''
 
-n = 22
-retain = 0.6
-params = np.loadtxt('params_'+str(n)+'_'+str(retain)+'.txt')
+n = 10
+retain = 0.5
+params = np.loadtxt('params_' + 'best_' + 'n' +str(n)+'_retain'+str(retain)+'.txt')
 params = params.astype(np.float32)
 alphaD_em1 = []
 for idx in range(len(combined)):
-
-    
-
     alpha_tensor = tf.constant(float(combined[idx][0]), dtype=tf.float32)  # (batch,)
     beta_tensor  = tf.constant(float(combined[idx][1]), dtype=tf.float32)
 
-    
-    
-    
     opt_D, opt_S1, opt_S2,opt_S3,opt_S4, opt_v0,opt_v1, opt_v2, fold, x1, x2, x3, x4 = helper.modified_DS_affine_v(params, n)
     #opt_eigenvalues, opt_eigenvectors = helper.generalized_eigen(opt_D.numpy(), opt_S1.numpy(), opt_S2.numpy(), combined[idx], central_point)
     exp1 = tf.exp( -(alpha_tensor- float(central_point[0])) * x1 )
@@ -268,9 +262,11 @@ sm = ScalarMappable(cmap='Spectral', norm=norm)
 sm.set_array([])  # for compatibility
 
 # Add colorbar
-cbar = plt.colorbar(sm, label=r'$b_{TV}$ (fm$^{2}$)')
-plt.xlabel('$d_{TV}$', size = 18)
-plt.ylabel(r'$\alpha_D$ (fm$^3$)', size = 18)
+cbar = fig.colorbar(sm, ax=ax)
+cbar.set_label(r'$b_{TV}$ (fm$^{2}$)')
+
+ax.set_xlabel(r'$d_{TV}$', size=18)
+ax.set_ylabel(r'$\alpha_D$ (fm$^3$)', size=18)
 
 
 unique = np.unique(emulator[:,1])
@@ -297,6 +293,8 @@ for i in range(len(unique)):
 plt.legend(frameon = False)
 plt.ylim(12.5,23)
     
+
+
 '''
 Creating second figure for 3 emulators
 '''

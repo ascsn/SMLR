@@ -37,8 +37,9 @@ import tensorflow as tf
 import matplotlib
 matplotlib.use("Agg")             # <- never opens windows
 import matplotlib.pyplot as plt
-import helper
 
+import helper
+''
 
 # ------------------------------ CLI: user options ------------------------------
 def parse_args():
@@ -83,6 +84,8 @@ os.makedirs(SAVE_DIR, exist_ok=True)
 MIN_ITERATIONS = 20000
 if NUM_ITERATIONS < MIN_ITERATIONS:
     raise ValueError(f"--num-iter ({NUM_ITERATIONS}) must be >= {MIN_ITERATIONS}.")
+
+
 
 # ------------------------------- Build the dataset -----------------------------
 # User note: this reads strength/polarizability data from a fixed directory layout.
@@ -131,6 +134,8 @@ cv_set, test_set = [], []
 print('Central point:', central_point)
 print('Sizes -> test:', len(test_set), 'cv:', len(cv_set), 'train:', len(train_set))
 
+
+
 # ---------------------------- Model & data preparation -------------------------
 D, S1, S2 = helper.nec_mat(n)
 print("Matrix shapes:", D.shape, S1.shape, S2.shape)
@@ -167,7 +172,7 @@ def save_central_fit_plot(out_dir: str):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.plot(data[:, 0], y_hat, label='fit')
-    ax.stem(E_hat, B_hat, use_line_collection=True, label='poles')
+    ax.stem(E_hat, B_hat, label='poles')
     ax.plot(data[:, 0], data[:, 1], label='true')
     ax.set_title('Central spectrum fit')
     ax.legend()
@@ -187,6 +192,8 @@ def encode_init_with_fit(random_init):
     # Project-specific packing of poles/weights around the central fit
     return helper.encode_initial_guess(random_init, E_hat, B_hat, n, retain).astype(np.float32)
 
+
+
 # ------------------------ Early stopping configuration -------------------------
 # Two criteria: (A) "best" patience, (B) moving-average plateau.
 # We also require a hard minimum iteration count (MIN_ITERATIONS).
@@ -198,12 +205,15 @@ MA_WINDOW            = 10       # length of moving average (in logs)
 MIN_DELTA_REL        = 3e-4     # minimum relative MA improvement
 
 WARMUP_LOGS          = 12       # skip early-stop counting during first logs
+
 REQUIRE_BOTH_TO_STOP = True     # require BOTH criteria to trigger stop
 
 def moving_average(arr, k):
     if len(arr) < k:
         return None
     return np.convolve(arr, np.ones(k)/k, mode='valid')
+
+
 
 # ------------------------------- Training (restarts) ---------------------------
 def set_all_seeds(seed: int):
@@ -229,7 +239,7 @@ for r in range(N_RESTARTS):
     init_vec = make_initial_guess(seed)
     init_vec = encode_init_with_fit(init_vec)
     params   = tf.Variable(init_vec, dtype=tf.float32)
-    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.01)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
     @tf.function
     def optimization_step():
@@ -317,6 +327,8 @@ for r in range(N_RESTARTS):
                   f"best={best_cost_this:.6e} @ {best_iter_this}")
             break
 
+
+
     # --------------------- Save artifacts for this restart ---------------------
     np.savetxt(os.path.join(run_dir, f"params_n{n}_retain{retain}_seed{seed}.txt"), best_params_this)
     np.savetxt(os.path.join(run_dir, f"cost_history_seed{seed}.txt"), np.array(cost_history))
@@ -345,7 +357,7 @@ for r in range(N_RESTARTS):
         ax.set_title(f'Convergence (seed={seed}) | best={best_cost_this:.3e} @ iter {best_iter_this}')
         ax.legend()
         fig.savefig(os.path.join(run_dir, f'cost_curve_seed{seed}.png'), bbox_inches='tight', dpi=150)
-        fig.savefig(os.path.join(run_dir, f'cost_curve_seed{seed}.pdf'), bbox_inches='tight')
+        # fig.savefig(os.path.join(run_dir, f'cost_curve_seed{seed}.pdf'), bbox_inches='tight')
         plt.close(fig)
 
     # Track global best across restarts
@@ -354,11 +366,13 @@ for r in range(N_RESTARTS):
         global_best_params = best_params_this.copy()
         global_best_meta   = {"seed": seed, "iter": best_iter_this}
 
+
+
 # -------------------------- Save global best & summary -------------------------
 np.savetxt(f'params_best_n{n}_retain{retain}.txt', global_best_params)
 print(f"\n*** GLOBAL BEST *** cost={global_best_cost:.6e} "
       f"(seed={global_best_meta['seed']}, iter={global_best_meta['iter']})")
-print(f"Saved per-seed runs in {SAVE_DIR}/seed_<SEED>/ and best as params_best_n{n}_retain{retain}.txt")
+print(f"Saved per-seed runs in {SAVE_DIR}/seed_<SEED>/ and best as params_best_{n}_retain{retain}.txt")
 
 # Save the training grid for reference
 with open("train_set.txt", "w") as f:
