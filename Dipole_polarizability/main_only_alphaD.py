@@ -45,7 +45,7 @@ def parse_args():
     p = argparse.ArgumentParser(
         description="Train the dipole polarizability emulator (EM2, alphaD-only)."
     )
-    p.add_argument("--n",            type=int,   default=9,        help="Model dimension (default: 9)")
+    p.add_argument("--n",            type=int,   default=10,        help="Model dimension (default: 9)")
     p.add_argument("--n-restarts",   type=int,   default=5,        help="Number of restarts (different seeds)")
     p.add_argument("--seed0",        type=int,   default=42,       help="Base seed (seeds=seed0..seed0+n_restarts-1)")
     p.add_argument("--num-iter",     type=int,   default=30000,    help="Iterations per restart (must be ≥ 20000)")
@@ -153,7 +153,7 @@ def run_single_restart(seed: int, run_dir: str):
     # Random init per restart (same range as original)
     random_initial_guess = np.random.uniform(0, 2, nec_num_param)
     params    = tf.Variable(random_initial_guess, dtype=tf.float32)
-    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.05)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.05)
 
     @tf.function
     def optimization_step():

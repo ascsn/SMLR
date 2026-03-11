@@ -90,8 +90,6 @@ central_point = tuple(test_set[central_index])
 print('Central data point in train set:', central_point)
 
 
-#
-
 strength, alphaD = helper.data_table(combined)
 
 
@@ -135,30 +133,34 @@ alphaD = np.vstack(alphaD)
 '''
 Emulator figures
 '''
-# n = 13
-# params = np.loadtxt('params_'+str(n)+'_only_alphaD.txt')
-# params = params.astype(np.float32)
-# alphaD_opt, alphaD_orig, times = helper.plot_alphaD_simple(combined,params,n, central_point)
+
+'''
+Emulator 2
+'''
+
+n = 10
+params = np.loadtxt('params_'+str(n)+'_only_alphaD.txt')
+params = params.astype(np.float32)
+alphaD_opt, alphaD_orig, times = helper.plot_alphaD_simple(combined,params,n, central_point)
     
+alphaD_opt = np.array(alphaD_opt)
+alphaD_orig = np.array(alphaD_orig)
 
-# alphaD_opt = np.array(alphaD_opt)
-# alphaD_orig = np.array(alphaD_orig)
+x_em = []
+y_em = []
+z_em = []
 
-# x_em = []
-# y_em = []
-# z_em = []
-
-# for i in range(len(combined)):
-#     x_em.append(float(combined[i][0]))
-#     y_em.append(float(combined[i][1]))
-#     z_em.append(alphaD_opt[i])
+for i in range(len(combined)):
+    x_em.append(float(combined[i][0]))
+    y_em.append(float(combined[i][1]))
+    z_em.append(alphaD_opt[i])
     
-# x_em = np.array(x_em).reshape(len(x_em),1)
-# y_em = np.array(y_em).reshape(len(y_em),1)
-# z_em = np.array(z_em).reshape(len(z_em),1)
+x_em = np.array(x_em).reshape(len(x_em),1)
+y_em = np.array(y_em).reshape(len(y_em),1)
+z_em = np.array(z_em).reshape(len(z_em),1)
 
 
-# emulator = np.concatenate((x_em, y_em, z_em), axis = 1)
+emulator2 = np.concatenate((x_em, y_em, z_em), axis = 1)
 
 
     
@@ -234,6 +236,12 @@ z_em1 = np.array(z_em1).reshape(len(z_em1),1)
 emulator1 = np.concatenate((x_em1, y_em1, z_em1), axis = 1)
 
 
+
+
+
+
+
+
 '''
 Creating first figure for 3 emulators
 '''
@@ -261,18 +269,27 @@ norm = Normalize(vmin=np.min(x), vmax=np.max(x))
 sm = ScalarMappable(cmap='Spectral', norm=norm)
 sm.set_array([])  # for compatibility
 
+
+fig, ax = plt.subplots()
+
 # Add colorbar
-cbar = fig.colorbar(sm, ax=ax)
-cbar.set_label(r'$b_{TV}$ (fm$^{2}$)')
 
-ax.set_xlabel(r'$d_{TV}$', size=18)
-ax.set_ylabel(r'$\alpha_D$ (fm$^3$)', size=18)
+cbar = plt.colorbar(sm, ax=ax, label=r'$b_{TV}$ (fm$^{2}$)')
+
+plt.xlabel('$d_{TV}$', size = 18)
+plt.ylabel(r'$\alpha_D$ (fm$^3$)', size = 18)
+
+# cbar = fig.colorbar(sm, ax=ax)
+# cbar.set_label(r'$b_{TV}$ (fm$^{2}$)')
+
+# ax.set_xlabel(r'$d_{TV}$', size=18)
+# ax.set_ylabel(r'$\alpha_D$ (fm$^3$)', size=18)
 
 
-unique = np.unique(emulator[:,1])
+unique = np.unique(emulator2[:,1])
 for i in range(len(unique)):
     
-    data_tmp = emulator[emulator[:,1] == unique[i]]
+    data_tmp = emulator2[emulator2[:,1] == unique[i]]
     data_tmp = data_tmp[data_tmp[:,0].argsort()]
     plt.plot(data_tmp[:,0], data_tmp[:,2], color = 'r', ls = '--')
     #plt.scatter(data_tmp[:,0], data_tmp[:,2],color='k')
@@ -294,53 +311,58 @@ plt.legend(frameon = False)
 plt.ylim(12.5,23)
     
 
+plt.show()
+plt.savefig("figure2.png", dpi=300)
+
 
 '''
 Creating second figure for 3 emulators
 '''
 
-plt.figure(3,dpi=200)
+# plt.figure(3,dpi=200)
 
-for i in range(len(np.unique(y))):
+# for i in range(len(np.unique(y))):
     
-    data_tmp = alphaD[alphaD[:,1] == np.unique(y)[i]]
-    data_tmp = data_tmp[data_tmp[:,0].argsort()]
-    plt.plot(data_tmp[:,0], data_tmp[:,2], color = colors[i], lw = 2.5, alpha = 0.8)
-    #plt.scatter(data_tmp[:,0], data_tmp[:,2],color='k')
-#plt.legend(loc = 'upper right', bbox_to_anchor=(1.2, 1))
-# Create scalar mappable for colorbar
-norm = Normalize(vmin=np.min(y), vmax=np.max(y))
-sm = ScalarMappable(cmap='Spectral', norm=norm)
-sm.set_array([])  # for compatibility
+#     data_tmp = alphaD[alphaD[:,1] == np.unique(y)[i]]
+#     data_tmp = data_tmp[data_tmp[:,0].argsort()]
+#     plt.plot(data_tmp[:,0], data_tmp[:,2], color = colors[i], lw = 2.5, alpha = 0.8)
+#     #plt.scatter(data_tmp[:,0], data_tmp[:,2],color='k')
+# #plt.legend(loc = 'upper right', bbox_to_anchor=(1.2, 1))
+# # Create scalar mappable for colorbar
+# norm = Normalize(vmin=np.min(y), vmax=np.max(y))
+# sm = ScalarMappable(cmap='Spectral', norm=norm)
+# sm.set_array([])  # for compatibility
 
-# Add colorbar
-cbar = plt.colorbar(sm, label=r'$d_{TV}$')
-plt.xlabel('$b_{TV}$ (fm$^{2}$)', size = 18)
-plt.ylabel(r'$\alpha_D$ (fm$^3$)', size = 18)
+# # Add colorbar
+# cbar = plt.colorbar(sm, ax=ax, label=r'$d_{TV}$')
+# plt.xlabel('$b_{TV}$ (fm$^{2}$)', size = 18)
+# plt.ylabel(r'$\alpha_D$ (fm$^3$)', size = 18)
 
-unique = np.unique(emulator[:,0])
-for i in range(len(unique)):
+
+
+# unique = np.unique(emulator[:,0])
+# for i in range(len(unique)):
     
-    data_tmp = emulator[emulator[:,0] == unique[i]]
-    data_tmp = data_tmp[data_tmp[:,1].argsort()]
-    plt.plot(data_tmp[:,1], data_tmp[:,2], color = 'r', ls = '--')
-    #plt.scatter(data_tmp[:,0], data_tmp[:,2],color='k')
+#     data_tmp = emulator[emulator[:,0] == unique[i]]
+#     data_tmp = data_tmp[data_tmp[:,1].argsort()]
+#     plt.plot(data_tmp[:,1], data_tmp[:,2], color = 'r', ls = '--')
+#     #plt.scatter(data_tmp[:,0], data_tmp[:,2],color='k')
 
 
 
 
-unique = np.unique(emulator1[:,0])
-for i in range(len(unique)):
+# unique = np.unique(emulator1[:,0])
+# for i in range(len(unique)):
     
-    data_tmp = emulator1[emulator1[:,0] == unique[i]]
-    data_tmp = data_tmp[data_tmp[:,1].argsort()]
-    plt.plot(data_tmp[:,1], data_tmp[:,2], color = 'k', ls = '--')
-    #plt.scatter(data_tmp[:,0], data_tmp[:,2],color='k')
+#     data_tmp = emulator1[emulator1[:,0] == unique[i]]
+#     data_tmp = data_tmp[data_tmp[:,1].argsort()]
+#     plt.plot(data_tmp[:,1], data_tmp[:,2], color = 'k', ls = '--')
+#     #plt.scatter(data_tmp[:,0], data_tmp[:,2],color='k')
   
-#plt.plot([],[], color = 'k', ls = '--', label = 'Emulator 1')
-plt.plot([],[], color = 'k', ls = '--', label = 'Emulator 2')
-plt.legend(frameon = False)
-plt.ylim(13,25)
+# #plt.plot([],[], color = 'k', ls = '--', label = 'Emulator 1')
+# plt.plot([],[], color = 'k', ls = '--', label = 'Emulator 2')
+# plt.legend(frameon = False)
+# plt.ylim(13,25)
 
 
 
