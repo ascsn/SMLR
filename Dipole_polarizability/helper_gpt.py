@@ -31,7 +31,7 @@ class GenericDataset:
     central_point: np.ndarray          # (p,)
 
 
-@dataclass
+@dataclass(frozen=True)
 class AnsatzConfig:
     n: int
     n_params: int
@@ -190,13 +190,13 @@ def load_dataset(
 # Lorentzian helpers and central fit
 # -----------------------------------------------------------------------------
 def _softplus(x):
-    x = np.asarray(x, dtype=float)
+    x = np.asarray(x, dtype=np.float32)
     return np.log1p(np.exp(-np.abs(x))) + np.maximum(x, 0.0)
 
 
 
 def _inv_softplus(y):
-    y = np.maximum(np.asarray(y, dtype=float), 1e-12)
+    y = np.maximum(np.asarray(y, dtype=np.float32), 1e-12)
     return np.log(np.expm1(y))
 
 
@@ -214,10 +214,10 @@ def _unpack_poles_and_strengths_tf(z, n, wmin, min_spacing):
 
 
 def _pack_poles_and_strengths_np(E0, B0, wmin, min_spacing):
-    zE = np.empty_like(E0, dtype=float)
+    zE = np.empty_like(E0, dtype=np.float32)
     zE[0] = _inv_softplus(E0[0] - wmin)
     gaps = np.diff(E0)
-    zE[1:] = _inv_softplus(np.maximum(gaps - min_spacing, 1e-6))
+    zE[1:] = _inv_softplus(np.maximum(gaps - min_spacing, 1e-12))
     zB = _inv_softplus(np.sqrt(np.maximum(B0, 1e-12)))
     return np.concatenate([zE, zB])
 
@@ -254,18 +254,19 @@ def give_me_Lorentzian_batched(omega, poles_batch, B_batch, width_batch):
 
 
 def fit_strength_with_tf_lorentzian(omega, y, n, eta, grid_M=None, min_spacing=0.2, l2=0.0):
-    omega_np = np.asarray(omega, float)
-    y_np = np.asarray(y, float)
+    omega_np = np.asarray(omega, np.float32)
+    y_np = np.asarray(y, np.float32) #
     wmin, wmax = float(omega_np.min()), float(omega_np.max())
     if grid_M is None:
         grid_M = len(omega_np)
 
-    E_grid = np.linspace(wmin + 1e-6, wmax - 1e-6, grid_M)
+    E_grid = np.linspace(wmin + 1e-6, wmax - 1e-6, grid_M, dtype=np.float32) #
     A = 1.0 / ((omega_np[:, None] - E_grid[None, :]) ** 2 + (eta ** 2) / 4.0) * (eta / (2 * np.pi))
     coeff, _ = nnls(A, y_np)
+    coeff = coeff.astype(np.float32)
     idx = np.argsort(coeff)[-n:]
-    E0 = np.sort(E_grid[idx])
-    B0 = coeff[idx][np.argsort(E_grid[idx])]
+    E0 = np.sort(E_grid[idx]).astype(np.float32)
+    B0 = coeff[idx][np.argsort(E_grid[idx])].astype(np.float32)
 
     for k in range(1, n):
         if E0[k] - E0[k - 1] < min_spacing:
@@ -277,7 +278,7 @@ def fit_strength_with_tf_lorentzian(omega, y, n, eta, grid_M=None, min_spacing=0
         yhat_tf = give_me_Lorentzian(omega_np, E_tf, B_tf, tf.constant(eta, tf.float32))
         r = yhat_tf.numpy() - y_np
         if l2 > 0:
-            r = np.concatenate([r, np.sqrt(l2) * np.asarray(z, dtype=float)])
+            r = np.concatenate([r, np.sqrt(l2) * np.asarray(z, dtype=np.float32)])
         return r
 
     res = least_squares(residuals, z0, method="trf", max_nfev=5000, xtol=1e-10, ftol=1e-10, gtol=1e-10)
