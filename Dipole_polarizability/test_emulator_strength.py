@@ -17,7 +17,7 @@ Test performance on the train set
 
 
 
-n = 40
+n = 10
 
 params = np.loadtxt('params_'+str(n)+'.txt')
 

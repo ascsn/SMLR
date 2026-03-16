@@ -681,3 +681,153 @@ def summarize_config(config: AnsatzConfig) -> Dict[str, int | str | bool]:
         "n_upper": layout.n_upper,
         "n_trainable": layout.total_size,
     }
+
+
+# -----------------------------------------------------------------------------
+# AlphaD-only emulator helpers
+# -----------------------------------------------------------------------------
+@dataclass(frozen=True)
+class AlphaDOnlyConfig:
+    n: int
+    n_params: int
+    ansatz: str = "linear"
+    alphaD_mode: str = "mid_eigenvalue"   # mid_eigenvalue | sum_inverse_positive
+
+
+
+def load_generic_alphaD_dataset(
+    strength_dir: str,
+    alphaD_dir: Optional[str] = None,
+    strength_regex: str = r"strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out",
+    alphaD_regex: Optional[str] = None,
+    filter_ranges: Optional[str | Dict[str, Sequence[float]]] = None,
+    central_point: Optional[Sequence[float] | str] = None,
+) -> GenericDataset:
+    if isinstance(central_point, str):
+        central_point = json.loads(central_point)
+    return load_dataset(
+        strength_dir=strength_dir,
+        alphaD_dir=alphaD_dir,
+        strength_regex=strength_regex,
+        alphaD_regex=alphaD_regex,
+        filter_ranges=filter_ranges,
+        central_point=central_point,
+    )
+
+
+
+def summarize_alphaD_only_config(config: AlphaDOnlyConfig) -> Dict[str, int | str]:
+    return {
+        "n": config.n,
+        "n_params": config.n_params,
+        "ansatz": config.ansatz,
+        "alphaD_mode": config.alphaD_mode,
+        "n_basis": _n_basis_from_config(AnsatzConfig(n=config.n, n_params=config.n_params, ansatz=config.ansatz)),
+        "n_trainable": count_alphaD_only_parameters(config),
+    }
+
+
+
+def count_alphaD_only_parameters(config: AlphaDOnlyConfig) -> int:
+    n_upper = config.n * (config.n + 1) // 2
+    n_basis = _n_basis_from_config(AnsatzConfig(n=config.n, n_params=config.n_params, ansatz=config.ansatz))
+    feature_param_size = config.n_params if config.ansatz == "linear_exp" else 0
+    return config.n + n_basis * n_upper + feature_param_size
+
+
+
+def count_em2_parameters_generic(n: int, n_params: int, ansatz: str = "linear_exp") -> int:
+    config = AlphaDOnlyConfig(n=n, n_params=n_params, ansatz=ansatz)
+    return count_alphaD_only_parameters(config)
+
+
+
+def unpack_alphaD_only_parameters(params: tf.Tensor, config: AlphaDOnlyConfig) -> Dict[str, tf.Tensor]:
+    params = tf.convert_to_tensor(params, dtype=tf.float32)
+    n = int(config.n)
+    n_upper = n * (n + 1) // 2
+    ansatz_config = AnsatzConfig(n=n, n_params=int(config.n_params), ansatz=config.ansatz)
+    n_basis = _n_basis_from_config(ansatz_config)
+
+    idx = 0
+    d_diag = params[idx:idx + n]
+    idx += n
+
+    basis_flat = params[idx:idx + n_basis * n_upper]
+    idx += n_basis * n_upper
+    basis_mats = tf.reshape(basis_flat, (n_basis, n_upper))
+    basis_mats = tf.map_fn(lambda x: _sym_from_upper(x, n), basis_mats, fn_output_signature=tf.float32)
+
+    if config.ansatz == "linear_exp":
+        feature_params = tf.nn.softplus(params[idx:idx + config.n_params])
+    else:
+        feature_params = tf.zeros((0,), dtype=tf.float32)
+
+    return {
+        "D": tf.linalg.diag(d_diag),
+        "d_diag": d_diag,
+        "basis_mats": basis_mats,
+        "feature_params": feature_params,
+    }
+
+
+
+def build_alphaD_only_matrices(
+    params: tf.Tensor,
+    config: AlphaDOnlyConfig,
+    param_values: tf.Tensor,
+    central_point: tf.Tensor,
+) -> Tuple[tf.Tensor, tf.Tensor]:
+    unpacked = unpack_alphaD_only_parameters(params, config)
+    dx = tf.cast(param_values, tf.float32) - tf.cast(central_point[None, :], tf.float32)
+    ansatz_config = AnsatzConfig(n=config.n, n_params=config.n_params, ansatz=config.ansatz)
+    features = compute_ansatz_features(dx, ansatz_config, unpacked["feature_params"])
+    M_batch = unpacked["D"][None, :, :] + tf.einsum('bf,fij->bij', features, unpacked["basis_mats"])
+    return M_batch, features
+
+
+
+def alphaD_from_eigenvalues_batch(eigenvalues: tf.Tensor, mode: str, eps: float = 1.0e-8) -> tf.Tensor:
+    eigenvalues = tf.cast(eigenvalues, tf.float32)
+    if mode == "mid_eigenvalue":
+        n_i = tf.shape(eigenvalues)[1]
+        mid_idx = tf.maximum(0, (n_i - 1) // 2)
+        return eigenvalues[:, mid_idx]
+    if mode == "sum_inverse_positive":
+        mask = tf.cast(eigenvalues > 1.0, tf.float32)
+        return tf.reduce_sum(mask / tf.maximum(eigenvalues, eps), axis=1)
+    raise ValueError(f"Unknown alphaD_mode {mode!r}.")
+
+
+
+def make_alphaD_only_loss_fn_generic(
+    n: int,
+    param_values,
+    alphaD_true,
+    central_point,
+    ansatz: str = "linear_exp",
+    alphaD_mode: str = "mid_eigenvalue",
+    l2_reg: float = 0.0,
+):
+    param_values_tf = tf.convert_to_tensor(param_values, dtype=tf.float32)
+    alphaD_true_tf = tf.convert_to_tensor(alphaD_true, dtype=tf.float32)
+    central_point_tf = tf.convert_to_tensor(central_point, dtype=tf.float32)
+    config = AlphaDOnlyConfig(
+        n=int(n),
+        n_params=int(param_values_tf.shape[1]),
+        ansatz=ansatz,
+        alphaD_mode=alphaD_mode,
+    )
+
+    def loss_fn(params: tf.Tensor):
+        M_batch, _ = build_alphaD_only_matrices(params, config, param_values_tf, central_point_tf)
+        eigenvalues, _ = tf.linalg.eigh(M_batch)
+        alphaD_pred = alphaD_from_eigenvalues_batch(eigenvalues, config.alphaD_mode)
+
+        scale = tf.math.reduce_std(alphaD_true_tf) + tf.constant(1.0e-8, tf.float32)
+        mse = tf.reduce_mean(tf.square((alphaD_pred - alphaD_true_tf) / scale))
+        if l2_reg > 0:
+            mse = mse + tf.cast(l2_reg, tf.float32) * tf.reduce_mean(tf.square(tf.cast(params, tf.float32)))
+        return mse, alphaD_pred
+
+    return loss_fn

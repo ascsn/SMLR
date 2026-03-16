@@ -17,7 +17,7 @@ import matplotlib.ticker as ticker
 
 
 
-n = 60
+n = 10
 
 
 params = np.loadtxt('params_'+str(n)+'.txt')

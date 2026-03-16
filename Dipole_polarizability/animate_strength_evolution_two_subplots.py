@@ -25,8 +25,8 @@ plt.rcParams.update({'font.size': 16})
 Read in all the data
 '''
 
-n = 13
-retain = 0.6
+n = 10
+retain = 0.5
 
 params = np.loadtxt(f'params_best_n{n}_retain{retain}.txt')
 params = params.astype(np.float32)
