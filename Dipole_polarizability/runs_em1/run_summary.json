@@ -1,0 +1,51 @@
+{
+  "dataset_param_names": [
+    "p1",
+    "p2"
+  ],
+  "n_samples": 225,
+  "central_point": [
+    1.100000023841858,
+    2.75
+  ],
+  "config": {
+    "n": 10,
+    "n_params": 2,
+    "ansatz": "linear_exp",
+    "width_model": "affine",
+    "use_vector_terms": true,
+    "n_basis": 4,
+    "n_upper": 55,
+    "n_trainable": 266
+  },
+  "global_best_cost": 0.004363475367426872,
+  "global_best_meta": {
+    "seed": 49,
+    "iter": 29981
+  },
+  "args": {
+    "strength_dir": "../dipoles_data_all/total_strength/",
+    "alphaD_dir": "../dipoles_data_all/total_alphaD/",
+    "strength_regex": "strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\\.out",
+    "alphaD_regex": null,
+    "filter_ranges": null,
+    "central_point": null,
+    "n": 10,
+    "retain": 0.5,
+    "fold": 2.0,
+    "ansatz": "linear_exp",
+    "width_model": "affine",
+    "no_vector_terms": false,
+    "w_strength": 1.0,
+    "w_alphaD": 2.0,
+    "w_m1": 0.0,
+    "m1_target": 875.0,
+    "learning_rate": 0.01,
+    "n_restarts": 10,
+    "seed0": 42,
+    "num_iter": 30000,
+    "print_every": 1000,
+    "plots": "save",
+    "save_dir": "runs_em1"
+  }
+}

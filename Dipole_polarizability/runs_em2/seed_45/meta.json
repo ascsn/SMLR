@@ -1,0 +1,21 @@
+{
+  "seed": 45,
+  "best_cost": 4.228802481520688e-06,
+  "best_iter": 29628,
+  "dataset_param_names": [
+    "p1",
+    "p2"
+  ],
+  "central_point": [
+    1.100000023841858,
+    2.75
+  ],
+  "config": {
+    "n": 10,
+    "n_params": 2,
+    "ansatz": "linear_exp",
+    "alphaD_mode": "mid_eigenvalue",
+    "n_basis": 4,
+    "n_trainable": 232
+  }
+}

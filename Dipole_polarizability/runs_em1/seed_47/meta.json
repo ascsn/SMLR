@@ -1,0 +1,23 @@
+{
+  "seed": 47,
+  "best_cost": 0.005287833511829376,
+  "best_iter": 29797,
+  "dataset_param_names": [
+    "p1",
+    "p2"
+  ],
+  "central_point": [
+    1.100000023841858,
+    2.75
+  ],
+  "config": {
+    "n": 10,
+    "n_params": 2,
+    "ansatz": "linear_exp",
+    "width_model": "affine",
+    "use_vector_terms": true,
+    "n_basis": 4,
+    "n_upper": 55,
+    "n_trainable": 266
+  }
+}
