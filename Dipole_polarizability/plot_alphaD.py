@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import re
-import helper
+import scrap.helper as helper
 from scipy.interpolate import griddata
 import tensorflow as tf
 from matplotlib.cm import ScalarMappable
@@ -312,7 +312,7 @@ plt.ylim(12.5,23)
     
 
 plt.show()
-plt.savefig("figure2.png", dpi=300)
+#plt.savefig("figure2.png", dpi=300)
 
 
 '''

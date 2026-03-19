@@ -11,7 +11,7 @@ Takes the parameters file once the training has been done and plots the final re
 
 '''
 import numpy as np
-import helper
+import scrap.helper as helper
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
@@ -20,7 +20,7 @@ import matplotlib.ticker as ticker
 n = 10
 
 
-params = np.loadtxt('params_'+str(n)+'.txt')
+params = np.loadtxt('params_bestn'+str(n)+'_retain'+.txt')
 
 test_set = []
 with open("test_set.txt", "r") as f:

@@ -15,7 +15,7 @@ Created on Sat May 24 12:19:24 2025
 """
 
 import numpy as np
-import helper
+import scrap.helper as helper
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import tensorflow as tf

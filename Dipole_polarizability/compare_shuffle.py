@@ -17,7 +17,7 @@ def emulator_stats_and_curves(em_tag, color, label):
     for seed in seeds:
         seed_means = []
         for i in tiers:
-            df = pd.read_csv(f"alphaD_eval_{em_tag}_{seed}/alphaD_relerr_test_tier{i}.csv")
+            df = pd.read_csv(f"alphaD_samples/alphaD_eval_{em_tag}_{seed}/alphaD_relerr_test_tier{i}.csv")
             seed_means.append(df["rel_abs"].to_numpy().mean())
         per_seed_means.append(seed_means)
         # plot this seed in light gray
@@ -59,7 +59,7 @@ def emulator_stats_and_curves(em_tag, color, label, sets):
     for seed in seeds:
         seed_means = []
         for i in tiers:
-            df = pd.read_csv(f"alphaD_eval_{em_tag}_{seed}/alphaD_relerr_{sets}_tier{i}.csv")
+            df = pd.read_csv(f"alphaD_samples/alphaD_eval_{em_tag}_{seed}/alphaD_relerr_{sets}_tier{i}.csv")
             seed_means.append(df["rel_abs"].to_numpy().mean())
         per_seed_means.append(seed_means)
         # plot this seed in light gray

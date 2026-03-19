@@ -7,7 +7,7 @@ Created on Thu Apr 10 17:10:54 2025
 """
 
 import numpy as np
-import helper
+import scrap.helper as helper
 import matplotlib.pyplot as plt
 
 
