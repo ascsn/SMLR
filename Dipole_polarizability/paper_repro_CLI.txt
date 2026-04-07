@@ -1,0 +1,21 @@
+python main_gpt2.py \
+  --strength-dir ../dipoles_data_all/total_strength/ \
+  --alphaD-dir ../dipoles_data_all/total_alphaD/ \
+  --strength-regex 'strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out' \
+  --filter-ranges '{"p1":[0.5,1.75],"p2":[1.5,4.0]}' \
+  --n 13 \
+  --retain 0.5 \
+  --fold 2.0 \
+  --ansatz linear_exp \
+  --width-model affine \
+  --w-strength 1.0 \
+  --w-alphaD 2.0 \
+  --w-m1 0.0 \
+  --m1-target 875.0 \
+  --learning-rate 1e-2 \
+  --n-restarts 10 \
+  --seed0 42 \
+  --num-iter 30000 \
+  --print-every 1000 \
+  --plots save \
+  --save-dir runs_em1

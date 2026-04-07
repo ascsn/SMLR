@@ -7,7 +7,7 @@ Created on Tue May 20 22:27:30 2025
 """
 
 import numpy as np
-import helper_gpt
+import src.helper_gpt as helper_gpt
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
