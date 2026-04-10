@@ -10,8 +10,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 from matplotlib.colors import LogNorm
+import matplotlib.colors as mcolors
+import matplotlib.patches as patches
 
-import src.helper_gpt as helper_gpt
+import helper_gpt #as helper_gpt
 
 
 """
@@ -86,6 +88,12 @@ def maybe_parse_json_dict(text):
 def ensure_dir(path):
     Path(path).mkdir(parents=True, exist_ok=True)
 
+
+
+def apply_notebook_plot_style():
+    plt.rcParams.update({'font.size': 16})
+    plt.rcParams['xtick.direction'] = 'in'
+    plt.rcParams['ytick.direction'] = 'in'
 
 
 def choose_detail_idx(n_samples, requested=None):
@@ -240,7 +248,7 @@ def plot_alphaD_true_vs_pred(alphaD_true, alphaD_opt, label_points=True):
 
 
 
-def plot_parameter_error_map(dataset, alphaD_true, alphaD_opt, max_label_points=60):
+def plot_parameter_error_map(dataset, alphaD_true, alphaD_opt, max_label_points=60, filter_ranges=None):
     param_values = np.asarray(dataset.param_values)
     param_names = list(dataset.param_names)
     rel_err = np.abs(alphaD_opt - alphaD_true) / np.maximum(np.abs(alphaD_true), 1e-12)
@@ -253,22 +261,30 @@ def plot_parameter_error_map(dataset, alphaD_true, alphaD_opt, max_label_points=
         idx = np.arange(len(rel_err))
         ax.scatter(idx, rel_err)
         ax.set_xlabel("Sample index")
-        ax.set_ylabel(r"Relative error in $\alpha_D$")
+        ax.set_ylabel(r"Relative error in $lpha_D$")
         ax.set_title(r"No varying parameter detected")
         fig.tight_layout()
         return fig
 
-    # One varying parameter: line of points, no rectangle
+    # One varying parameter: styled trace with notebook-like markers
     if len(varying) == 1:
         j = varying[0]
         x = param_values[:, j]
         order = np.argsort(x)
+        positive_rel_err = np.clip(rel_err[order], 1e-16, None)
+        use_lognorm = np.any(positive_rel_err > 0)
+        norm = LogNorm(vmin=positive_rel_err.min(), vmax=positive_rel_err.max()) if use_lognorm else None
 
-        fig, ax = plt.subplots(figsize=(7, 4.5))
-        sc = ax.scatter(x[order], rel_err[order], c=rel_err[order], cmap="Spectral")
-        ax.plot(x[order], rel_err[order], alpha=0.7)
+        fig, ax = plt.subplots(figsize=(7, 4.75))
+        sc = ax.scatter(
+            x[order], rel_err[order], c=positive_rel_err,
+            marker="o", cmap="coolwarm", norm=norm,
+            edgecolors="0.3", linewidths=0.6, s=170,
+        )
+        ax.scatter(x[order], rel_err[order], marker=".", color="black", s=20)
+        ax.plot(x[order], rel_err[order], color="0.25", alpha=0.5, linewidth=1.25)
         cbar = fig.colorbar(sc, ax=ax)
-        cbar.set_label(r"Relative error $\alpha_D$")
+        cbar.set_label(r"Relative error on $lpha_D$")
 
         if label_points:
             for idx in order:
@@ -276,37 +292,70 @@ def plot_parameter_error_map(dataset, alphaD_true, alphaD_opt, max_label_points=
                         ha="center", va="bottom")
 
         ax.set_xlabel(param_names[j])
-        ax.set_ylabel(r"Relative error in $\alpha_D$")
+        ax.set_ylabel(r"Relative error in $lpha_D$")
         ax.set_title(r"1D parameter-space error trace")
         fig.tight_layout()
         return fig
 
-    # Two or more varying parameters: show first two varying dimensions
+    # Two or more varying parameters: notebook-style parameter map
     j0, j1 = varying[:2]
     x = param_values[:, j0]
     y = param_values[:, j1]
 
-    positive_rel_err = np.maximum(rel_err, 1e-15)
-    use_lognorm = np.any(positive_rel_err > 0) and (positive_rel_err.max() / positive_rel_err.min() > 50)
+    positive_rel_err = np.clip(rel_err, 1e-16, None)
+    use_lognorm = np.any(positive_rel_err > 0)
     norm = LogNorm(vmin=positive_rel_err.min(), vmax=positive_rel_err.max()) if use_lognorm else None
 
-    fig, ax = plt.subplots(figsize=(6.5, 5.5))
-    sc = ax.scatter(x, y, c=positive_rel_err, marker="s", cmap="Spectral", norm=norm)
+    fig, ax = plt.subplots(figsize=(6.6, 5.6), dpi=150)
+    sc = ax.scatter(
+        x, y, c=positive_rel_err,
+        marker="o", cmap="coolwarm", norm=norm,
+        edgecolors="0.3", linewidths=0.6, s=170,
+    )
+    ax.scatter(x, y, marker=".", color="black", s=20)
+
     cbar = fig.colorbar(sc, ax=ax)
-    cbar.set_label(r"Relative error $\alpha_D$")
+    cbar.set_label(r"Relative error on alpha_D")
+
+    if filter_ranges is not None and j0 < len(param_names) and j1 < len(param_names):
+        name_x = param_names[j0]
+        name_y = param_names[j1]
+        if name_x in filter_ranges and name_y in filter_ranges:
+            x_lo, x_hi = filter_ranges[name_x]
+            y_lo, y_hi = filter_ranges[name_y]
+
+            xmin, xmax = ax.get_xlim()
+            ymin, ymax = ax.get_ylim()
+            x0 = max(x_lo, xmin)
+            x1 = min(x_hi, xmax)
+            y0 = max(y_lo, ymin)
+            y1 = min(y_hi, ymax)
+
+            if (x1 > x0) and (y1 > y0):
+                face_rgba = mcolors.to_rgba('0.6', 0.30)
+                fill = patches.Rectangle(
+                    (x0, y0), x1 - x0, y1 - y0,
+                    facecolor=face_rgba, edgecolor='none', zorder=0.5
+                )
+                edge = patches.Rectangle(
+                    (x0, y0), x1 - x0, y1 - y0,
+                    facecolor='none', edgecolor='k', linewidth=2.2, zorder=0.6
+                )
+                ax.add_patch(fill)
+                ax.add_patch(edge)
 
     if label_points:
         for idx, (xi, yi) in enumerate(zip(x, y)):
             ax.text(xi, yi, str(idx), ha="center", va="center", fontsize=8, color="black")
 
-    ax.set_xlabel(param_names[j0])
-    ax.set_ylabel(param_names[j1])
+    ax.set_xlabel(param_names[j0], size=18)
+    ax.set_ylabel(param_names[j1], size=18)
 
     extra = ""
     if len(varying) > 2:
         hidden = ", ".join(param_names[k] for k in varying[2:])
         extra = f" (first two varying dims shown; also varies: {hidden})"
-    ax.set_title(r"Parameter-space relative error in $\alpha_D$" + extra)
+    ax.set_title(r"Parameter-space relative error in alpha_D" + extra)
     fig.tight_layout()
     return fig
 
@@ -322,6 +371,7 @@ def save_figure(fig, outdir, filename, dpi=200):
 
 def main():
     args = parse_args()
+    apply_notebook_plot_style()
     filter_ranges = maybe_parse_json_dict(args.filter_ranges)
 
     params_file = args.params_file or os.path.join(args.save_dir, "best_params_global.txt")
@@ -380,6 +430,7 @@ def main():
         alphaD_true,
         alphaD_opt,
         max_label_points=args.max_label_points,
+        filter_ranges=filter_ranges,
     )
 
     if args.plots in {"save", "both"}:

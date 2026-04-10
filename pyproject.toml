@@ -1,0 +1,22 @@
+[project]
+name = "smlr"
+version = "0.1.0"
+description = "Surrogate Models for Linear Response"
+readme = "README.md"
+authors = [
+    { name = "jinlauren", email = "ljin3634@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.9.29,<0.10.0"]
+build-backend = "uv_build"
+
+[project.optional-dependencies]
+docs = [
+    "sphinx>=7.0",
+    "pydata-sphinx-theme>=0.15",
+    "myst-parser>=2.0",
+]
+

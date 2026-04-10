@@ -3,34 +3,60 @@
     "p1",
     "p2"
   ],
-  "n_samples": 225,
+  "n_total_samples": 225,
+  "n_train_samples": 110,
+  "n_test_samples": 115,
+  "train_filters": {
+    "p1": [
+      0.5,
+      1.75
+    ],
+    "p2": [
+      1.5,
+      4.0
+    ]
+  },
   "central_point": [
     1.100000023841858,
     2.75
   ],
   "config": {
-    "n": 10,
+    "n": 13,
     "n_params": 2,
     "ansatz": "linear_exp",
     "width_model": "affine",
     "use_vector_terms": true,
     "n_basis": 4,
-    "n_upper": 55,
-    "n_trainable": 266
+    "n_upper": 91,
+    "n_trainable": 422
   },
-  "global_best_cost": 0.004363475367426872,
+  "global_best_cost": 0.002456470625475049,
   "global_best_meta": {
     "seed": 49,
-    "iter": 29981
+    "iter": 29986,
+    "train_metrics": {
+      "cost": 0.0024564426857978106,
+      "strength_cost": 0.0024402302224189043,
+      "alphaD_cost": 1.6212574337259866e-05,
+      "m1_cost": 0.0,
+      "alphaD_rel": 0.0002343290689168498
+    },
+    "test_metrics": {
+      "cost": 0.22824662923812866,
+      "strength_cost": 0.00721714599058032,
+      "alphaD_cost": 0.22102949023246765,
+      "m1_cost": 0.0,
+      "alphaD_rel": 0.018689360469579697
+    }
   },
   "args": {
     "strength_dir": "../dipoles_data_all/total_strength/",
     "alphaD_dir": "../dipoles_data_all/total_alphaD/",
     "strength_regex": "strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\\.out",
     "alphaD_regex": null,
-    "filter_ranges": null,
+    "filter_ranges": "{\"p1\":[0.5,1.75],\"p2\":[1.5,4.0]}",
     "central_point": null,
-    "n": 10,
+    "n": 13,
     "retain": 0.5,
     "fold": 2.0,
     "ansatz": "linear_exp",

@@ -3,8 +3,56 @@
 ![Logo](SMLR.png)
 
 This repository accompanies *L. Jin et al., “Surrogate Models for Linear Response”*.  
-It provides user-ready **emulators** and **notebooks** for reproducing figures and results.
+It provides user-ready **emulators**, **training workflows**, and **documentation**.
 
+## Table of Contents
+
+- [Home](#home)
+- [Getting Started](#getting-started)
+- [Reproducibility](#reproducibility)
+  - [Generate Synthetic Training Data](#generate-synthetic-training-data)
+  - [Visualize Training Data](#visualize-training-data)
+  - [Train Surrogate Model](#train-surrogate-model)
+  - [Leave-One-Out CV](#leave-one-out-cv)
+  - [Prediction at New Parameter Point](#prediction-at-new-parameter-point)
+  - [Conclusion](#conclusion)
+- [Examples](#examples)
+- [Documentation](#documentation)
+- [Development](#development)
+
+---
+
+## Home
+
+SMLR is a software package for building surrogate models of linear response
+observables in nuclear structure. The current repository includes emulator scripts
+for dipole polarizability and beta-decay strength calculations.
+
+## Getting Started
+
+Start by installing and building the package with `uv`.
+See `docs/Getting Started.md` for a structured setup guide.
+
+## Reproducibility
+
+The reproducibility workflow includes data generation, visualization,
+model training, cross-validation, and prediction for new parameter points.
+Read `docs/Reproducibility.md` for the full workflow.
+
+## Examples
+
+Examples are provided for both dipole polarizability and beta-decay emulators.
+Open `docs/Examples.md` for commands and use cases.
+
+## Documentation
+
+The full documentation set lives in `docs/` and mirrors the requested layout.
+Use the markdown files directly or render them with a static site generator.
+
+## Development
+
+Package metadata has been added under `src/smlr/` so the project can be built using `uv`.
+Development notes and package build instructions are available in `docs/Development.md`.
 
 ---
 
