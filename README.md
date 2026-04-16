@@ -1,6 +1,6 @@
 # SMLR: Surrogate Models for Linear Response
 
-![Logo](SMLR.png)
+![Logo](logos/SMLR.png)
 
 This repository accompanies *L. Jin et al., “Surrogate Models for Linear Response”*.  
 It provides user-ready **emulators** and **notebooks** for reproducing figures and results.
