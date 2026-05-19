@@ -1,14 +1,12 @@
-cd Dipole_polarizability
-
 python src/diagnostics_general_gpt.py \
   --strength-dir ../dipoles_data_all/total_strength/ \
   --alphaD-dir ../dipoles_data_all/total_alphaD/ \
   --strength-regex 'strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out' \
-  --filter-ranges '{"p1":[0.4,1.8],"p2":[1.5,4.0]}' \
+  --filter-ranges '{"p1":[0.2,2.0],"p2":[1.0,4.5]}' \
   --n 13 \
   --retain 0.6 \
   --ansatz paper_dipole \
   --width-model affine \
-  --params-file /Users/laurenjin/Downloads/params_best_n13_retain0.6.txt \
-  --plots save \
+  --max-label-points 1000 \
+  --plots both \
   --save-dir runs_em1

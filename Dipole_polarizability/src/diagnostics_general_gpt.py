@@ -63,7 +63,7 @@ def parse_args():
     p.add_argument("--fig-dir", default=None,
                    help="Directory for saved figures. Defaults to <save-dir>/diagnostics")
     p.add_argument("--dpi", type=int, default=200)
-    p.add_argument("--max-label-points", type=int, default=60,
+    p.add_argument("--max-label-points", type=int, default=1000,
                    help="Only annotate point indices when sample count is <= this threshold.")
     p.add_argument("--yscale", choices=["linear", "log"], default="linear")
 
@@ -253,8 +253,8 @@ def compute_rmse(dataset, opt_strength):
 
 
 
-def plot_detail(dataset, outputs, detail_idx, yscale="linear"):
-    fig, ax = plt.subplots(figsize=(8, 5))
+def draw_detail_axis(ax, dataset, outputs, detail_idx, yscale="linear"):
+    ax.clear()
 
     x = dataset.strengths[detail_idx][:, 0]
     y_true = dataset.strengths[detail_idx][:, 1]
@@ -269,8 +269,17 @@ def plot_detail(dataset, outputs, detail_idx, yscale="linear"):
 
     ax.set_xlabel(r"$\omega$")
     ax.set_ylabel("Strength")
-    ax.set_title(f"Detailed spectrum check (sample {detail_idx})")
+    params = ", ".join(
+        f"{name}={value:g}"
+        for name, value in zip(dataset.param_names, dataset.param_values[detail_idx])
+    )
+    ax.set_title(f"Detailed spectrum check (sample {detail_idx}: {params})")
     ax.legend()
+
+
+def plot_detail(dataset, outputs, detail_idx, yscale="linear"):
+    fig, ax = plt.subplots(figsize=(8, 5))
+    draw_detail_axis(ax, dataset, outputs, detail_idx, yscale=yscale)
     fig.tight_layout()
     return fig
 
@@ -278,7 +287,7 @@ def plot_detail(dataset, outputs, detail_idx, yscale="linear"):
 
 def plot_alphaD_true_vs_pred(alphaD_true, alphaD_opt, label_points=True):
     fig, ax = plt.subplots(figsize=(6, 5))
-    ax.scatter(alphaD_true, alphaD_opt)
+    scatter = ax.scatter(alphaD_true, alphaD_opt, picker=True, pickradius=5)
 
     lo = min(np.min(alphaD_true), np.min(alphaD_opt))
     hi = max(np.max(alphaD_true), np.max(alphaD_opt))
@@ -294,7 +303,36 @@ def plot_alphaD_true_vs_pred(alphaD_true, alphaD_opt, label_points=True):
     ax.set_ylabel(r"Predicted $\alpha_D$")
     ax.set_title(r"$\alpha_D$: prediction vs truth")
     fig.tight_layout()
-    return fig
+    return fig, scatter
+
+
+def connect_alphaD_picker(fig_alphaD, scatter, fig_detail, dataset, outputs, yscale="linear"):
+    detail_ax = fig_detail.axes[0]
+
+    def on_pick(event):
+        if event.artist is not scatter or len(event.ind) == 0:
+            return
+        if event.mouseevent is not None and len(event.ind) > 1:
+            offsets = scatter.get_offsets()[event.ind]
+            click_xy = np.array([event.mouseevent.xdata, event.mouseevent.ydata], dtype=float)
+            if np.any(~np.isfinite(click_xy)):
+                detail_idx = int(event.ind[0])
+            else:
+                detail_idx = int(event.ind[np.argmin(np.sum((offsets - click_xy[None, :]) ** 2, axis=1))])
+        else:
+            detail_idx = int(event.ind[0])
+
+        draw_detail_axis(detail_ax, dataset, outputs, detail_idx, yscale=yscale)
+        fig_detail.tight_layout()
+        fig_detail.canvas.draw_idle()
+        print(
+            f"Selected sample {detail_idx}: params={dataset.param_values[detail_idx].tolist()} "
+            f"alphaD true={dataset.alphaD_values[detail_idx]:.8g} "
+            f"pred={outputs['alphaD_opt'][detail_idx]:.8g}"
+        )
+
+    cid = fig_alphaD.canvas.mpl_connect("pick_event", on_pick)
+    return cid
 
 
 
@@ -428,11 +466,21 @@ def main():
     print("Max alpha_D rel. err:", float(np.max(np.abs(alphaD_opt - alphaD_true) / np.maximum(np.abs(alphaD_true), 1e-12))))
 
     fig1 = plot_detail(dataset, outputs, detail_idx, yscale=args.yscale)
-    fig2 = plot_alphaD_true_vs_pred(
+    fig2, alphaD_scatter = plot_alphaD_true_vs_pred(
         alphaD_true,
         alphaD_opt,
         label_points=(n_samples <= args.max_label_points),
     )
+    alphaD_picker_cid = connect_alphaD_picker(
+        fig_alphaD=fig2,
+        scatter=alphaD_scatter,
+        fig_detail=fig1,
+        dataset=dataset,
+        outputs=outputs,
+        yscale=args.yscale,
+    )
+    # Keep the connection id alive for interactive backends.
+    fig2._alphaD_picker_cid = alphaD_picker_cid
     fig3 = plot_parameter_error_map(
         dataset,
         alphaD_true,

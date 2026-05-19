@@ -1,5 +1,3 @@
-cd Dipole_polarizability
-
 python src/main_gpt2.py \
   --strength-dir ../dipoles_data_all/total_strength/ \
   --alphaD-dir ../dipoles_data_all/total_alphaD/ \
@@ -15,7 +13,7 @@ python src/main_gpt2.py \
   --w-m1 0.0 \
   --m1-target 875.0 \
   --learning-rate 1e-2 \
-  --n-restarts 30 \
+  --n-restarts 1 \
   --seed0 1234 \
   --num-iter 20000 \
   --print-every 1000 \

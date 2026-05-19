@@ -30,23 +30,23 @@
     "n_upper": 91,
     "n_trainable": 330
   },
-  "global_best_cost": 0.0014326106756925583,
+  "global_best_cost": 0.11825507879257202,
   "global_best_meta": {
-    "seed": 42,
-    "iter": 29905,
+    "seed": 1234,
+    "iter": 19952,
     "train_metrics": {
-      "cost": 0.0014333670260384679,
-      "strength_cost": 0.0014196403790265322,
-      "alphaD_cost": 1.3726657925872132e-05,
+      "cost": 0.11826374381780624,
+      "strength_cost": 0.11793291568756104,
+      "alphaD_cost": 0.0003308317100163549,
       "m1_cost": 0.0,
-      "alphaD_rel": 0.0007012133137322962
+      "alphaD_rel": 0.00045316052273847163
     },
     "test_metrics": {
-      "cost": 0.17595869302749634,
-      "strength_cost": 0.020892266184091568,
-      "alphaD_cost": 0.15506643056869507,
+      "cost": 1.068241000175476,
+      "strength_cost": 0.32054808735847473,
+      "alphaD_cost": 0.747692883014679,
       "m1_cost": 0.0,
-      "alphaD_rel": 0.03131432086229324
+      "alphaD_rel": 0.006949413102120161
     }
   },
   "args": {
@@ -62,14 +62,14 @@
     "ansatz": "paper_dipole",
     "width_model": "affine",
     "no_vector_terms": false,
-    "w_strength": 1.0,
-    "w_alphaD": 2.0,
+    "w_strength": 100.0,
+    "w_alphaD": 200.0,
     "w_m1": 0.0,
     "m1_target": 875.0,
     "learning_rate": 0.01,
-    "n_restarts": 3,
-    "seed0": 42,
-    "num_iter": 30000,
+    "n_restarts": 1,
+    "seed0": 1234,
+    "num_iter": 20000,
     "print_every": 1000,
     "plots": "save",
     "save_dir": "runs_em1"
