@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-import src.helper_gpt as helper_gpt
+import helper_gpt as helper_gpt
 
 
 # -----------------------------------------------------------------------------
@@ -44,7 +44,7 @@ def parse_args():
     p.add_argument("--n", type=int, default=10, help="Matrix size.")
     p.add_argument("--retain", type=float, default=0.5, help="Retained fraction of eigenmodes.")
     p.add_argument("--fold", type=float, default=2.0, help="Base Lorentzian width.")
-    p.add_argument("--ansatz", choices=["linear", "quadratic", "linear_exp"], default="linear_exp",
+    p.add_argument("--ansatz", choices=["linear", "quadratic", "linear_exp", "paper_dipole"], default="paper_dipole",
                    help="Matrix ansatz family.")
     p.add_argument("--width-model", choices=["constant", "affine"], default="affine",
                    help="How eta depends on parameters.")
@@ -269,7 +269,7 @@ def main():
     MIN_DELTA_REL = 3e-4
     WARMUP_LOGS = 12
     REQUIRE_BOTH_TO_STOP = True
-    MIN_ITERATIONS = min(2000, max(args.print_every, args.num_iter // 10))
+    MIN_ITERATIONS = 20000
 
     for r in range(args.n_restarts):
         seed = args.seed0 + r
@@ -279,8 +279,25 @@ def main():
         print(f"\n========== RESTART {r+1}/{args.n_restarts} (seed={seed}) ==========")
         set_all_seeds(seed)
 
-        init_vec = helper_gpt.make_random_initial_guess(config, seed=seed, fold=args.fold)
-        init_vec = helper_gpt.encode_initial_guess(init_vec, E_hat, B_hat, config, args.retain)
+        if args.ansatz == "paper_dipole":
+            rng = np.random.default_rng(seed)
+            init_vec = rng.uniform(0.0, 1.0, size=helper_gpt.count_trainable_parameters(config)).astype(np.float32)
+            init_vec[0] = np.float32(args.fold)
+            layout = helper_gpt.get_packed_layout(config)
+            init_vec[layout.width_bias_slice] = np.array([1.0], dtype=np.float32)
+            init_vec[layout.width_linear_slice] = np.ones(
+                layout.width_linear_slice.stop - layout.width_linear_slice.start,
+                dtype=np.float32,
+            )
+            init_vec[layout.feature_param_slice] = np.ones(
+                layout.feature_param_slice.stop - layout.feature_param_slice.start,
+                dtype=np.float32,
+            )
+        else:
+            init_vec = helper_gpt.make_random_initial_guess(config, seed=seed, fold=args.fold)
+        init_vec = helper_gpt.encode_initial_guess(
+            init_vec, E_hat, B_hat, config, args.retain, reference_point=dataset.central_point
+        )
         params = tf.Variable(init_vec, dtype=tf.float32)
         optimizer = tf.keras.optimizers.Adam(learning_rate=args.learning_rate)
 
@@ -364,7 +381,7 @@ def main():
             stop_best = (no_improve_cnt >= PATIENCE_BEST)
             stop_plateau = (plateau_cnt >= PATIENCE_PLATEAU)
             do_stop = (stop_best and stop_plateau) if REQUIRE_BOTH_TO_STOP else (stop_best or stop_plateau)
-            if do_stop and i >= MIN_ITERATIONS:
+            if do_stop and (i + 1) >= MIN_ITERATIONS:
                 print(f"[seed {seed}] Early stopping at iter {i}. best={best_cost_this:.6e} @ {best_iter_this}")
                 break
 

@@ -1,0 +1,28 @@
+name = "test-engineer"
+category = "software-package-development"
+
+purpose = "Build focused tests that protect scientific package behavior without requiring full expensive production workflows."
+
+use_when = [
+  "Adding package tests for existing research scripts.",
+  "Converting executable validation scripts into pytest-style tests.",
+  "Creating smoke tests for command-line workflows.",
+  "Protecting refactors with regression tests.",
+  "Designing small fixtures for data-heavy scientific code.",
+]
+
+helpful_inputs = [
+  "Functions, scripts, or commands under test.",
+  "Representative small input files or synthetic data.",
+  "Known reference outputs, tolerances, and invariants.",
+  "Runtime limits for local tests and CI.",
+  "Recent bugs or fragile workflows.",
+]
+
+expected_output = [
+  "Test plan ordered by risk and cost.",
+  "Concrete tests or test skeletons.",
+  "Recommended fixtures and reference data.",
+  "Numerical tolerances and invariants to assert.",
+  "Commands to run tests locally and in CI.",
+]

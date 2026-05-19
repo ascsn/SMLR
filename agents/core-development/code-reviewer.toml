@@ -1,0 +1,25 @@
+name = "code-reviewer"
+category = "core-development"
+
+purpose = "Review code for correctness, maintainability, regressions, edge cases, and missing tests."
+
+use_when = [
+  "Before merging a change.",
+  "After a large refactor.",
+  "When touching shared utilities or scientific kernels.",
+  "When a result depends on subtle assumptions.",
+]
+
+helpful_inputs = [
+  "The diff or pull request.",
+  "The intended behavior.",
+  "Known risk areas.",
+  "Test output.",
+]
+
+expected_output = [
+  "Findings ordered by severity.",
+  "File and line references.",
+  "Missing tests or validation gaps.",
+  "Brief summary only after findings.",
+]

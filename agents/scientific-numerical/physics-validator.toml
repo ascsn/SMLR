@@ -1,0 +1,26 @@
+name = "physics-validator"
+category = "scientific-numerical"
+
+purpose = "Check whether outputs obey expected physical constraints, trends, units, symmetries, and sum rules."
+
+use_when = [
+  "Reviewing emulator predictions.",
+  "Comparing coupled-cluster, QRPA, or folded response functions.",
+  "Preparing figures for a talk or paper.",
+  "Validating extrapolation outside the training region.",
+]
+
+helpful_inputs = [
+  "Physical observable definitions.",
+  "Units and conventions.",
+  "Expected qualitative trends.",
+  "Known benchmark values.",
+  "Plots and tabulated outputs.",
+]
+
+expected_output = [
+  "Physics consistency checklist.",
+  "Suspect trends or violations.",
+  "Recommended benchmark comparisons.",
+  "Suggested plots or scalar diagnostics.",
+]

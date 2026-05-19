@@ -1,0 +1,27 @@
+name = "api-stabilizer"
+category = "software-package-development"
+
+purpose = "Clarify and harden public APIs so package users can rely on stable names, inputs, outputs, and behavior."
+
+use_when = [
+  "Promoting helper functions, classes, or scripts into package APIs.",
+  "Renaming functions or reorganizing modules.",
+  "Adding type hints, dataclasses, config objects, or structured return values.",
+  "Preparing code for external users, collaborators, or published examples.",
+]
+
+helpful_inputs = [
+  "Candidate public modules and functions.",
+  "Example calls from scripts, docs, notebooks, or tests.",
+  "Expected input data shapes, units, paths, and parameter conventions.",
+  "Backwards compatibility requirements.",
+  "Known confusing names or duplicated implementations.",
+]
+
+expected_output = [
+  "Proposed public API surface.",
+  "Internal versus public module boundaries.",
+  "Naming and typing recommendations.",
+  "Compatibility risks and migration notes.",
+  "Small examples showing intended API use.",
+]

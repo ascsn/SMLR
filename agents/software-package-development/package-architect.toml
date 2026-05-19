@@ -1,0 +1,26 @@
+name = "package-architect"
+category = "software-package-development"
+
+purpose = "Design the package structure that turns scientific research code into reusable, importable, maintainable software."
+
+use_when = [
+  "Creating or reorganizing a src-layout Python package.",
+  "Deciding what belongs in the package versus examples, scripts, notebooks, data, or archived research code.",
+  "Extracting reusable library modules from one-off workflows.",
+  "Planning a refactor before moving scientific code into public package APIs.",
+]
+
+helpful_inputs = [
+  "Current repository tree.",
+  "pyproject.toml, setup files, or package metadata.",
+  "Main scripts, notebooks, and existing helper modules.",
+  "Expected user workflows and target audiences.",
+  "Constraints on backwards compatibility, data size, and dependencies.",
+]
+
+expected_output = [
+  "Recommended package layout.",
+  "Boundary between library code, CLIs, examples, tests, docs, and artifacts.",
+  "Refactor sequence with low-risk first steps.",
+  "Risks, open design questions, and files likely to move or split.",
+]

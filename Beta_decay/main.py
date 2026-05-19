@@ -136,10 +136,12 @@ train_set = combined[:n_train]
 cv_set    = combined[n_train:n_train + n_cv]
 test_set  = combined[n_train + n_cv:]
 
-# centroid
+# Central point: nearest sampled point to the bounding-box midpoint.
 combined_ar = np.array(combined, dtype=float)
-centroid = combined_ar.mean(axis=0)
-distances = np.linalg.norm(combined_ar - centroid, axis=1)
+mins = combined_ar.min(axis=0)
+maxs = combined_ar.max(axis=0)
+center = 0.5 * (mins + maxs)
+distances = np.linalg.norm(combined_ar - center, axis=1)
 central_index = np.argmin(distances)
 central_point = tuple(combined[central_index])
 print('Central data point in train set:', central_point)

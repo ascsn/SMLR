@@ -41,7 +41,7 @@ def parse_args():
 
     # Model structure
     p.add_argument("--n", type=int, default=10, help="Matrix size.")
-    p.add_argument("--ansatz", choices=["linear", "quadratic", "linear_exp"], default="linear_exp",
+    p.add_argument("--ansatz", choices=["linear", "quadratic", "linear_exp", "paper_dipole"], default="linear_exp",
                    help="Matrix ansatz family.")
     p.add_argument("--alphaD-mode", choices=["mid_eigenvalue", "sum_inverse_positive"], default="mid_eigenvalue",
                    help="How the emulator converts eigenvalues into the alphaD prediction.")

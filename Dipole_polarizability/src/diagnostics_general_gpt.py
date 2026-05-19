@@ -116,6 +116,7 @@ def build_outputs(dataset, params, n, retain, ansatz, width_model, use_vector_te
         width_model=width_model,
         use_vector_terms=use_vector_terms,
     )
+    params = coerce_params_layout(params, config)
 
     param_values_tf = tf.convert_to_tensor(dataset.param_values, dtype=tf.float32)
     central_point_tf = tf.convert_to_tensor(dataset.central_point, dtype=tf.float32)
@@ -157,7 +158,7 @@ def build_outputs(dataset, params, n, retain, ansatz, width_model, use_vector_te
             energy=omega_tf,
             poles=eigvals_kept[i],
             strength=B_batch[i],
-            width=eta_batch[i] / 2.0,
+            width=eta_batch[i],
         ).numpy()
 
         opt_strength.append(y_pred)
@@ -178,6 +179,63 @@ def build_outputs(dataset, params, n, retain, ansatz, width_model, use_vector_te
         "opt_eigs": opt_eigs,
         "opt_Bs": opt_Bs,
     }
+
+
+def coerce_params_layout(params, config):
+    params = np.asarray(params, dtype=np.float32).reshape(-1)
+    layout = helper_gpt.get_packed_layout(config)
+    if params.size == layout.total_size:
+        return params
+
+    if config.ansatz != "paper_dipole" or config.n_params != 2:
+        raise ValueError(
+            f"Parameter vector has length {params.size}, expected {layout.total_size}."
+        )
+
+    n = int(config.n)
+    n_upper = n * (n + 1) // 2
+    legacy_size = 1 + 3 * n + n + 4 * n_upper + 4
+    if params.size != legacy_size:
+        raise ValueError(
+            f"Parameter vector has length {params.size}; expected current layout "
+            f"{layout.total_size} or legacy paper layout {legacy_size}."
+        )
+
+    idx = 0
+    eta = params[idx:idx + 1]
+    idx += 1
+    v0 = params[idx:idx + n]
+    idx += n
+    v1 = params[idx:idx + n]
+    idx += n
+    v2 = params[idx:idx + n]
+    idx += n
+    d_diag = params[idx:idx + n]
+    idx += n
+    s1 = params[idx:idx + n_upper]
+    idx += n_upper
+    s2 = params[idx:idx + n_upper]
+    idx += n_upper
+    s3 = params[idx:idx + n_upper]
+    idx += n_upper
+    idx += n_upper  # Legacy S4 block is packed but unused by the paper EM1 equation.
+    x1, x2, x3, x4 = params[idx:idx + 4]
+
+    converted = np.zeros(layout.total_size, dtype=np.float32)
+    converted[0] = eta[0]
+    converted[layout.v0_slice] = v0
+    converted[layout.v_linear_slice] = np.concatenate([v1, v2])
+    converted[layout.d_diag_slice] = d_diag
+    converted[layout.basis_slice] = np.concatenate([s1, s2, s3])
+    converted[layout.width_bias_slice] = np.array([x2], dtype=np.float32)
+    converted[layout.width_linear_slice] = np.array([x3, x4], dtype=np.float32)
+    converted[layout.feature_param_slice] = np.array([x1], dtype=np.float32)
+
+    print(
+        f"Converted legacy paper parameter layout ({legacy_size}) "
+        f"to current helper_gpt layout ({layout.total_size})."
+    )
+    return converted
 
 
 

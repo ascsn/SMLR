@@ -35,7 +35,7 @@ class GenericDataset:
 class AnsatzConfig:
     n: int
     n_params: int
-    ansatz: str = "linear"            # linear | quadratic | linear_exp
+    ansatz: str = "linear"            # linear | quadratic | linear_exp | paper_dipole
     width_model: str = "affine"       # constant | affine
     use_vector_terms: bool = True
 
@@ -236,19 +236,19 @@ def give_me_Lorentzian(energy, poles, strength, width):
 
 
 @tf.function
-def give_me_Lorentzian_batched(omega, poles_batch, B_batch, width_batch):
+def give_me_Lorentzian_batched(omega, poles_batch, B_batch, half_width_batch):
     omega = tf.convert_to_tensor(omega, dtype=tf.float32)
     poles_batch = tf.convert_to_tensor(poles_batch, dtype=tf.float32)
     B_batch = tf.convert_to_tensor(B_batch, dtype=tf.float32)
-    width_batch = tf.reshape(tf.convert_to_tensor(width_batch, dtype=tf.float32), (-1, 1, 1))
+    half_width_batch = tf.reshape(tf.convert_to_tensor(half_width_batch, dtype=tf.float32), (-1, 1, 1))
 
     omega_exp = tf.expand_dims(omega, axis=1)
     omega_exp = tf.tile(omega_exp, [tf.shape(poles_batch)[0], 1, 1])
     poles_exp = tf.expand_dims(poles_batch, axis=-1)
     B_exp = tf.expand_dims(B_batch, axis=-1)
 
-    numerator = B_exp * width_batch / np.pi
-    denominator = tf.square(omega_exp - poles_exp) + tf.square(width_batch)
+    numerator = B_exp * half_width_batch / np.pi
+    denominator = tf.square(omega_exp - poles_exp) + tf.square(half_width_batch)
     return tf.reduce_sum(numerator / denominator, axis=1)
 
 
@@ -298,6 +298,10 @@ def _n_basis_from_config(config: AnsatzConfig) -> int:
         return 2 * p
     if config.ansatz == "quadratic":
         return p + p * (p + 1) // 2
+    if config.ansatz == "paper_dipole":
+        if p != 2:
+            raise ValueError("paper_dipole ansatz requires exactly two parameters: alpha and beta.")
+        return 3
     raise ValueError(f"Unknown ansatz {config.ansatz!r}.")
 
 
@@ -333,6 +337,8 @@ def get_packed_layout(config: AnsatzConfig) -> PackedLayout:
     idx += width_linear_size
 
     feature_param_size = p if config.ansatz == "linear_exp" else 0
+    if config.ansatz == "paper_dipole":
+        feature_param_size = 1
     feature_param_slice = slice(idx, idx + feature_param_size)
     idx += feature_param_size
 
@@ -389,6 +395,8 @@ def unpack_trainable_parameters(params: tf.Tensor, config: AnsatzConfig) -> Dict
 
     if config.ansatz == "linear_exp":
         feature_params = tf.nn.softplus(params[layout.feature_param_slice])
+    elif config.ansatz == "paper_dipole":
+        feature_params = params[layout.feature_param_slice]
     else:
         feature_params = tf.zeros((0,), dtype=tf.float32)
 
@@ -433,7 +441,29 @@ def compute_ansatz_features(param_shifts: tf.Tensor, config: AnsatzConfig, featu
             feats.append(tf.stack(quad_terms, axis=1))
         return tf.concat(feats, axis=1)
 
+    if config.ansatz == "paper_dipole":
+        if p != 2:
+            raise ValueError("paper_dipole ansatz requires exactly two parameters: alpha and beta.")
+        if feature_params is None:
+            feature_params = tf.ones((1,), dtype=tf.float32)
+        alpha_shift = dx[:, 0]
+        beta_shift = dx[:, 1]
+        x1 = tf.reshape(feature_params, (-1,))[0]
+        return tf.stack(
+            [alpha_shift, beta_shift, beta_shift * tf.exp(-alpha_shift * x1)],
+            axis=1,
+        )
+
     raise ValueError(f"Unknown ansatz {config.ansatz!r}.")
+
+
+def compute_trainable_fwhm(unpacked: Dict[str, tf.Tensor], dx: tf.Tensor, config: AnsatzConfig) -> tf.Tensor:
+    """Paper-reproduction trainable FWHM: sqrt(eta0^2 + affine(parameters)^2)."""
+    if config.width_model == "constant":
+        return tf.fill((tf.shape(dx)[0],), tf.abs(unpacked["eta0"]))
+
+    width_affine = unpacked["width_bias"] + tf.einsum('bp,p->b', dx, unpacked["width_linear"])
+    return tf.sqrt(tf.square(unpacked["eta0"]) + tf.square(width_affine))
 
 
 
@@ -444,19 +474,17 @@ def build_model_matrices_and_vectors(
     central_point: tf.Tensor,
 ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
     unpacked = unpack_trainable_parameters(params, config)
-    dx = tf.cast(param_values, tf.float32) - tf.cast(central_point[None, :], tf.float32)
-    features = compute_ansatz_features(dx, config, unpacked["feature_params"])
+    param_values = tf.cast(param_values, tf.float32)
+    dx = param_values - tf.cast(central_point[None, :], tf.float32)
 
+    features = compute_ansatz_features(dx, config, unpacked["feature_params"])
     M_batch = unpacked["D"][None, :, :] + tf.einsum('bf,fij->bij', features, unpacked["basis_mats"])
+
     v_batch = unpacked["v0"][None, :] + tf.einsum('bp,pn->bn', dx, unpacked["v_linear"])
 
-    if config.width_model == "constant":
-        eta_batch = tf.fill((tf.shape(dx)[0],), tf.abs(unpacked["eta0"]))
-    else:
-        width_affine = unpacked["width_bias"] + tf.einsum('bp,p->b', dx, unpacked["width_linear"])
-        eta_batch = tf.sqrt(tf.square(unpacked["eta0"]) + tf.square(width_affine))
+    fwhm_batch = compute_trainable_fwhm(unpacked, dx, config)
 
-    return M_batch, v_batch, eta_batch, features
+    return M_batch, v_batch, fwhm_batch, features
 
 
 
@@ -468,11 +496,13 @@ def make_random_initial_guess(config: AnsatzConfig, seed: Optional[int] = None, 
     vec[layout.width_bias_slice] = np.array([0.0], dtype=np.float32)
     if config.ansatz == "linear_exp":
         vec[layout.feature_param_slice] = np.full(layout.feature_param_slice.stop - layout.feature_param_slice.start, 0.2, dtype=np.float32)
+    elif config.ansatz == "paper_dipole":
+        vec[layout.feature_param_slice] = np.array([0.2], dtype=np.float32)
     return vec
 
 
 
-def encode_initial_guess(random_initial_guess, E, B, config_or_n, retain):
+def encode_initial_guess(random_initial_guess, E, B, config_or_n, retain, reference_point=None):
     """
     Generic version of the old initializer.
 
@@ -550,7 +580,7 @@ def cost_function_batched_generic(
     m1_target=875.0,
     eps=1e-8,
 ):
-    M_batch, v_batch, eta_batch, _ = build_model_matrices_and_vectors(params, config, param_values, central_point)
+    M_batch, v_batch, fwhm_batch, _ = build_model_matrices_and_vectors(params, config, param_values, central_point)
     eigenvalues, eigenvectors = tf.linalg.eigh(M_batch)
 
     n_i = tf.shape(eigenvalues)[1]
@@ -569,7 +599,7 @@ def cost_function_batched_generic(
 
     omega_tensor = tf.cast(strength_true[0][:, 0], tf.float32)
     strength_true_tensor = tf.stack([tf.cast(s[:, 1], tf.float32) for s in strength_true], axis=0)
-    Lor_batch = give_me_Lorentzian_batched(omega_tensor[None, :], eigenvalues_kept, B_batch, eta_batch / 2.0)
+    Lor_batch = give_me_Lorentzian_batched(omega_tensor[None, :], eigenvalues_kept, B_batch, 0.5 * fwhm_batch)
 
     d = omega_tensor[1:] - omega_tensor[:-1]
     w0 = d[0] / 2.0
@@ -580,17 +610,23 @@ def cost_function_batched_generic(
 
     diff = Lor_batch - strength_true_tensor
     num = tf.reduce_sum(tf.square(diff) * trap_w[None, :], axis=1)
-    den = tf.reduce_sum(tf.square(strength_true_tensor) * trap_w[None, :], axis=1) + eps
+    # Paper-reproduction scaling from the original project. The generalized
+    # alternative was per-sample: den = integral S_true_i(w)^2 dw + eps.
+    den = tf.cast(285.66404867541524, tf.float32)
     L_strength = tf.reduce_mean(num / den)
 
     mask = tf.cast(eigenvalues_kept > 1.0, tf.float32)
     alphaD_calc = tf.reduce_sum((B_batch * mask) / tf.maximum(eigenvalues_kept, 1e-6), axis=1) * tf.constant(ALPHAD_FAC, tf.float32)
     alphaD_true_tensor = tf.cast(alphaD_true, tf.float32)
-    alphaD_scale = tf.math.reduce_std(alphaD_true_tensor) + eps
+    # Paper-reproduction scaling from the original project. The generalized
+    # alternative was dataset scaling: std(alphaD_true) + eps.
+    alphaD_scale = tf.cast(7.1110237745439, tf.float32)
     L_mminus1 = tf.reduce_mean(tf.square((alphaD_calc - alphaD_true_tensor) / alphaD_scale))
 
     m1_calc = tf.reduce_sum(B_batch * eigenvalues_kept * mask, axis=1)
-    m1_scale = tf.maximum(tf.abs(tf.cast(m1_target, tf.float32)), 1.0)
+    # Paper-reproduction scaling from the original project. The generalized
+    # alternative was max(abs(m1_target), 1.0).
+    m1_scale = tf.cast(58.703055785984134, tf.float32)
     L_mplus1 = tf.reduce_mean(tf.square((m1_calc - tf.cast(m1_target, tf.float32)) / m1_scale))
 
     total_cost = tf.cast(w_strength, tf.float32) * L_strength + tf.cast(w_mminus1, tf.float32) * L_mminus1 + tf.cast(w_mplus1, tf.float32) * L_mplus1
@@ -622,7 +658,7 @@ def cost_function_batched_mixed(
     else:
         param_values = np.asarray(fmt_data, dtype=np.float32)
 
-    config = AnsatzConfig(n=int(n), n_params=param_values.shape[1], ansatz="linear_exp", width_model="affine", use_vector_terms=True)
+    config = AnsatzConfig(n=int(n), n_params=param_values.shape[1], ansatz="paper_dipole", width_model="affine", use_vector_terms=True)
     return cost_function_batched_generic(
         params=params,
         config=config,
@@ -779,10 +815,16 @@ def build_alphaD_only_matrices(
     central_point: tf.Tensor,
 ) -> Tuple[tf.Tensor, tf.Tensor]:
     unpacked = unpack_alphaD_only_parameters(params, config)
-    dx = tf.cast(param_values, tf.float32) - tf.cast(central_point[None, :], tf.float32)
+    param_values = tf.cast(param_values, tf.float32)
+    dx = param_values - tf.cast(central_point[None, :], tf.float32)
     ansatz_config = AnsatzConfig(n=config.n, n_params=config.n_params, ansatz=config.ansatz)
-    features = compute_ansatz_features(dx, ansatz_config, unpacked["feature_params"])
-    M_batch = unpacked["D"][None, :, :] + tf.einsum('bf,fij->bij', features, unpacked["basis_mats"])
+
+    feature_inputs = param_values if config.ansatz == "paper_dipole" else dx
+    features = compute_ansatz_features(feature_inputs, ansatz_config, unpacked["feature_params"])
+    if config.ansatz == "paper_dipole":
+        M_batch = tf.einsum('bf,fij->bij', features, unpacked["basis_mats"])
+    else:
+        M_batch = unpacked["D"][None, :, :] + tf.einsum('bf,fij->bij', features, unpacked["basis_mats"])
     return M_batch, features
 
 
@@ -824,8 +866,10 @@ def make_alphaD_only_loss_fn_generic(
         eigenvalues, _ = tf.linalg.eigh(M_batch)
         alphaD_pred = alphaD_from_eigenvalues_batch(eigenvalues, config.alphaD_mode)
 
-        scale = tf.math.reduce_std(alphaD_true_tf) + tf.constant(1.0e-8, tf.float32)
-        mse = tf.reduce_mean(tf.square((alphaD_pred - alphaD_true_tf) / scale))
+        # Paper-reproduction alphaD-only loss uses raw squared error. Keep the
+        # current package behavior of averaging over samples instead of summing.
+        # The generalized alternative was scaling by std(alphaD_true) + eps.
+        mse = tf.reduce_mean(tf.square(alphaD_pred - alphaD_true_tf))
         if l2_reg > 0:
             mse = mse + tf.cast(l2_reg, tf.float32) * tf.reduce_mean(tf.square(tf.cast(params, tf.float32)))
         return mse, alphaD_pred

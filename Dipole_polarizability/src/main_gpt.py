@@ -44,7 +44,7 @@ def parse_args():
     p.add_argument("--n", type=int, default=10, help="Matrix size.")
     p.add_argument("--retain", type=float, default=0.5, help="Retained fraction of eigenmodes.")
     p.add_argument("--fold", type=float, default=2.0, help="Base Lorentzian width.")
-    p.add_argument("--ansatz", choices=["linear", "quadratic", "linear_exp"], default="linear_exp",
+    p.add_argument("--ansatz", choices=["linear", "quadratic", "linear_exp", "paper_dipole"], default="linear_exp",
                    help="Matrix ansatz family.")
     p.add_argument("--width-model", choices=["constant", "affine"], default="affine",
                    help="How eta depends on parameters.")
@@ -182,7 +182,9 @@ def main():
         set_all_seeds(seed)
 
         init_vec = helper_gpt.make_random_initial_guess(config, seed=seed, fold=args.fold)
-        init_vec = helper_gpt.encode_initial_guess(init_vec, E_hat, B_hat, config, args.retain)
+        init_vec = helper_gpt.encode_initial_guess(
+            init_vec, E_hat, B_hat, config, args.retain, reference_point=dataset.central_point
+        )
         params = tf.Variable(init_vec, dtype=tf.float32)
         optimizer = tf.keras.optimizers.Adam(learning_rate=args.learning_rate)
 
