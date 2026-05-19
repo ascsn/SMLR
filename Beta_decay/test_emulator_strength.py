@@ -7,7 +7,10 @@ Created on Tue May 20 22:46:47 2025
 """
 
 import numpy as np
-import helper
+try:
+    from . import helper
+except ImportError:  # pragma: no cover - direct script execution
+    import helper
 from numpy.polynomial.polynomial import Polynomial
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -68,7 +71,7 @@ plt.plot(xvals, f3_opt(xvals), color = 'green', ls = ':')
 plt.xlim(-6,0.7)
 plt.ylim(0)
 
-plt.xlabel('$\omega$ (MeV)', size = 18)
+plt.xlabel(r'$\omega$ (MeV)', size = 18)
 plt.ylabel('$S$ (1/MeV)', size = 18)
 
 plt.annotate('${}^{74}$Ni', (0.2,0.2), xycoords='axes fraction', size = 18)

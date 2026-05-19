@@ -1,0 +1,43 @@
+2026-05-19 14:45:45.734157: W external/local_xla/xla/tsl/platform/profile_utils/cpu_utils.cc:145] Failed to get CPU frequency: 0 Hz
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1779216345.758225 82862894 op_level_cost_estimator.cc:743] Invalid device specifications for CPU: goo.gle/debugstr  type: "CPU" model: "0" num_cores: 8 environment { key: "cpu_instruction_set" value: "ARM NEON" } environment { key: "eigen" value: "3.4.90" } l1_cache_size: 16384 l2_cache_size: 524288 l3_cache_size: 524288 memory_size: 268435456
+/private/tmp/smlr_h2_10model_sweep_20260519_123636/make_h2_original_style_diagnostics.py:197: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+  fig.tight_layout()
+Wrote diagnostics to /private/tmp/smlr_h2_10model_sweep_20260519_123636/sweep_runs/best_plots/original_style_strength_diagnostics
+{
+  "best_model": {
+    "name": "m06_n16_ret1_fold1_linear_exp_affine_lr5e-3",
+    "status": "done",
+    "strength_cost": "0.017020845785737038",
+    "global_best_cost": "0.017022687941789627",
+    "best_seed": "47",
+    "best_iter": "29912",
+    "n": "16",
+    "retain": "1.0",
+    "fold": "1.0",
+    "ansatz": "linear_exp",
+    "width_model": "affine",
+    "lr": "0.005",
+    "seed": "47",
+    "elapsed_min": "4.11030293305715",
+    "run_dir": "/private/tmp/smlr_h2_10model_sweep_20260519_123636/sweep_runs/m06_n16_ret1_fold1_linear_exp_affine_lr5e-3"
+  },
+  "global_rmse": 0.01746787317097187,
+  "mean_sample_rmse": 0.0148888835683465,
+  "median_sample_rmse": 0.01654289849102497,
+  "max_sample_rmse": 0.03184982016682625,
+  "selected_indices": {
+    "q_min_theta_min": 2,
+    "q_min_theta_mid": 1,
+    "q_min_theta_max": 4,
+    "q_mid_theta_min": 27,
+    "q_mid_theta_mid": 26,
+    "q_mid_theta_max": 29,
+    "q_max_theta_min": 47,
+    "q_max_theta_mid": 46,
+    "q_max_theta_max": 49,
+    "best_rmse": 1,
+    "median_rmse": 41,
+    "worst_rmse": 39
+  }
+}

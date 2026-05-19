@@ -1,0 +1,24 @@
+{
+  "seed": 47,
+  "best_cost": 0.00540892081335187,
+  "best_iter": 29947,
+  "dataset_param_names": [
+    "q",
+    "theta"
+  ],
+  "central_point": [
+    0.6944444179534912,
+    0.7853981852531433
+  ],
+  "strength_scale": 3.4967087283078895,
+  "config": {
+    "n": 16,
+    "n_params": 2,
+    "ansatz": "linear_exp",
+    "width_model": "affine",
+    "use_vector_terms": true,
+    "n_basis": 4,
+    "n_upper": 136,
+    "n_trainable": 614
+  }
+}

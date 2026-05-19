@@ -1,0 +1,9 @@
+{
+  "train": {
+    "cost": 0.017020845785737038,
+    "strength_cost": 0.017020845785737038,
+    "alphaD_cost": 0.0,
+    "m1_cost": 0.0
+  },
+  "test": null
+}

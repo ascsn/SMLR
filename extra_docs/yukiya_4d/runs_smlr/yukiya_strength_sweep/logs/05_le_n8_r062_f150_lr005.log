@@ -1,0 +1,29 @@
+Command: /Users/laurenjin/envs/smlr-frib/bin/python -u /Users/laurenjin/Documents/projects/SMLR-package/SMLR-jingy/Dipole_polarizability/src/main_gpt2.py --strength-dir /Users/laurenjin/Documents/projects/SMLR-package/SMLR-jingy/extra_docs/yukiya_4d/total_strength --alphaD-dir /Users/laurenjin/Documents/projects/SMLR-package/SMLR-jingy/extra_docs/yukiya_4d/total_alphaD --strength-regex strength_(?P<p1>-?[0-9.]+)_(?P<p2>-?[0-9.]+)_(?P<p3>-?[0-9.]+)_(?P<p4>-?[0-9.]+)\.out --n 8 --retain 0.62 --fold 1.5 --ansatz linear_exp --width-model affine --w-strength 1.0 --w-alphaD 0.0 --learning-rate 0.005 --n-restarts 1 --seed0 420 --num-iter 4000 --print-every 500 --plots save --save-dir /Users/laurenjin/Documents/projects/SMLR-package/SMLR-jingy/extra_docs/yukiya_4d/runs_smlr/yukiya_strength_sweep/le_n8_r062_f150_lr005
+
+Running script: /Users/laurenjin/Documents/projects/SMLR-package/SMLR-jingy/Dipole_polarizability/src/main_gpt2.py
+Imported helper: /Users/laurenjin/Documents/projects/SMLR-package/SMLR-jingy/Dipole_polarizability/src/helper_gpt.py
+Working directory: /Users/laurenjin/Documents/projects/SMLR-package/SMLR-jingy
+Loaded dataset
+  param names: ['p1', 'p2', 'p3', 'p4']
+  total matched samples: 50
+  train samples: 50
+  test samples: 0
+  train central point: [-250.0, 125.0, -125.0, -125.0]
+  config: {'n': 8, 'n_params': 4, 'ansatz': 'linear_exp', 'width_model': 'affine', 'use_vector_terms': True, 'n_basis': 8, 'n_upper': 36, 'n_trainable': 346}
+2026-05-19 14:50:40.820038: W external/local_xla/xla/tsl/platform/profile_utils/cpu_utils.cc:145] Failed to get CPU frequency: 0 Hz
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1779216640.822679 82869074 op_level_cost_estimator.cc:743] Invalid device specifications for CPU: goo.gle/debugproto    type: "CPU" model: "0" num_cores: 8 environment { key: "cpu_instruction_set" value: "ARM NEON" } environment { key: "eigen" value: "3.4.90" } l1_cache_size: 16384 l2_cache_size: 524288 l3_cache_size: 524288 memory_size: 268435456
+
+========== RESTART 1/1 (seed=420) ==========
+[seed 420] iter      0 | cost=5.033651e+00 | mean alphaD rel=9.526e-01 | strength=5.034e+00 | alphaD=0.000e+00 | m1=0.000e+00
+[seed 420] iter    500 | cost=2.524837e-02 | mean alphaD rel=9.980e-01 | strength=2.525e-02 | alphaD=0.000e+00 | m1=0.000e+00
+[seed 420] iter   1000 | cost=2.149826e-02 | mean alphaD rel=9.985e-01 | strength=2.150e-02 | alphaD=0.000e+00 | m1=0.000e+00
+[seed 420] iter   1500 | cost=1.536076e-02 | mean alphaD rel=9.990e-01 | strength=1.536e-02 | alphaD=0.000e+00 | m1=0.000e+00
+[seed 420] iter   2000 | cost=1.197826e-02 | mean alphaD rel=9.991e-01 | strength=1.198e-02 | alphaD=0.000e+00 | m1=0.000e+00
+[seed 420] iter   2500 | cost=1.007393e-02 | mean alphaD rel=9.992e-01 | strength=1.007e-02 | alphaD=0.000e+00 | m1=0.000e+00
+[seed 420] iter   3000 | cost=1.126951e-02 | mean alphaD rel=9.991e-01 | strength=1.127e-02 | alphaD=0.000e+00 | m1=0.000e+00
+[seed 420] iter   3500 | cost=9.641017e-03 | mean alphaD rel=9.990e-01 | strength=9.641e-03 | alphaD=0.000e+00 | m1=0.000e+00
+[seed 420] train metrics: {'cost': 0.00964965671300888, 'strength_cost': 0.00964965671300888, 'alphaD_cost': 0.0, 'm1_cost': 0.0, 'alphaD_rel': 0.9989340901374817}
+
+*** GLOBAL BEST *** cost=8.246215e-03 (seed=420, iter=3965)
+Saved outputs in /Users/laurenjin/Documents/projects/SMLR-package/SMLR-jingy/extra_docs/yukiya_4d/runs_smlr/yukiya_strength_sweep/le_n8_r062_f150_lr005

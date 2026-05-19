@@ -16,5 +16,5 @@ This section collects example workflows and practical use cases.
 
 ```bash
 python Dipole_polarizability/main.py --help
-python Beta_decay/main.py --help
+python -m Beta_decay.main --help
 ```

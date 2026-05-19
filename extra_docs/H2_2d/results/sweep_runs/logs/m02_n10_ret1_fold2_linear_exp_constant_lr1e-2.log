@@ -1,0 +1,52 @@
+/Users/laurenjin/envs/smlr-frib/bin/python -u /private/tmp/smlr_h2_10model_sweep_20260519_123636/Dipole_polarizability/src/main_gpt2.py --strength-dir /private/tmp/smlr_h2_10model_sweep_20260519_123636/Dipole_polarizability/aaron_H2/total_strength --strength-regex strength_(?P<q>[0-9.]+)_(?P<theta>[0-9.]+)\.out --strength-only --n 10 --retain 1.0 --fold 2.0 --ansatz linear_exp --width-model constant --w-strength 1.0 --learning-rate 0.01 --n-restarts 1 --seed0 43 --num-iter 30000 --print-every 1000 --plots none --save-dir /private/tmp/smlr_h2_10model_sweep_20260519_123636/sweep_runs/m02_n10_ret1_fold2_linear_exp_constant_lr1e-2
+
+Running script: /private/tmp/smlr_h2_10model_sweep_20260519_123636/Dipole_polarizability/src/main_gpt2.py
+Imported helper: /private/tmp/smlr_h2_10model_sweep_20260519_123636/Dipole_polarizability/src/helper_gpt.py
+Working directory: /private/tmp/smlr_h2_10model_sweep_20260519_123636
+Loaded dataset
+  param names: ['q', 'theta']
+  total matched samples: 50
+  train samples: 50
+  test samples: 0
+  train central point: [0.6944444179534912, 0.7853981852531433]
+  config: {'n': 10, 'n_params': 2, 'ansatz': 'linear_exp', 'width_model': 'constant', 'use_vector_terms': True, 'n_basis': 4, 'n_upper': 55, 'n_trainable': 264}
+  strength-only mode: observable-loss weights are disabled
+2026-05-19 13:01:54.699239: W external/local_xla/xla/tsl/platform/profile_utils/cpu_utils.cc:145] Failed to get CPU frequency: 0 Hz
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1779210114.702766 82776415 op_level_cost_estimator.cc:743] Invalid device specifications for CPU: goo.gle/debugonly   type: "CPU" model: "0" num_cores: 8 environment { key: "cpu_instruction_set" value: "ARM NEON" } environment { key: "eigen" value: "3.4.90" } l1_cache_size: 16384 l2_cache_size: 524288 l3_cache_size: 524288 memory_size: 268435456
+
+========== RESTART 1/1 (seed=43) ==========
+[seed 43] iter      0 | cost=5.427509e+02 | strength=5.428e+02
+[seed 43] iter   1000 | cost=6.733804e-01 | strength=6.734e-01
+[seed 43] iter   2000 | cost=6.240123e-01 | strength=6.240e-01
+[seed 43] iter   3000 | cost=5.545653e-01 | strength=5.546e-01
+[seed 43] iter   4000 | cost=2.637248e-01 | strength=2.637e-01
+[seed 43] iter   5000 | cost=2.422221e-01 | strength=2.422e-01
+[seed 43] iter   6000 | cost=2.285901e-01 | strength=2.286e-01
+[seed 43] iter   7000 | cost=2.207245e-01 | strength=2.207e-01
+[seed 43] iter   8000 | cost=2.157056e-01 | strength=2.157e-01
+[seed 43] iter   9000 | cost=2.114824e-01 | strength=2.115e-01
+[seed 43] iter  10000 | cost=2.081885e-01 | strength=2.082e-01
+[seed 43] iter  11000 | cost=2.051101e-01 | strength=2.051e-01
+[seed 43] iter  12000 | cost=2.009826e-01 | strength=2.010e-01
+[seed 43] iter  13000 | cost=1.988907e-01 | strength=1.989e-01
+[seed 43] iter  14000 | cost=1.977661e-01 | strength=1.978e-01
+[seed 43] iter  15000 | cost=1.972762e-01 | strength=1.973e-01
+[seed 43] iter  16000 | cost=1.966608e-01 | strength=1.967e-01
+[seed 43] iter  17000 | cost=1.962391e-01 | strength=1.962e-01
+[seed 43] iter  18000 | cost=1.962228e-01 | strength=1.962e-01
+[seed 43] iter  19000 | cost=1.964754e-01 | strength=1.965e-01
+[seed 43] iter  20000 | cost=1.956691e-01 | strength=1.957e-01
+[seed 43] iter  21000 | cost=1.951582e-01 | strength=1.952e-01
+[seed 43] iter  22000 | cost=1.944604e-01 | strength=1.945e-01
+[seed 43] iter  23000 | cost=1.939235e-01 | strength=1.939e-01
+[seed 43] iter  24000 | cost=1.935822e-01 | strength=1.936e-01
+[seed 43] iter  25000 | cost=1.930483e-01 | strength=1.930e-01
+[seed 43] iter  26000 | cost=1.921255e-01 | strength=1.921e-01
+[seed 43] iter  27000 | cost=1.919257e-01 | strength=1.919e-01
+[seed 43] iter  28000 | cost=1.917783e-01 | strength=1.918e-01
+[seed 43] iter  29000 | cost=1.915217e-01 | strength=1.915e-01
+[seed 43] train metrics: {'cost': 0.19129537045955658, 'strength_cost': 0.19129537045955658, 'alphaD_cost': 0.0, 'm1_cost': 0.0}
+
+*** GLOBAL BEST *** cost=1.912960e-01 (seed=43, iter=29859)
+Saved outputs in /private/tmp/smlr_h2_10model_sweep_20260519_123636/sweep_runs/m02_n10_ret1_fold2_linear_exp_constant_lr1e-2

@@ -23,7 +23,7 @@ Each emulator module includes scripts in the `Beta_decay/` and
 `Dipole_polarizability/` directories. For example:
 
 ```bash
-python Beta_decay/main.py
+python -m Beta_decay.main
 python Dipole_polarizability/main.py
 ```
 

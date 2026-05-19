@@ -6,6 +6,7 @@ This is a temporary script file.
 """
 import numpy as np
 import pandas as pd
+import os
 from scipy.linalg import eigh, eig
 import matplotlib.pyplot as plt
 import time
@@ -29,6 +30,13 @@ compton = hbarc/emass # fm
 kappa = 6147 #s
 del_np = 1.293 # MeV
 del_nH = 0.782 # MeV
+
+MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.dirname(MODULE_DIR)
+
+
+def beta_data_dir(nucnam):
+    return os.path.join(REPO_ROOT, f"beta_decay_data_{nucnam}")
 
 
 
@@ -429,7 +437,7 @@ def data_table(fmt_data, coeffs, g_A, nucnam):
         beta = frmt[1]
 
         # first open the file with the data
-        file = np.loadtxt('../beta_decay_data_'+nucnam+'/lorm_'+nucnam+'_'+beta+'_'+alpha+'.out')
+        file = np.loadtxt(os.path.join(beta_data_dir(nucnam), f"lorm_{nucnam}_{beta}_{alpha}.out"))
         
         # normalize the Lorentzians
         #norm = np.sum(file[:,1])
@@ -444,7 +452,7 @@ def data_table(fmt_data, coeffs, g_A, nucnam):
         Lors.append(file)  
         
         # now calculate half-lives the old way
-        file = np.loadtxt('../beta_decay_data_'+nucnam+'/excm_'+nucnam+'_'+beta+'_'+alpha+'.out')
+        file = np.loadtxt(os.path.join(beta_data_dir(nucnam), f"excm_{nucnam}_{beta}_{alpha}.out"))
         file = file[file[:,0]<del_nH]
         file = file[file[:,0]>-10]
         HLs.append(half_life_loss(file[:,0], file[:,1],coeffs, g_A))
@@ -741,7 +749,7 @@ def data_table_only_HL(fmt_data,coeffs, g_A, nucnam):
         beta = frmt[1]
 
         # now calculate half-lives the old way
-        file = np.loadtxt('../beta_decay_data_'+nucnam+'/excm_'+nucnam+'_'+beta+'_'+alpha+'.out')
+        file = np.loadtxt(os.path.join(beta_data_dir(nucnam), f"excm_{nucnam}_{beta}_{alpha}.out"))
         file = file[file[:,0]<del_nH]
         file = file[file[:,0]>-10]
         HLs.append(half_life_loss(file[:,0], file[:,1],coeffs, g_A))

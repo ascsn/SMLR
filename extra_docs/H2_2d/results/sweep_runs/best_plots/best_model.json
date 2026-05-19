@@ -1,0 +1,17 @@
+{
+  "name": "m06_n16_ret1_fold1_linear_exp_affine_lr5e-3",
+  "status": "done",
+  "strength_cost": "0.017020845785737038",
+  "global_best_cost": "0.017022687941789627",
+  "best_seed": "47",
+  "best_iter": "29912",
+  "n": "16",
+  "retain": "1.0",
+  "fold": "1.0",
+  "ansatz": "linear_exp",
+  "width_model": "affine",
+  "lr": "0.005",
+  "seed": "47",
+  "elapsed_min": "4.11030293305715",
+  "run_dir": "results/sweep_runs/m06_n16_ret1_fold1_linear_exp_affine_lr5e-3"
+}

@@ -1,0 +1,62 @@
+{
+  "dataset_param_names": [
+    "q",
+    "theta"
+  ],
+  "n_total_samples": 50,
+  "n_train_samples": 50,
+  "n_test_samples": 0,
+  "train_filters": {},
+  "central_point": [
+    0.6944444179534912,
+    0.7853981852531433
+  ],
+  "config": {
+    "n": 13,
+    "n_params": 2,
+    "ansatz": "linear_exp",
+    "width_model": "affine",
+    "use_vector_terms": true,
+    "n_basis": 4,
+    "n_upper": 91,
+    "n_trainable": 422
+  },
+  "global_best_cost": 0.0978182852268219,
+  "global_best_meta": {
+    "seed": 42,
+    "iter": 28717,
+    "train_metrics": {
+      "cost": 0.09781397134065628,
+      "strength_cost": 0.09781397134065628,
+      "alphaD_cost": 0.0,
+      "m1_cost": 0.0
+    },
+    "test_metrics": null
+  },
+  "args": {
+    "strength_dir": "Dipole_polarizability/aaron_H2/total_strength/",
+    "alphaD_dir": null,
+    "strength_regex": "strength_(?P<q>[0-9.]+)_(?P<theta>[0-9.]+)\\.out",
+    "alphaD_regex": null,
+    "filter_ranges": null,
+    "central_point": null,
+    "n": 13,
+    "retain": 0.5,
+    "fold": 2.0,
+    "ansatz": "linear_exp",
+    "width_model": "affine",
+    "no_vector_terms": false,
+    "w_strength": 1.0,
+    "w_alphaD": 0.0,
+    "w_m1": 0.0,
+    "m1_target": 875.0,
+    "strength_only": true,
+    "learning_rate": 0.01,
+    "n_restarts": 3,
+    "seed0": 42,
+    "num_iter": 30000,
+    "print_every": 1000,
+    "plots": "save",
+    "save_dir": "Dipole_polarizability/aaron_H2/runs_strength"
+  }
+}

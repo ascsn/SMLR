@@ -1,0 +1,11 @@
+name,status,strength_cost,global_best_cost,best_seed,best_iter,n,retain,fold,ansatz,width_model,lr,seed,elapsed_min,run_dir
+m06_n16_ret1_fold1_linear_exp_affine_lr5e-3,done,0.017020845785737038,0.017022687941789627,47,29912,16,1.0,1.0,linear_exp,affine,0.005,47,4.11030293305715,results/sweep_runs/m06_n16_ret1_fold1_linear_exp_affine_lr5e-3
+m08_n20_ret1_fold2_linear_exp_affine_lr3e-3,done,0.03675343096256256,0.03675425797700882,49,29916,20,1.0,2.0,linear_exp,affine,0.003,49,5.06215451558431,results/sweep_runs/m08_n20_ret1_fold2_linear_exp_affine_lr3e-3
+m05_n13_ret075_fold2_linear_exp_affine_lr5e-3,done,0.037273112684488297,0.03727303817868233,46,20688,13,0.75,2.0,linear_exp,affine,0.005,46,3.4936933835347492,results/sweep_runs/m05_n13_ret075_fold2_linear_exp_affine_lr5e-3
+m09_n13_ret1_fold2_linear_affine_lr1e-2,done,0.04216865450143814,0.04216812178492546,50,29647,13,1.0,2.0,linear,affine,0.01,50,3.140484631061554,results/sweep_runs/m09_n13_ret1_fold2_linear_affine_lr1e-2
+m03_n13_ret1_fold1_linear_exp_affine_lr1e-2,done,0.09657119959592819,0.09656471014022827,44,29793,13,1.0,1.0,linear_exp,affine,0.01,44,4.098936998844147,results/sweep_runs/m03_n13_ret1_fold1_linear_exp_affine_lr1e-2
+m07_n16_ret1_fold2_linear_exp_affine_lr3e-3,done,0.11077908426523209,0.11077912151813507,48,29963,16,1.0,2.0,linear_exp,affine,0.003,48,4.376316463947296,results/sweep_runs/m07_n16_ret1_fold2_linear_exp_affine_lr3e-3
+m10_n13_ret1_fold2_quadratic_affine_lr3e-3,done,0.11501672863960266,0.11501415073871613,51,29894,13,1.0,2.0,quadratic,affine,0.003,51,11.385641316572825,results/sweep_runs/m10_n13_ret1_fold2_quadratic_affine_lr3e-3
+m01_n10_ret1_fold1_linear_exp_affine_lr1e-2,done,0.13071313500404358,0.13071388006210327,42,29207,10,1.0,1.0,linear_exp,affine,0.01,42,2.8294172326723737,results/sweep_runs/m01_n10_ret1_fold1_linear_exp_affine_lr1e-2
+m04_n13_ret1_fold2_linear_exp_affine_lr1e-2,done,0.13386544585227966,0.13386350870132446,45,29718,13,1.0,2.0,linear_exp,affine,0.01,45,4.0838346163431805,results/sweep_runs/m04_n13_ret1_fold2_linear_exp_affine_lr1e-2
+m02_n10_ret1_fold2_linear_exp_constant_lr1e-2,done,0.19129537045955658,0.1912960261106491,43,29859,10,1.0,2.0,linear_exp,constant,0.01,43,2.4956038196881614,results/sweep_runs/m02_n10_ret1_fold2_linear_exp_constant_lr1e-2

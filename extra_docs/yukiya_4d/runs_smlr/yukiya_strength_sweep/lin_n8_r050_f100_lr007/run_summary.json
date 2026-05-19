@@ -1,0 +1,66 @@
+{
+  "dataset_param_names": [
+    "p1",
+    "p2",
+    "p3",
+    "p4"
+  ],
+  "n_total_samples": 50,
+  "n_train_samples": 50,
+  "n_test_samples": 0,
+  "train_filters": {},
+  "central_point": [
+    -250.0,
+    125.0,
+    -125.0,
+    -125.0
+  ],
+  "config": {
+    "n": 8,
+    "n_params": 4,
+    "ansatz": "linear",
+    "width_model": "affine",
+    "use_vector_terms": true,
+    "n_basis": 4,
+    "n_upper": 36,
+    "n_trainable": 198
+  },
+  "global_best_cost": 0.009194076992571354,
+  "global_best_meta": {
+    "seed": 420,
+    "iter": 3149,
+    "train_metrics": {
+      "cost": 0.0092407101765275,
+      "strength_cost": 0.0092407101765275,
+      "alphaD_cost": 0.0,
+      "m1_cost": 0.0,
+      "alphaD_rel": 0.9988713264465332
+    },
+    "test_metrics": null
+  },
+  "args": {
+    "strength_dir": "/Users/laurenjin/Documents/projects/SMLR-package/SMLR-jingy/extra_docs/yukiya_4d/total_strength",
+    "alphaD_dir": "/Users/laurenjin/Documents/projects/SMLR-package/SMLR-jingy/extra_docs/yukiya_4d/total_alphaD",
+    "strength_regex": "strength_(?P<p1>-?[0-9.]+)_(?P<p2>-?[0-9.]+)_(?P<p3>-?[0-9.]+)_(?P<p4>-?[0-9.]+)\\.out",
+    "alphaD_regex": null,
+    "filter_ranges": null,
+    "central_point": null,
+    "n": 8,
+    "retain": 0.5,
+    "fold": 1.0,
+    "ansatz": "linear",
+    "width_model": "affine",
+    "no_vector_terms": false,
+    "w_strength": 1.0,
+    "w_alphaD": 0.0,
+    "w_m1": 0.0,
+    "m1_target": 875.0,
+    "learning_rate": 0.007,
+    "n_restarts": 1,
+    "seed0": 420,
+    "num_iter": 4000,
+    "print_every": 500,
+    "plots": "save",
+    "save_dir": "/Users/laurenjin/Documents/projects/SMLR-package/SMLR-jingy/extra_docs/yukiya_4d/runs_smlr/yukiya_strength_sweep/lin_n8_r050_f100_lr007"
+  }
+}

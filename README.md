@@ -128,37 +128,37 @@ Contains emulators for **charge-exchange QRPA** using the `beta_decay_data_Ni_80
 ### Quick start — EM1
 ```bash
 # Fast default — trains $n_1 = 8$ model
-python main.py
+python -m Beta_decay.main
 
 # Customize model and training knobs
-python main.py --n 12 --retain 0.85 --num-iter 40000 --print-every 500                --n-restarts 3 --seed0 100 --plots save --save-dir runs_em1
+python -m Beta_decay.main --n 12 --retain 0.85 --num-iter 40000 --print-every 500                --n-restarts 3 --seed0 100 --plots save --save-dir runs_em1
 ```
-More flags: `python main.py --help`
+More flags: `python -m Beta_decay.main --help`
 
 **Outputs (EM1)**
 - Per-seed: `runs_em1/seed_<SEED>/`  
   - `params_n<N>_retain<R>_seed<SEED>.txt`  
   - `cost_history_seed<SEED>.png` / `.pdf`  
   - (optional with `--plots save`) training diagnostics PNGs
-- Global (top-level):  
+- Global (in `--save-dir`):  
   - `params_best_n<N>_retain<R>.txt`  
   - `train_set.txt`
 
 ### Quick start — EM2
 ```bash
 # Fast default — trains $n_2 = 9$ model 
-python main_only_hl.py
+python -m Beta_decay.main_only_HL
 
 # Customize
-python main_only_hl.py --n 9 --n-restarts 4 --seed0 42     --num-iter 40000 --print-every 500     --plots save --save-dir runs_em2
+python -m Beta_decay.main_only_HL --n 9 --n-restarts 4 --seed0 42     --num-iter 40000 --print-every 500     --plots save --save-dir runs_em2
 ```
-More flags: `python main_only_HL.py --help`
+More flags: `python -m Beta_decay.main_only_HL --help`
 
 **Outputs (EM2)**
 - Per-seed: `runs_em2/seed_<SEED>/`  
   - `params_n<N>_seed<SEED>.txt`  
   - `cost_history_seed<SEED>.png` / `.pdf`
-- Global (top-level):  
+- Global (in `--save-dir`):  
   - `params_<N>_only_HL.txt`  
   - `train_set.txt`
 
@@ -173,7 +173,7 @@ High-fidelity QRPA inputs should be placed at:
 - `beta_decay_data_Ni_80/`  
   - strength files and half-life tables used by the Beta-decay emulators
 
-Adjust paths in the scripts if your dataset is stored elsewhere.
+The Beta-decay scripts resolve this data directory relative to the repository root.
 
 ---
 
@@ -189,10 +189,10 @@ They expect trained parameter files produced by the scripts above.
 Performance of EM1 on the training set, reproducing Gamow–Teller strength in $^{80}$Ni.
 
 Sweep across $g_0$ (fix $V_0^{\mathrm{is}}$):  
-![animation](Beta_decay/em1_grid_sweep_beta_V0_2.000_n13.gif)
+![animation](docs/assets/beta_decay/em1_grid_sweep_beta_V0_2.000_n13.gif)
 
 Sweep across $V_0^{\mathrm{is}}$ (fix $g_0$):  
-![animation2](Beta_decay/em1_grid_sweep_alpha_V0_0.500_n13.gif)
+![animation2](docs/assets/beta_decay/em1_grid_sweep_alpha_V0_0.500_n13.gif)
 
 ---
 

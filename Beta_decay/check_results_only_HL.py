@@ -11,7 +11,10 @@ Takes the parameters file once the training has been done and plots the final re
 
 '''
 import numpy as np
-import helper
+try:
+    from . import helper
+except ImportError:  # pragma: no cover - direct script execution
+    import helper
 from numpy.polynomial.polynomial import Polynomial
 import matplotlib.pyplot as plt
 import tensorflow as tf

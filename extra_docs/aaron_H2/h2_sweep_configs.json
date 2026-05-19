@@ -1,0 +1,17 @@
+[
+  {"name": "n10_retain1_fold1_linear_exp_affine_lr1e-2", "n": 10, "retain": 1.0, "fold": 1.0, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.01},
+  {"name": "n10_retain1_fold2_linear_exp_affine_lr1e-2", "n": 10, "retain": 1.0, "fold": 2.0, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.01},
+  {"name": "n10_retain1_fold4_linear_exp_affine_lr3e-3", "n": 10, "retain": 1.0, "fold": 4.0, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.003},
+  {"name": "n13_retain1_fold1_linear_exp_affine_lr1e-2", "n": 13, "retain": 1.0, "fold": 1.0, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.01},
+  {"name": "n13_retain1_fold2_linear_exp_affine_lr1e-2", "n": 13, "retain": 1.0, "fold": 2.0, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.01},
+  {"name": "n13_retain1_fold4_linear_exp_affine_lr3e-3", "n": 13, "retain": 1.0, "fold": 4.0, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.003},
+  {"name": "n16_retain1_fold1_linear_exp_affine_lr1e-2", "n": 16, "retain": 1.0, "fold": 1.0, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.01},
+  {"name": "n16_retain1_fold2_linear_exp_affine_lr3e-3", "n": 16, "retain": 1.0, "fold": 2.0, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.003},
+  {"name": "n16_retain1_fold4_linear_exp_affine_lr3e-3", "n": 16, "retain": 1.0, "fold": 4.0, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.003},
+  {"name": "n20_retain1_fold2_linear_exp_affine_lr3e-3", "n": 20, "retain": 1.0, "fold": 2.0, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.003},
+  {"name": "n13_retain075_fold2_linear_exp_affine_lr1e-2", "n": 13, "retain": 0.75, "fold": 2.0, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.01},
+  {"name": "n16_retain075_fold2_linear_exp_affine_lr3e-3", "n": 16, "retain": 0.75, "fold": 2.0, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.003},
+  {"name": "n13_retain1_fold2_linear_affine_lr1e-2", "n": 13, "retain": 1.0, "fold": 2.0, "ansatz": "linear", "width_model": "affine", "learning_rate": 0.01},
+  {"name": "n16_retain1_fold2_linear_affine_lr3e-3", "n": 16, "retain": 1.0, "fold": 2.0, "ansatz": "linear", "width_model": "affine", "learning_rate": 0.003},
+  {"name": "n13_retain1_fold2_quadratic_affine_lr3e-3", "n": 13, "retain": 1.0, "fold": 2.0, "ansatz": "quadratic", "width_model": "affine", "learning_rate": 0.003}
+]

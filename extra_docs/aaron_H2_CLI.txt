@@ -1,0 +1,17 @@
+python Dipole_polarizability/src/main_gpt2.py \
+  --strength-dir Dipole_polarizability/aaron_H2/total_strength/ \
+  --strength-regex 'strength_(?P<q>[0-9.]+)_(?P<theta>[0-9.]+)\.out' \
+  --strength-only \
+  --n 13 \
+  --retain 1 \
+  --fold 2.0 \
+  --ansatz linear_exp \
+  --width-model affine \
+  --w-strength 1.0 \
+  --learning-rate 1e-2 \
+  --n-restarts 3 \
+  --seed0 42 \
+  --num-iter 30000 \
+  --print-every 1000 \
+  --plots save \
+  --save-dir Dipole_polarizability/aaron_H2/runs_strength

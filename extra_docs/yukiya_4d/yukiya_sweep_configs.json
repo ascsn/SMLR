@@ -1,0 +1,12 @@
+[
+  {"name": "le_n6_r050_f075_lr010", "n": 6, "retain": 0.50, "fold": 0.75, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.010},
+  {"name": "le_n6_r067_f100_lr007", "n": 6, "retain": 0.67, "fold": 1.00, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.007},
+  {"name": "le_n8_r050_f075_lr007", "n": 8, "retain": 0.50, "fold": 0.75, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.007},
+  {"name": "le_n8_r050_f125_lr005", "n": 8, "retain": 0.50, "fold": 1.25, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.005},
+  {"name": "le_n8_r062_f150_lr005", "n": 8, "retain": 0.62, "fold": 1.50, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.005},
+  {"name": "le_n10_r050_f100_lr003", "n": 10, "retain": 0.50, "fold": 1.00, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.003},
+  {"name": "le_n10_r060_f150_lr003", "n": 10, "retain": 0.60, "fold": 1.50, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.003},
+  {"name": "lin_n8_r050_f100_lr007", "n": 8, "retain": 0.50, "fold": 1.00, "ansatz": "linear", "width_model": "affine", "learning_rate": 0.007},
+  {"name": "quad_n6_r050_f100_lr005", "n": 6, "retain": 0.50, "fold": 1.00, "ansatz": "quadratic", "width_model": "affine", "learning_rate": 0.005},
+  {"name": "le_n12_r050_f125_lr002", "n": 12, "retain": 0.50, "fold": 1.25, "ansatz": "linear_exp", "width_model": "affine", "learning_rate": 0.002}
+]

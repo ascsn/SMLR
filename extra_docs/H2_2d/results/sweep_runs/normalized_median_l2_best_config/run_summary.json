@@ -1,0 +1,65 @@
+{
+  "dataset_param_names": [
+    "q",
+    "theta"
+  ],
+  "n_total_samples": 50,
+  "n_train_samples": 50,
+  "n_test_samples": 0,
+  "train_filters": {},
+  "central_point": [
+    0.6944444179534912,
+    0.7853981852531433
+  ],
+  "config": {
+    "n": 16,
+    "n_params": 2,
+    "ansatz": "linear_exp",
+    "width_model": "affine",
+    "use_vector_terms": true,
+    "n_basis": 4,
+    "n_upper": 136,
+    "n_trainable": 614
+  },
+  "global_best_cost": 0.00540892081335187,
+  "global_best_meta": {
+    "seed": 47,
+    "iter": 29947,
+    "train_metrics": {
+      "cost": 0.005408762488514185,
+      "strength_cost": 0.005408762488514185,
+      "alphaD_cost": 0.0,
+      "m1_cost": 0.0
+    },
+    "test_metrics": null
+  },
+  "strength_scale": 3.4967087283078895,
+  "args": {
+    "strength_dir": "data/total_strength",
+    "alphaD_dir": null,
+    "strength_regex": "strength_(?P<q>[0-9.]+)_(?P<theta>[0-9.]+)\\.out",
+    "alphaD_regex": null,
+    "filter_ranges": null,
+    "central_point": null,
+    "strength_scale": null,
+    "strength_normalization": "median_l2",
+    "n": 16,
+    "retain": 1.0,
+    "fold": 1.0,
+    "ansatz": "linear_exp",
+    "width_model": "affine",
+    "no_vector_terms": false,
+    "w_strength": 1.0,
+    "w_alphaD": 0.0,
+    "w_m1": 0.0,
+    "m1_target": 875.0,
+    "strength_only": true,
+    "learning_rate": 0.005,
+    "n_restarts": 1,
+    "seed0": 47,
+    "num_iter": 30000,
+    "print_every": 1000,
+    "plots": "none",
+    "save_dir": "results/sweep_runs/normalized_median_l2_best_config"
+  }
+}

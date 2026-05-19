@@ -1,0 +1,42 @@
+2026-05-19 15:44:34.229187: W external/local_xla/xla/tsl/platform/profile_utils/cpu_utils.cc:145] Failed to get CPU frequency: 0 Hz
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1779219874.257380 82913105 op_level_cost_estimator.cc:743] Invalid device specifications for CPU: goo.gle/debugstr    type: "CPU" model: "0" num_cores: 8 environment { key: "cpu_instruction_set" value: "ARM NEON" } environment { key: "eigen" value: "3.4.90" } l1_cache_size: 16384 l2_cache_size: 524288 l3_cache_size: 524288 memory_size: 268435456
+/private/tmp/smlr_h2_10model_sweep_20260519_123636/make_h2_original_style_diagnostics.py:223: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+  fig.tight_layout()
+Wrote diagnostics to /private/tmp/smlr_h2_10model_sweep_20260519_123636/sweep_runs/best_plots/normalized_median_l2_strength_diagnostics_xlim_0_40
+{
+  "best_model": {
+    "name": "normalized_median_l2_best_config",
+    "status": "done",
+    "strength_cost": "0.005408762488514185",
+    "global_best_cost": "0.00540892081335187",
+    "best_seed": "47",
+    "best_iter": "29947",
+    "n": "16",
+    "retain": "1.0",
+    "fold": "1.0",
+    "ansatz": "linear_exp",
+    "width_model": "affine",
+    "lr": "0.005",
+    "seed": "47",
+    "run_dir": "/private/tmp/smlr_h2_10model_sweep_20260519_123636/sweep_runs/normalized_median_l2_best_config"
+  },
+  "global_rmse": 0.017287002876400948,
+  "mean_sample_rmse": 0.01478624902665615,
+  "median_sample_rmse": 0.016658805310726166,
+  "max_sample_rmse": 0.02993406541645527,
+  "selected_indices": {
+    "q_min_theta_min": 2,
+    "q_min_theta_mid": 1,
+    "q_min_theta_max": 4,
+    "q_mid_theta_min": 27,
+    "q_mid_theta_mid": 26,
+    "q_mid_theta_max": 29,
+    "q_max_theta_min": 47,
+    "q_max_theta_mid": 46,
+    "q_max_theta_max": 49,
+    "best_rmse": 1,
+    "median_rmse": 23,
+    "worst_rmse": 39
+  }
+}

@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-import helper
+try:
+    from . import helper
+except ImportError:  # pragma: no cover - direct script execution
+    import helper
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import os, re
@@ -47,7 +50,7 @@ with open("../figs/data_beta/train_set.txt", "r") as f:
         train_set.append(tup)
 
 # -------- load grid points from strength filenames --------
-strength_dir = f'../beta_decay_data_{nucnam}/'
+strength_dir = helper.beta_data_dir(nucnam)
 pattern = re.compile(r'lorm_' + re.escape(nucnam) + r'_([0-9.]+)_([0-9.]+)\.out')
 
 combined = []
@@ -331,5 +334,3 @@ elif SAVE_AS.lower() == 'mp4':
     print(f"Saved MP4: {out}")
 else:
     raise ValueError("SAVE_AS must be 'gif' or 'mp4'")
-
-

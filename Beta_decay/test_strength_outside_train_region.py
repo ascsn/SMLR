@@ -7,7 +7,10 @@ Created on Sat May 24 12:19:24 2025
 """
 
 import numpy as np
-import helper
+try:
+    from . import helper
+except ImportError:  # pragma: no cover - direct script execution
+    import helper
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import tensorflow as tf
@@ -47,10 +50,10 @@ with open("train_set.txt", "r") as f:
 '''
 The values of parameters should be read directly from the file name
 '''
-strength_dir = '../beta_decay_data_'+nucnam+'/'
+strength_dir = helper.beta_data_dir(nucnam)
 
 # Pattern for strength files: strength_beta_alpha.out
-pattern = re.compile(r'lorm_'+nucnam+'_([0-9.]+)_([0-9.]+)\.out')
+pattern = re.compile(r'lorm_' + re.escape(nucnam) + r'_([0-9.]+)_([0-9.]+)\.out')
 
 formatted_alpha_values = []
 formatted_beta_values = []
@@ -288,6 +291,3 @@ plt.gca().add_patch(train_rect)
 # # strength, alphaD = helper.data_table(test_set)
 # # cost, Lor, Lor_true,x, alphaD_train = helper.cost_function_batched_mixed(params, n, test_set, strength, alphaD_list, weight, central_point)
 # # print('Cost on train set: ', cost)
-
-
-
