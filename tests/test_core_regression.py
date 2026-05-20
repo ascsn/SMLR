@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -16,6 +17,7 @@ if str(SRC) not in sys.path:
 
 from smlr.core import numerics
 from smlr.domains import PaperBetaDecayAdapter
+from smlr.validation import validate_strength_grid
 
 
 class CoreNumericsRegressionTest(unittest.TestCase):
@@ -35,6 +37,50 @@ class CoreNumericsRegressionTest(unittest.TestCase):
         self.assertEqual(info, (1, 4, 3))
         np.testing.assert_allclose(diag, [-3.0, -1.0, 0.0, 1.0, 3.0, 5.0])
         np.testing.assert_allclose(v0, [0.0, 2.0, 3.0, 4.0, 0.0, 0.0])
+
+
+class UserDataValidationTest(unittest.TestCase):
+    def test_valid_strength_grid_passes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for alpha in ("0.0", "1.0"):
+                for beta in ("0.0", "2.0"):
+                    (root / f"strength_{beta}_{alpha}.out").write_text("0.0 1.0\n1.0 2.0\n")
+            report = validate_strength_grid(
+                root,
+                r"strength_(?P<beta>[0-9.]+)_(?P<alpha>[0-9.]+)\.out",
+                parameter_names=("alpha", "beta"),
+            )
+            self.assertTrue(report.ok)
+            self.assertEqual(report.files_checked, 4)
+            self.assertEqual(len(report.points), 4)
+
+    def test_nonrectangular_strength_grid_fails_before_training(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "strength_0.0_0.0.out").write_text("0.0 1.0\n1.0 2.0\n")
+            (root / "strength_2.0_0.0.out").write_text("0.0 1.0\n1.0 2.0\n")
+            (root / "strength_0.0_1.0.out").write_text("0.0 1.0\n1.0 2.0\n")
+            report = validate_strength_grid(
+                root,
+                r"strength_(?P<beta>[0-9.]+)_(?P<alpha>[0-9.]+)\.out",
+                parameter_names=("alpha", "beta"),
+            )
+            self.assertFalse(report.ok)
+            self.assertIn("not rectangular", "\n".join(issue.message for issue in report.issues))
+
+    def test_bad_numeric_strength_file_fails_before_training(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "strength_0.0_0.0.out").write_text("not numeric\n")
+            report = validate_strength_grid(
+                root,
+                r"strength_(?P<beta>[0-9.]+)_(?P<alpha>[0-9.]+)\.out",
+                parameter_names=("alpha", "beta"),
+                require_rectangular_grid=False,
+            )
+            self.assertFalse(report.ok)
+            self.assertIn("could not read numeric strength table", "\n".join(issue.message for issue in report.issues))
 
 
 class BetaRunRegressionTest(unittest.TestCase):

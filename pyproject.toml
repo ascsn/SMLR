@@ -7,16 +7,25 @@ authors = [
     { name = "jinlauren", email = "ljin3634@gmail.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "numpy>=2.0",
+]
+
+[project.scripts]
+smlr = "smlr.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.9.29,<0.10.0"]
 build-backend = "uv_build"
 
 [project.optional-dependencies]
+paper = [
+    "matplotlib>=3.9",
+    "scipy>=1.14",
+    "tensorflow>=2.20",
+]
 docs = [
     "sphinx>=7.0",
     "pydata-sphinx-theme>=0.15",
     "myst-parser>=2.0",
 ]
-

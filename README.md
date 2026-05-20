@@ -33,6 +33,18 @@ for dipole polarizability and beta-decay strength calculations.
 Start by installing and building the package with `uv`.
 See `docs/Getting Started.md` for a structured setup guide.
 
+For the current package draft, install the editable package and run the first
+data checks with:
+
+```bash
+uv sync --extra paper
+uv run smlr validate beta-paper --data-dir beta_decay_data_Ni_80
+uv run smlr validate dipole-paper --strength-dir dipoles_data_all/total_strength
+```
+
+The `smlr validate strength-grid` command is the general entry point for a
+user's own two-parameter strength-function data.
+
 ## Reproducibility
 
 The reproducibility workflow includes data generation, visualization,
