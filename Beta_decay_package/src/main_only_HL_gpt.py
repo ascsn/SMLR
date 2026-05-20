@@ -25,6 +25,13 @@ try:
     from . import helper_gpt as helper
 except ImportError:  # pragma: no cover - direct script execution
     import helper_gpt as helper
+try:
+    from smlr.core import training as core_training
+except ModuleNotFoundError:  # pragma: no cover - source-tree execution before install
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+    from smlr.core import training as core_training
 
 
 # -----------------------------
@@ -79,15 +86,10 @@ def main():
     nucnam = 'Ni_80'
 
     def set_all_seeds(seed: int):
-        rn.seed(seed)
-        np.random.seed(seed)
-        tf.random.set_seed(seed)
+        core_training.set_all_seeds(seed)
 
     def make_optimizer(learning_rate: float):
-        try:
-            return tf.keras.optimizers.legacy.Adam(learning_rate=learning_rate)
-        except ImportError:
-            return tf.keras.optimizers.Adam(learning_rate=learning_rate)
+        return core_training.make_optimizer(learning_rate)
 
     # -----------------------------
     # Phase-space polynomial (for HL)

@@ -20,6 +20,13 @@ try:
     from . import helper_gpt as helper
 except ImportError:  # pragma: no cover - direct script execution
     import helper_gpt as helper
+try:
+    from smlr.core import training as core_training
+except ModuleNotFoundError:  # pragma: no cover - source-tree execution before install
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+    from smlr.core import training as core_training
 
 
 # -------------------- CLI --------------------
@@ -163,17 +170,14 @@ def main():
 
     # -------------------- utils --------------------
     def set_all_seeds(seed: int):
-        rn.seed(seed); np.random.seed(seed); tf.random.set_seed(seed)
+        core_training.set_all_seeds(seed)
 
     def make_initial_guess(nec_num_param: int, seed: int):
         rng = np.random.default_rng(seed)
         return rng.uniform(0.0, 1.0, size=nec_num_param)
 
     def make_optimizer(learning_rate: float):
-        try:
-            return tf.keras.optimizers.legacy.Adam(learning_rate=learning_rate)
-        except ImportError:
-            return tf.keras.optimizers.Adam(learning_rate=learning_rate)
+        return core_training.make_optimizer(learning_rate)
 
     # early-stopping thresholds
     PATIENCE_BEST       = 120
@@ -183,9 +187,7 @@ def main():
     MIN_DELTA_REL       = 3e-4
 
     def moving_average(arr, k):
-        if len(arr) < k:
-            return None
-        return np.convolve(arr, np.ones(k)/k, mode='valid')
+        return core_training.moving_average(arr, k)
 
     def maybe_training_plots(iter_idx, rel, E_last, B_last, x, Lor, Lor_true, seed, out_dir):
         """Save training-time diagnostics if requested. Never shows on screen."""

@@ -11,6 +11,18 @@ import numpy as np
 import tensorflow as tf
 from scipy.optimize import least_squares, nnls
 
+try:
+    from smlr.core import ansatz as core_ansatz
+    from smlr.core import fitting as core_fitting
+    from smlr.core import numerics as core_numerics
+except ModuleNotFoundError:  # pragma: no cover - source-tree execution before install
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+    from smlr.core import ansatz as core_ansatz
+    from smlr.core import fitting as core_fitting
+    from smlr.core import numerics as core_numerics
+
 logging.getLogger('tensorflow').setLevel(logging.ERROR)
 
 hqc = 197.33
@@ -224,67 +236,20 @@ def _pack_poles_and_strengths_np(E0, B0, wmin, min_spacing):
 
 @tf.function
 def give_me_Lorentzian(energy, poles, strength, width):
-    energy = tf.convert_to_tensor(energy, dtype=tf.float32)
-    poles = tf.convert_to_tensor(poles, dtype=tf.float32)
-    strength = tf.convert_to_tensor(strength, dtype=tf.float32)
-    width = tf.convert_to_tensor(width, dtype=tf.float32)
-
-    energy_expanded = tf.expand_dims(energy, axis=-1)
-    numerator = strength * (width / (2.0 * np.pi))
-    denominator = (energy_expanded - poles) ** 2 + (width ** 2 / 4.0)
-    return tf.reduce_sum(numerator / denominator, axis=-1)
+    return core_numerics.give_me_lorentzian(energy, poles, strength, width, dtype=tf.float32)
 
 
 @tf.function
 def give_me_Lorentzian_batched(omega, poles_batch, B_batch, half_width_batch):
-    omega = tf.convert_to_tensor(omega, dtype=tf.float32)
-    poles_batch = tf.convert_to_tensor(poles_batch, dtype=tf.float32)
-    B_batch = tf.convert_to_tensor(B_batch, dtype=tf.float32)
-    half_width_batch = tf.reshape(tf.convert_to_tensor(half_width_batch, dtype=tf.float32), (-1, 1, 1))
-
-    omega_exp = tf.expand_dims(omega, axis=1)
-    omega_exp = tf.tile(omega_exp, [tf.shape(poles_batch)[0], 1, 1])
-    poles_exp = tf.expand_dims(poles_batch, axis=-1)
-    B_exp = tf.expand_dims(B_batch, axis=-1)
-
-    numerator = B_exp * half_width_batch / np.pi
-    denominator = tf.square(omega_exp - poles_exp) + tf.square(half_width_batch)
-    return tf.reduce_sum(numerator / denominator, axis=1)
+    return core_numerics.give_me_lorentzian_batched(omega, poles_batch, B_batch, half_width_batch, dtype=tf.float32)
 
 
 
 def fit_strength_with_tf_lorentzian(omega, y, n, eta, grid_M=None, min_spacing=0.2, l2=0.0):
-    omega_np = np.asarray(omega, np.float32)
-    y_np = np.asarray(y, np.float32) #
-    wmin, wmax = float(omega_np.min()), float(omega_np.max())
-    if grid_M is None:
-        grid_M = len(omega_np)
-
-    E_grid = np.linspace(wmin + 1e-6, wmax - 1e-6, grid_M, dtype=np.float32) #
-    A = 1.0 / ((omega_np[:, None] - E_grid[None, :]) ** 2 + (eta ** 2) / 4.0) * (eta / (2 * np.pi))
-    coeff, _ = nnls(A, y_np)
-    coeff = coeff.astype(np.float32)
-    idx = np.argsort(coeff)[-n:]
-    E0 = np.sort(E_grid[idx]).astype(np.float32)
-    B0 = coeff[idx][np.argsort(E_grid[idx])].astype(np.float32)
-
-    for k in range(1, n):
-        if E0[k] - E0[k - 1] < min_spacing:
-            E0[k] = E0[k - 1] + min_spacing
-    z0 = _pack_poles_and_strengths_np(E0, B0, wmin, min_spacing)
-
-    def residuals(z):
-        E_tf, B_tf = _unpack_poles_and_strengths_tf(z, n, tf.constant(wmin, tf.float32), tf.constant(min_spacing, tf.float32))
-        yhat_tf = give_me_Lorentzian(omega_np, E_tf, B_tf, tf.constant(eta, tf.float32))
-        r = yhat_tf.numpy() - y_np
-        if l2 > 0:
-            r = np.concatenate([r, np.sqrt(l2) * np.asarray(z, dtype=np.float32)])
-        return r
-
-    res = least_squares(residuals, z0, method="trf", max_nfev=5000, xtol=1e-10, ftol=1e-10, gtol=1e-10)
-    E_tf, B_tf = _unpack_poles_and_strengths_tf(res.x, n, tf.constant(wmin, tf.float32), tf.constant(min_spacing, tf.float32))
-    yhat_tf = give_me_Lorentzian(omega_np, E_tf, B_tf, tf.constant(eta, tf.float32))
-    return E_tf.numpy(), B_tf.numpy(), yhat_tf.numpy()
+    return core_fitting.fit_strength_with_tf_lorentzian(
+        omega, y, n, eta, grid_M=grid_M, min_spacing=min_spacing, l2=l2,
+        np_dtype=np.float32, tf_dtype=tf.float32, gap_floor=1e-12,
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -307,163 +272,27 @@ def _n_basis_from_config(config: AnsatzConfig) -> int:
 
 
 def get_packed_layout(config: AnsatzConfig) -> PackedLayout:
-    n = int(config.n)
-    p = int(config.n_params)
-    n_upper = n * (n + 1) // 2
-    n_basis = _n_basis_from_config(config)
-
-    idx = 0
-    eta_size = 1
-    idx += eta_size
-
-    v0_slice = slice(idx, idx + n)
-    idx += n
-
-    v_linear_size = p * n if config.use_vector_terms else 0
-    v_linear_slice = slice(idx, idx + v_linear_size)
-    idx += v_linear_size
-
-    d_diag_slice = slice(idx, idx + n)
-    idx += n
-
-    basis_slice = slice(idx, idx + n_basis * n_upper)
-    idx += n_basis * n_upper
-
-    width_bias_slice = slice(idx, idx + 1)
-    idx += 1
-
-    width_linear_size = p if config.width_model == "affine" else 0
-    width_linear_slice = slice(idx, idx + width_linear_size)
-    idx += width_linear_size
-
-    feature_param_size = p if config.ansatz == "linear_exp" else 0
-    if config.ansatz == "paper_dipole":
-        feature_param_size = 1
-    feature_param_slice = slice(idx, idx + feature_param_size)
-    idx += feature_param_size
-
-    return PackedLayout(
-        eta_size=eta_size,
-        v0_slice=v0_slice,
-        v_linear_slice=v_linear_slice,
-        d_diag_slice=d_diag_slice,
-        basis_slice=basis_slice,
-        width_bias_slice=width_bias_slice,
-        width_linear_slice=width_linear_slice,
-        feature_param_slice=feature_param_slice,
-        n_upper=n_upper,
-        n_basis=n_basis,
-        total_size=idx,
-    )
+    return core_ansatz.get_packed_layout(config)
 
 
 
 def _sym_from_upper(flat_upper: tf.Tensor, n: int) -> tf.Tensor:
-    flat_upper = tf.cast(flat_upper, tf.float32)
-    upper_idx = np.triu_indices(n)
-    indices = tf.constant(np.column_stack(upper_idx), dtype=tf.int32)
-    mat = tf.tensor_scatter_nd_update(tf.zeros((n, n), dtype=tf.float32), indices, flat_upper)
-    return mat + tf.transpose(mat) - tf.linalg.diag(tf.linalg.diag_part(mat))
+    return core_ansatz.sym_from_upper(flat_upper, n, dtype=tf.float32)
 
 
 
 def unpack_trainable_parameters(params: tf.Tensor, config: AnsatzConfig) -> Dict[str, tf.Tensor]:
-    params = tf.convert_to_tensor(params, dtype=tf.float32)
-    layout = get_packed_layout(config)
-    n, p = int(config.n), int(config.n_params)
-
-    eta0 = params[0]
-    v0 = params[layout.v0_slice]
-
-    if config.use_vector_terms and layout.v_linear_slice.stop > layout.v_linear_slice.start:
-        v_linear = tf.reshape(params[layout.v_linear_slice], (p, n))
-    else:
-        v_linear = tf.zeros((p, n), dtype=tf.float32)
-
-    d_diag = params[layout.d_diag_slice]
-    D = tf.linalg.diag(d_diag)
-
-    basis_flat = params[layout.basis_slice]
-    basis_mats = tf.reshape(basis_flat, (layout.n_basis, layout.n_upper))
-    basis_mats = tf.map_fn(lambda x: _sym_from_upper(x, n), basis_mats, fn_output_signature=tf.float32)
-
-    width_bias = params[layout.width_bias_slice][0]
-    if config.width_model == "affine" and layout.width_linear_slice.stop > layout.width_linear_slice.start:
-        width_linear = params[layout.width_linear_slice]
-    else:
-        width_linear = tf.zeros((p,), dtype=tf.float32)
-
-    if config.ansatz == "linear_exp":
-        feature_params = tf.nn.softplus(params[layout.feature_param_slice])
-    elif config.ansatz == "paper_dipole":
-        feature_params = params[layout.feature_param_slice]
-    else:
-        feature_params = tf.zeros((0,), dtype=tf.float32)
-
-    return {
-        "eta0": eta0,
-        "v0": v0,
-        "v_linear": v_linear,
-        "D": D,
-        "d_diag": d_diag,
-        "basis_mats": basis_mats,
-        "width_bias": width_bias,
-        "width_linear": width_linear,
-        "feature_params": feature_params,
-        "layout": layout,
-    }
+    return core_ansatz.unpack_trainable_parameters(params, config)
 
 
 
 def compute_ansatz_features(param_shifts: tf.Tensor, config: AnsatzConfig, feature_params: Optional[tf.Tensor] = None) -> tf.Tensor:
-    dx = tf.convert_to_tensor(param_shifts, dtype=tf.float32)
-    if dx.shape.rank == 1:
-        dx = dx[None, :]
-    p = int(config.n_params)
-
-    if config.ansatz == "linear":
-        return dx
-
-    if config.ansatz == "linear_exp":
-        if feature_params is None:
-            feature_params = tf.ones((p,), dtype=tf.float32)
-        decay = tf.reshape(feature_params, (1, p))
-        damped = dx * tf.exp(-decay * tf.abs(dx))
-        return tf.concat([dx, damped], axis=1)
-
-    if config.ansatz == "quadratic":
-        feats = [dx]
-        quad_terms = []
-        for i in range(p):
-            for j in range(i, p):
-                quad_terms.append(dx[:, i] * dx[:, j])
-        if quad_terms:
-            feats.append(tf.stack(quad_terms, axis=1))
-        return tf.concat(feats, axis=1)
-
-    if config.ansatz == "paper_dipole":
-        if p != 2:
-            raise ValueError("paper_dipole ansatz requires exactly two parameters: alpha and beta.")
-        if feature_params is None:
-            feature_params = tf.ones((1,), dtype=tf.float32)
-        alpha_shift = dx[:, 0]
-        beta_shift = dx[:, 1]
-        x1 = tf.reshape(feature_params, (-1,))[0]
-        return tf.stack(
-            [alpha_shift, beta_shift, beta_shift * tf.exp(-alpha_shift * x1)],
-            axis=1,
-        )
-
-    raise ValueError(f"Unknown ansatz {config.ansatz!r}.")
+    return core_ansatz.compute_ansatz_features(param_shifts, config, feature_params)
 
 
 def compute_trainable_fwhm(unpacked: Dict[str, tf.Tensor], dx: tf.Tensor, config: AnsatzConfig) -> tf.Tensor:
     """Paper-reproduction trainable FWHM: sqrt(eta0^2 + affine(parameters)^2)."""
-    if config.width_model == "constant":
-        return tf.fill((tf.shape(dx)[0],), tf.abs(unpacked["eta0"]))
-
-    width_affine = unpacked["width_bias"] + tf.einsum('bp,p->b', dx, unpacked["width_linear"])
-    return tf.sqrt(tf.square(unpacked["eta0"]) + tf.square(width_affine))
+    return core_ansatz.compute_trainable_fwhm(unpacked, dx, config)
 
 
 
@@ -473,32 +302,12 @@ def build_model_matrices_and_vectors(
     param_values: tf.Tensor,
     central_point: tf.Tensor,
 ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
-    unpacked = unpack_trainable_parameters(params, config)
-    param_values = tf.cast(param_values, tf.float32)
-    dx = param_values - tf.cast(central_point[None, :], tf.float32)
-
-    features = compute_ansatz_features(dx, config, unpacked["feature_params"])
-    M_batch = unpacked["D"][None, :, :] + tf.einsum('bf,fij->bij', features, unpacked["basis_mats"])
-
-    v_batch = unpacked["v0"][None, :] + tf.einsum('bp,pn->bn', dx, unpacked["v_linear"])
-
-    fwhm_batch = compute_trainable_fwhm(unpacked, dx, config)
-
-    return M_batch, v_batch, fwhm_batch, features
+    return core_ansatz.build_model_matrices_and_vectors(params, config, param_values, central_point)
 
 
 
 def make_random_initial_guess(config: AnsatzConfig, seed: Optional[int] = None, fold: float = 1.0) -> np.ndarray:
-    rng = np.random.default_rng(seed)
-    layout = get_packed_layout(config)
-    vec = rng.normal(scale=0.05, size=layout.total_size).astype(np.float32)
-    vec[0] = np.float32(fold)
-    vec[layout.width_bias_slice] = np.array([0.0], dtype=np.float32)
-    if config.ansatz == "linear_exp":
-        vec[layout.feature_param_slice] = np.full(layout.feature_param_slice.stop - layout.feature_param_slice.start, 0.2, dtype=np.float32)
-    elif config.ansatz == "paper_dipole":
-        vec[layout.feature_param_slice] = np.array([0.2], dtype=np.float32)
-    return vec
+    return core_ansatz.make_random_initial_guess(config, seed=seed, fold=fold)
 
 
 
@@ -518,35 +327,9 @@ def encode_initial_guess(random_initial_guess, E, B, config_or_n, retain, refere
     n = int(config.n)
     params = np.asarray(random_initial_guess, dtype=np.float32).copy()
 
-    k_keep = int(round(float(retain) * n))
-    k_keep = max(1, min(k_keep, n))
-    left = (n - k_keep) // 2
-    right = left + k_keep
-
-    E = np.asarray(E, dtype=np.float32).reshape(-1)
-    B = np.asarray(B, dtype=np.float32).reshape(-1)
-    order = np.argsort(E)
-    E, B = E[order], B[order]
-    if len(E) < k_keep:
-        raise ValueError(f"E,B need at least k_keep={k_keep} entries (got {len(E)}).")
-
-    start = (len(E) - k_keep) // 2
-    E_sel = E[start:start + k_keep]
-    B_sel = B[start:start + k_keep]
-
-    D_full = np.empty(n, dtype=np.float32)
-    D_full[left:right] = E_sel
-    cur = E_sel[0]
-    for i in range(left - 1, -1, -1):
-        cur -= 2.0
-        D_full[i] = cur
-    cur = E_sel[-1]
-    for i in range(right, n):
-        cur += 2.0
-        D_full[i] = cur
-
-    v0_full = np.zeros(n, dtype=np.float32)
-    v0_full[left:right] = np.sqrt(np.maximum(B_sel, 0.0)).astype(np.float32)
+    D_full, v0_full, _ = core_numerics.centered_spectrum_initialization(
+        E, B, n, retain, dtype=np.float32, step=2.0
+    )
 
     params[0] = params[0] if params.size > 0 else 0.0
     params[layout.v0_slice] = v0_full

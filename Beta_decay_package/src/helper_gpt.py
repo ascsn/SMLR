@@ -23,6 +23,18 @@ import scipy.integrate as integrate
 import matplotlib.ticker as ticker
 from scipy.optimize import least_squares, nnls
 
+try:
+    from smlr.core import ansatz as core_ansatz
+    from smlr.core import fitting as core_fitting
+    from smlr.core import numerics as core_numerics
+except ModuleNotFoundError:  # pragma: no cover - source-tree execution before install
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+    from smlr.core import ansatz as core_ansatz
+    from smlr.core import fitting as core_fitting
+    from smlr.core import numerics as core_numerics
+
 emass = 0.511 # MeV
 alpha_c = 1/137
 hbarc = 197.33 # MeV fm
@@ -67,45 +79,9 @@ def encode_initial_guess(random_initial_guess, E, B, n, retain):
     n = int(n)
     params = np.asarray(random_initial_guess, dtype=np.float64).copy()
 
-    # how many to keep (centered)
-    k_keep = int(round(float(retain) * n))
-    k_keep = max(1, min(k_keep, n))
-    left  = (n - k_keep) // 2
-    right = left + k_keep
-
-    # sort by energy and take centered slice of fitted set
-    E = np.asarray(E, dtype=np.float64).reshape(-1)
-    B = np.asarray(B, dtype=np.float64).reshape(-1)
-    order = np.argsort(E)
-    E, B = E[order], B[order]
-
-    if len(E) < k_keep:
-        raise ValueError(f"E,B need at least k_keep={k_keep} entries (got {len(E)}).")
-
-    m = len(E)
-    start = (m - k_keep) // 2
-    E_sel = E[start:start + k_keep]
-    B_sel = B[start:start + k_keep]
-
-    # ---- build full D: kept center + +/-2 stepping on ends ----
-    D_full = np.empty(n, dtype=np.float64)
-    D_full[left:right] = E_sel
-
-    step = 2.0
-    # left side: decreasing by step from min(E_sel)
-    cur = E_sel[0]
-    for i in range(left - 1, -1, -1):
-        cur -= step
-        D_full[i] = cur
-    # right side: increasing by step from max(E_sel)
-    cur = E_sel[-1]
-    for i in range(right, n):
-        cur += step
-        D_full[i] = cur
-
-    # ---- v0: sqrt(B) in kept block, zeros elsewhere ----
-    v0_full = np.zeros(n, dtype=np.float64)
-    v0_full[left:right] = np.sqrt(np.maximum(B_sel, 0.0)).astype(np.float64)
+    D_full, v0_full, _ = core_numerics.centered_spectrum_initialization(
+        E, B, n, retain, dtype=np.float64, step=2.0
+    )
 
     # ---- write back into packed vector (your layout) ----
     num_upper = n * (n + 1) // 2
@@ -167,49 +143,10 @@ def fit_strength_with_tf_lorentzian(omega, y, n, eta,
 
     Returns: E_hat (n,), B_hat (n,), y_hat (G,)
     """
-    omega_np = np.asarray(omega, float)
-    y_np = np.asarray(y, float)
-    wmin, wmax = float(omega_np.min()), float(omega_np.max())
-    if grid_M is None:
-        grid_M = len(omega_np)
-
-    # ---- Stage 1: NNLS seed on a dense center grid ----
-    E_grid = np.linspace(wmin + 1e-6, wmax - 1e-6, grid_M)
-    A = 1.0 / ((omega[:, None] - E_grid[None, :])**2 + (eta**2)/4.0) * (eta/(2*np.pi))
-    coeff, _ = nnls(A, y)
-    idx = np.argsort(coeff)[-n:]
-    E0 = np.sort(E_grid[idx])
-    B0 = coeff[idx][np.argsort(E_grid[idx])]
-
-    # ensure minimal spacing in seed
-    for k in range(1, n):
-        if E0[k] - E0[k-1] < min_spacing:
-            E0[k] = E0[k-1] + min_spacing
-    z0 = _pack_init_np(E0, B0, wmin, min_spacing)
-
-    # ---- Stage 2: nonlinear refine using TF lorentzian in the residual ----
-    def residuals(z):
-        # unpack in TF, evaluate model with your TF lorentzian, return numpy residuals
-        E_tf, B_tf = _unpack_params_tf(z, n, tf.constant(wmin, tf.float64),
-                                        tf.constant(min_spacing, tf.float64))
-        yhat_tf = give_me_Lorentzian(omega, E_tf, B_tf, tf.constant(eta, tf.float64))
-        r = (yhat_tf.numpy() - y)
-        if l2 > 0:
-            r = np.concatenate([r, np.sqrt(l2) * np.asarray(z, dtype=float)])
-        return r
-
-    res = least_squares(residuals, z0, method="trf",
-                        max_nfev=5000, xtol=1e-10, ftol=1e-10, gtol=1e-10)
-
-    # unpack final parameters and compute final curve (all through TF)
-    E_tf, B_tf = _unpack_params_tf(res.x, n, tf.constant(wmin, tf.float64),
-                                    tf.constant(min_spacing, tf.float64))
-    yhat_tf = give_me_Lorentzian(omega, E_tf, B_tf, tf.constant(eta, tf.float64))
-
-    E_hat = E_tf.numpy()
-    B_hat = B_tf.numpy()
-    y_hat = yhat_tf.numpy()
-    return E_hat, B_hat, y_hat
+    return core_fitting.fit_strength_with_tf_lorentzian(
+        omega, y, n, eta, grid_M=grid_M, min_spacing=min_spacing, l2=l2,
+        np_dtype=np.float64, tf_dtype=tf.float64, gap_floor=1e-6,
+    )
 
 
 
@@ -383,23 +320,7 @@ def half_life_loss(eigenvalues, B,coeffs,g_A):
 
 @tf.function
 def give_me_Lorentzian(energy, poles, strength, width):
-    if isinstance(energy, np.ndarray):
-        energy = tf.convert_to_tensor(energy, dtype=tf.float64)
-
-    poles = tf.convert_to_tensor(poles, dtype=tf.float64)
-    strength = tf.convert_to_tensor(strength, dtype=tf.float64)
-
-    energy_expanded = tf.expand_dims(energy, axis=-1)
-
-    numerator = strength * (width / 2 / np.pi)
-    denominator = ((energy_expanded - poles) ** 2 + (width ** 2 / 4))
-    
-    lorentzian = numerator / denominator
-
-    value = tf.reduce_sum(lorentzian, axis=-1)
-    
-    
-    return value
+    return core_numerics.give_me_lorentzian(energy, poles, strength, width, dtype=tf.float64)
 
 
 
@@ -493,29 +414,13 @@ def modified_DS(params, n):
     D_mod = tf.linalg.diag(params[idx:idx+n])
     idx += n
 
-    # S1 upper triangle
-    S1_mod = tf.zeros(S1_shape, dtype=tf.float64)
-    upper_tri_indices1 = np.triu_indices(S1_shape[0])
-    indices1 = tf.constant(list(zip(upper_tri_indices1[0], upper_tri_indices1[1])))
-
-    num_upper1 = len(upper_tri_indices1[0])
-    S1_mod = tf.tensor_scatter_nd_update(S1_mod, indices1,
-                                         params[idx:idx+num_upper1])
+    num_upper1 = n * (n + 1) // 2
+    S1_mod = core_ansatz.sym_from_upper(params[idx:idx+num_upper1], n, dtype=tf.float64)
     idx += num_upper1
 
-    S1_mod = S1_mod + tf.linalg.band_part(tf.transpose(S1_mod), -1, 0) - tf.linalg.diag(tf.linalg.diag_part(S1_mod))
-
-    # S2 upper triangle
-    S2_mod = tf.zeros(S2_shape, dtype=tf.float64)
-    upper_tri_indices2 = np.triu_indices(S2_shape[0])
-    indices2 = tf.constant(list(zip(upper_tri_indices2[0], upper_tri_indices2[1])))
-
-    num_upper2 = len(upper_tri_indices2[0])
-    S2_mod = tf.tensor_scatter_nd_update(S2_mod, indices2,
-                                         params[idx:idx+num_upper2])
+    num_upper2 = n * (n + 1) // 2
+    S2_mod = core_ansatz.sym_from_upper(params[idx:idx+num_upper2], n, dtype=tf.float64)
     idx += num_upper2
-
-    S2_mod = S2_mod + tf.linalg.band_part(tf.transpose(S2_mod), -1, 0) - tf.linalg.diag(tf.linalg.diag_part(S2_mod))
     
     
     # Add new learned params x1 and x2 and x3
@@ -774,32 +679,13 @@ def modified_DS_only_HL(params, n):
 
     
     '''
-    D_shape = (n,n)
-    S1_shape = (n,n)
-    S2_shape = (n,n)
-    
     # initialize D, S1 and S2
-    D_mod = tf.linalg.diag(params[:D_shape[0]])
-    S1_mod = tf.zeros(S1_shape, dtype=tf.float64)
-    S2_mod = tf.zeros(S2_shape, dtype=tf.float64)
-    
-    # construct S1 and S2 matrices
-    upper_tri_indices1 = np.triu_indices(S1_shape[0])
-    indices1 = tf.constant(list(zip(upper_tri_indices1[0], upper_tri_indices1[1])))
-    S1_mod = tf.tensor_scatter_nd_update(S1_mod, indices1,\
-            params[D_shape[0]:D_shape[0] + len(upper_tri_indices1[0])])
-    
-    S1_mod = S1_mod + tf.linalg.band_part(tf.transpose(S1_mod), -1, 0) - tf.linalg.diag(tf.linalg.diag_part(S1_mod))
-    
-    
-    upper_tri_indices2 = np.triu_indices(S2_shape[0])
-    indices2 = tf.constant(list(zip(upper_tri_indices2[0], upper_tri_indices2[1])))
-    S2_mod = tf.tensor_scatter_nd_update(S2_mod, indices2 \
-    , params[D_shape[0] + len(upper_tri_indices1[0]):D_shape[0] \
-        + len(upper_tri_indices1[0])+len(upper_tri_indices2[0])])
-    
-    S2_mod = S2_mod + tf.linalg.band_part(tf.transpose(S2_mod), -1, 0) - tf.linalg.diag(tf.linalg.diag_part(S2_mod))
-    
+    D_mod = tf.linalg.diag(params[:n])
+    num_upper = n * (n + 1) // 2
+    s1_start = n
+    s2_start = s1_start + num_upper
+    S1_mod = core_ansatz.sym_from_upper(params[s1_start:s2_start], n, dtype=tf.float64)
+    S2_mod = core_ansatz.sym_from_upper(params[s2_start:s2_start + num_upper], n, dtype=tf.float64)
     
     return D_mod, S1_mod, S2_mod
 
