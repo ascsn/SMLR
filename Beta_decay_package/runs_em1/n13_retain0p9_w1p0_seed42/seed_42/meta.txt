@@ -1,0 +1,8 @@
+best_cost=0.08626743851397675
+best_iter=19955
+seed=42
+n=13
+retain=0.9
+weight=1.0
+stopped_at=19999
+min_iterations_enforced=20000

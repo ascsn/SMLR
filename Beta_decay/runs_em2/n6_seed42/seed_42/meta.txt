@@ -1,0 +1,6 @@
+best_cost=5.578679223246522e-05
+best_iter=19947
+seed=42
+n=6
+min_iterations_enforced=20000
+num_iterations=20000
