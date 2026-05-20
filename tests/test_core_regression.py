@@ -16,7 +16,10 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from smlr.core import numerics
+from smlr.core import split_by_parameter_ranges
 from smlr.domains import PaperBetaDecayAdapter
+from smlr.metrics import integrated_strength_error, observable_error_summary, relative_error, weighted_spectral_loss
+from smlr.specs import StrengthGridSpec, paper_beta_em2_spec, paper_dipole_em1_spec
 from smlr.validation import validate_strength_grid
 
 
@@ -37,6 +40,31 @@ class CoreNumericsRegressionTest(unittest.TestCase):
         self.assertEqual(info, (1, 4, 3))
         np.testing.assert_allclose(diag, [-3.0, -1.0, 0.0, 1.0, 3.0, 5.0])
         np.testing.assert_allclose(v0, [0.0, 2.0, 3.0, 4.0, 0.0, 0.0])
+
+    def test_parameter_range_split(self):
+        points = np.array([[0.0, 0.0], [0.0, 2.0], [1.0, 0.0], [1.0, 2.0]])
+        split = split_by_parameter_ranges(points, ("alpha", "beta"), {"alpha": [0.0, 0.5]})
+        np.testing.assert_array_equal(split.train_mask, [True, True, False, False])
+        np.testing.assert_array_equal(split.test_indices, [2, 3])
+
+
+class MetricsRegressionTest(unittest.TestCase):
+    def test_observable_relative_error_summary(self):
+        pred = np.array([1.0, 2.2, 2.7])
+        true = np.array([1.0, 2.0, 3.0])
+        np.testing.assert_allclose(relative_error(pred, true), [0.0, 0.1, 0.1])
+        summary = observable_error_summary(pred, true)
+        self.assertAlmostEqual(summary["mean_relative_error"], 2.0 / 30.0)
+        self.assertAlmostEqual(summary["max_absolute_error"], 0.3)
+
+    def test_integrated_strength_and_weighted_loss(self):
+        energy = np.array([0.0, 1.0, 2.0])
+        true = np.array([[1.0, 2.0, 1.0], [2.0, 2.0, 2.0]])
+        pred = np.array([[1.0, 1.0, 1.0], [1.0, 2.0, 3.0]])
+        errors = integrated_strength_error(pred, true, energy)
+        self.assertEqual(errors.shape, (2,))
+        self.assertGreater(errors[0], 0.0)
+        self.assertAlmostEqual(weighted_spectral_loss(pred, true, energy, weights=[1.0, 3.0]), np.average(errors, weights=[1.0, 3.0]))
 
 
 class UserDataValidationTest(unittest.TestCase):
@@ -81,6 +109,37 @@ class UserDataValidationTest(unittest.TestCase):
             )
             self.assertFalse(report.ok)
             self.assertIn("could not read numeric strength table", "\n".join(issue.message for issue in report.issues))
+
+
+class DataSpecRegressionTest(unittest.TestCase):
+    def test_strength_grid_spec_validates_toy_data(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for alpha in ("0.0", "1.0"):
+                for beta in ("0.0", "2.0"):
+                    (root / f"strength_{beta}_{alpha}.out").write_text("0.0 1.0\n1.0 2.0\n")
+            spec = StrengthGridSpec(
+                data_dir=str(root),
+                filename_regex=r"strength_(?P<beta>[0-9.]+)_(?P<alpha>[0-9.]+)\.out",
+                parameter_names=("alpha", "beta"),
+            )
+            report = spec.validate()
+            self.assertTrue(report.ok)
+            self.assertEqual(report.parameter_names, ("alpha", "beta"))
+
+    def test_builtin_paper_specs_validate_available_data(self):
+        dipole = paper_dipole_em1_spec(strength_dir=str(ROOT / "dipoles_data_all/total_strength"))
+        beta = paper_beta_em2_spec(data_dir=str(ROOT / "beta_decay_data_Ni_80"))
+        self.assertTrue(dipole.validate_data().ok)
+        self.assertTrue(beta.validate_data().ok)
+        self.assertEqual(dipole.observable.name, "alphaD")
+        self.assertEqual(beta.observable.name, "half_life")
+
+    def test_run_spec_splits_by_training_box(self):
+        spec = paper_dipole_em1_spec()
+        points = np.array([[0.2, 1.0], [0.4, 1.5], [1.0, 2.0], [2.0, 4.5]])
+        split = spec.split(points)
+        np.testing.assert_array_equal(split.train_mask, [False, True, True, False])
 
 
 class BetaRunRegressionTest(unittest.TestCase):

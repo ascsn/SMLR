@@ -17,11 +17,13 @@ import matplotlib.pyplot as plt
 import helper_gpt as helper_gpt
 try:
     from smlr.core import training as core_training
+    from smlr.core import splitting as core_splitting
 except ModuleNotFoundError:  # pragma: no cover - source-tree execution before install
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
     from smlr.core import training as core_training
+    from smlr.core import splitting as core_splitting
 
 
 # -----------------------------------------------------------------------------
@@ -107,36 +109,12 @@ def parse_optional_json(value):
 
 
 def parse_filter_ranges(value):
-    if value is None:
-        return {}
-    parsed = json.loads(value) if isinstance(value, str) else dict(value)
-    out = {}
-    for k, v in parsed.items():
-        if len(v) != 2:
-            raise ValueError(f"Filter for {k!r} must have two entries [min, max].")
-        lo, hi = float(v[0]), float(v[1])
-        if lo > hi:
-            raise ValueError(f"Filter for {k!r} must satisfy min <= max, got [{lo}, {hi}].")
-        out[k] = (lo, hi)
-    return out
+    return core_splitting.parse_filter_ranges(value)
 
 
 def build_split_masks(param_values, param_names, filter_ranges):
-    n = int(len(param_values))
-    if not filter_ranges:
-        train_mask = np.ones(n, dtype=bool)
-        test_mask = np.zeros(n, dtype=bool)
-        return train_mask, test_mask
-
-    name_to_idx = {name: i for i, name in enumerate(param_names)}
-    train_mask = np.ones(n, dtype=bool)
-    for name, (lo, hi) in filter_ranges.items():
-        if name not in name_to_idx:
-            raise ValueError(f"Unknown filter key {name!r}. Available names: {param_names}")
-        col = name_to_idx[name]
-        train_mask &= (param_values[:, col] >= lo) & (param_values[:, col] <= hi)
-    test_mask = ~train_mask
-    return train_mask, test_mask
+    split = core_splitting.split_by_parameter_ranges(param_values, param_names, filter_ranges)
+    return split.train_mask, split.test_mask
 
 
 def subset_dataset(dataset, mask, central_point_override=None):
@@ -145,11 +123,8 @@ def subset_dataset(dataset, mask, central_point_override=None):
         raise ValueError("Requested dataset subset is empty.")
     param_values = dataset.param_values[idx].copy()
     if central_point_override is None:
-        mins = np.min(param_values, axis=0)
-        maxs = np.max(param_values, axis=0)
-        center_guess = 0.5 * (mins + maxs)
-        center_idx = int(np.argmin(np.sum((param_values - center_guess[None, :]) ** 2, axis=1)))
-        central_point = param_values[center_idx].copy()
+        central_point, _ = core_splitting.choose_central_parameter_point(param_values)
+        central_point = central_point.astype(np.float32)
     else:
         central_point = np.asarray(central_point_override, dtype=np.float32).copy()
     return helper_gpt.GenericDataset(

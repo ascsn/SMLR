@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import os
 import re
 from pathlib import Path
@@ -12,8 +11,26 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-from matplotlib.colors import LogNorm
 from numpy.polynomial.polynomial import Polynomial
+
+try:
+    from smlr.diagnostics import (
+        DiagnosticLabels,
+        plot_detail_observable,
+        plot_detail_spectrum,
+        save_figure,
+        write_standard_observable_diagnostics,
+    )
+except ModuleNotFoundError:  # pragma: no cover - source-tree execution before install
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+    from smlr.diagnostics import (
+        DiagnosticLabels,
+        plot_detail_observable,
+        plot_detail_spectrum,
+        save_figure,
+        write_standard_observable_diagnostics,
+    )
 
 try:
     from . import helper_gpt as helper
@@ -145,48 +162,28 @@ def predict_em2(params, n, points, coeffs, g_A, nucnam, central_point):
 
 
 def save_half_life_outputs(fig_dir, points, pred, true, plots, dpi):
-    rel = np.abs(pred - true) / np.maximum(np.abs(true), 1e-12)
-    with open(fig_dir / "half_life_predictions.csv", "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["idx", "alpha", "beta", "true_half_life", "pred_half_life", "relative_error"])
-        for idx, (point, y_true, y_pred, err) in enumerate(zip(points, true, pred, rel)):
-            writer.writerow([idx, point[0], point[1], y_true, y_pred, err])
-
-    summary = {
-        "mean_relative_error": float(np.mean(rel)),
-        "median_relative_error": float(np.median(rel)),
-        "max_relative_error": float(np.max(rel)),
-    }
-    with open(fig_dir / "summary.txt", "w") as f:
-        for key, value in summary.items():
-            f.write(f"{key}={value}\n")
-
-    if plots == "none":
-        return summary
-
-    plt.figure(figsize=(6, 5))
-    plt.scatter(true, pred, s=18)
-    lo = min(float(np.min(true)), float(np.min(pred)))
-    hi = max(float(np.max(true)), float(np.max(pred)))
-    plt.plot([lo, hi], [lo, hi], color="black")
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.xlabel("True half-life")
-    plt.ylabel("Predicted half-life")
-    plt.title("Half-life: prediction vs truth")
-    plt.savefig(fig_dir / "half_life_true_vs_pred.png", bbox_inches="tight", dpi=dpi)
-    plt.close()
-
-    xy = np.asarray(points, dtype=float)
-    plt.figure(figsize=(6, 5))
-    plt.scatter(xy[:, 0], xy[:, 1], c=np.clip(rel, 1e-12, None), marker="s", cmap="Spectral", norm=LogNorm())
-    plt.colorbar(label="Half-life relative error")
-    plt.xlabel("V0_is")
-    plt.ylabel("g0")
-    plt.title("Parameter-space half-life error")
-    plt.savefig(fig_dir / "parameter_error_map.png", bbox_inches="tight", dpi=dpi)
-    plt.close()
-    return summary
+    labels = DiagnosticLabels(
+        observable_name="Half-life",
+        observable_true="True half-life",
+        observable_pred="Predicted half-life",
+        relative_error="Half-life relative error",
+        parameter_names=("V0_is", "g0"),
+        prediction_title="Half-life: prediction vs truth",
+        parameter_map_title="Parameter-space half-life error",
+    )
+    return write_standard_observable_diagnostics(
+        fig_dir,
+        points,
+        true,
+        pred,
+        labels=labels,
+        observable_key="half_life",
+        log_scatter=True,
+        plots=(plots != "none"),
+        csv_alias="half_life_predictions.csv",
+        scatter_alias="half_life_true_vs_pred.png",
+        dpi=dpi,
+    )
 
 
 def save_em1_detail_spectrum(fig_dir, points, outputs, detail_idx, dpi):
@@ -198,30 +195,36 @@ def save_em1_detail_spectrum(fig_dir, points, outputs, detail_idx, dpi):
     Bs = outputs["Bs"][detail_idx]
     point = points[detail_idx]
 
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(x, y_pred, label="pred")
-    ax.plot(x, y_true, label="true", alpha=0.85)
-    ax.stem(eigs, Bs, basefmt=" ", linefmt="C2-", markerfmt="C2o", label="poles")
-    ax.set_xlabel("E (MeV)")
-    ax.set_ylabel("Strength (1/MeV)")
-    ax.set_title(f"Detailed spectrum (idx={detail_idx}, V0_is={point[0]}, g0={point[1]})")
-    ax.set_ylim(bottom=0)
-    ax.legend()
-    fig.tight_layout()
-    fig.savefig(fig_dir / "detail_spectrum.png", bbox_inches="tight", dpi=dpi)
+    labels = DiagnosticLabels(
+        spectrum_x="E (MeV)",
+        spectrum_y="Strength (1/MeV)",
+        detail_spectrum_title="Detailed spectrum",
+    )
+    fig, _ = plot_detail_spectrum(
+        x,
+        y_true,
+        y_pred,
+        poles=eigs,
+        pole_strengths=Bs,
+        labels=labels,
+        title_suffix=f" (idx={detail_idx}, V0_is={point[0]}, g0={point[1]})",
+    )
+    save_figure(fig, fig_dir, "detail_spectrum.png", dpi=dpi)
     plt.close(fig)
 
 
 def save_em2_detail_observable(fig_dir, points, pred, true, detail_idx, dpi):
     point = points[detail_idx]
     rel = abs(pred[detail_idx] - true[detail_idx]) / max(abs(true[detail_idx]), 1e-12)
-    fig, ax = plt.subplots(figsize=(5, 4))
-    ax.bar(["true", "pred"], [true[detail_idx], pred[detail_idx]], color=["black", "tab:red"], alpha=0.8)
-    ax.set_yscale("log")
-    ax.set_ylabel("Half-life")
-    ax.set_title(f"Detailed half-life (idx={detail_idx}, rel={rel:.3e})\nV0_is={point[0]}, g0={point[1]}")
-    fig.tight_layout()
-    fig.savefig(fig_dir / "detail_observable.png", bbox_inches="tight", dpi=dpi)
+    labels = DiagnosticLabels(observable_name="Half-life", detail_observable_title="Detailed half-life")
+    fig, _ = plot_detail_observable(
+        true[detail_idx],
+        pred[detail_idx],
+        labels=labels,
+        title_suffix=f" (idx={detail_idx}, rel={rel:.3e})\nV0_is={point[0]}, g0={point[1]}",
+        log_scale=True,
+    )
+    save_figure(fig, fig_dir, "detail_observable.png", dpi=dpi)
     plt.close(fig)
 
 

@@ -13,15 +13,29 @@ from .validation import (
     validate_paper_dipole_data,
     validate_strength_grid,
 )
+from .specs import (
+    EmulatorRunSpec,
+    ObservableSpec,
+    StrengthGridSpec,
+    paper_beta_em1_spec,
+    paper_beta_em2_spec,
+    paper_dipole_em1_spec,
+)
 
 __all__ = [
     "BetaDecayAdapter",
     "DipoleAdapter",
+    "EmulatorRunSpec",
+    "ObservableSpec",
     "PaperBetaDecayAdapter",
     "PaperDipoleAdapter",
+    "StrengthGridSpec",
     "ValidationIssue",
     "ValidationReport",
     "__version__",
+    "paper_beta_em1_spec",
+    "paper_beta_em2_spec",
+    "paper_dipole_em1_spec",
     "validate_paper_beta_data",
     "validate_paper_dipole_data",
     "validate_strength_grid",

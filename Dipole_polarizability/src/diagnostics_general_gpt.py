@@ -12,6 +12,22 @@ import tensorflow as tf
 from matplotlib.colors import LogNorm
 
 import helper_gpt #as helper_gpt
+try:
+    from smlr import metrics as smlr_metrics
+    from smlr.diagnostics import (
+        DiagnosticLabels,
+        save_figure as save_standard_figure,
+        write_standard_observable_diagnostics,
+    )
+except ModuleNotFoundError:  # pragma: no cover - source-tree execution before install
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+    from smlr import metrics as smlr_metrics
+    from smlr.diagnostics import (
+        DiagnosticLabels,
+        save_figure as save_standard_figure,
+        write_standard_observable_diagnostics,
+    )
 
 
 """
@@ -245,10 +261,10 @@ def compute_rmse(dataset, opt_strength):
     for i in range(len(dataset.strengths)):
         diff = dataset.strengths[i][:, 1] - opt_strength[i]
         residuals.append(diff)
-        per_sample_rmse.append(np.sqrt(np.mean(diff ** 2)))
+        per_sample_rmse.append(smlr_metrics.rmse(diff, np.zeros_like(diff)))
 
     all_residuals = np.concatenate(residuals)
-    global_rmse = np.sqrt(np.mean(all_residuals ** 2))
+    global_rmse = smlr_metrics.rmse(all_residuals, np.zeros_like(all_residuals))
     return global_rmse, np.asarray(per_sample_rmse)
 
 
@@ -490,9 +506,28 @@ def main():
 
     if args.plots in {"save", "both"}:
         fig_dir = args.fig_dir or os.path.join(args.save_dir, "diagnostics")
-        save_figure(fig1, fig_dir, "detail_spectrum.png", dpi=args.dpi)
-        save_figure(fig2, fig_dir, "alphaD_true_vs_pred.png", dpi=args.dpi)
-        save_figure(fig3, fig_dir, "parameter_error_map.png", dpi=args.dpi)
+        save_standard_figure(fig1, fig_dir, "detail_spectrum.png", dpi=args.dpi)
+        labels = DiagnosticLabels(
+            observable_name="alphaD",
+            observable_true=r"True $\alpha_D$",
+            observable_pred=r"Predicted $\alpha_D$",
+            relative_error=r"Relative error $\alpha_D$",
+            parameter_names=tuple(dataset.param_names),
+            prediction_title=r"$\alpha_D$: prediction vs truth",
+            parameter_map_title=r"Parameter-space relative error in $\alpha_D$",
+        )
+        write_standard_observable_diagnostics(
+            fig_dir,
+            dataset.param_values,
+            alphaD_true,
+            alphaD_opt,
+            labels=labels,
+            observable_key="alphaD",
+            max_label_points=args.max_label_points,
+            dpi=args.dpi,
+            plots=True,
+            scatter_alias="alphaD_true_vs_pred.png",
+        )
 
     if args.plots in {"show", "both"}:
         plt.show()

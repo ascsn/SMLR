@@ -1,3 +1,6 @@
+mean_absolute_error=0.0008636226161366407
+median_absolute_error=0.0006382549184320851
+max_absolute_error=0.0036593013232908422
 mean_relative_error=0.0037465244409462333
 median_relative_error=0.002948494134051322
 max_relative_error=0.013784483563686866

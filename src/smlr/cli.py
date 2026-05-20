@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 
+from .specs import paper_beta_em1_spec, paper_beta_em2_spec, paper_dipole_em1_spec
 from .validation import validate_paper_beta_data, validate_paper_dipole_data, validate_strength_grid
 
 
@@ -48,6 +49,11 @@ def build_parser() -> argparse.ArgumentParser:
     generic.add_argument("--allow-negative-strength", action="store_true")
     generic.add_argument("--no-rectangular-grid", action="store_true")
     generic.add_argument("--json", action="store_true")
+
+    specs = subparsers.add_parser("spec", help="print built-in emulator run specs")
+    specs_sub = specs.add_subparsers(dest="kind", required=True)
+    for name in ("dipole-paper-em1", "beta-paper-em1", "beta-paper-em2"):
+        specs_sub.add_parser(name)
     return parser
 
 
@@ -76,6 +82,14 @@ def main(argv: list[str] | None = None) -> int:
         )
         _print_report(report, as_json=args.json)
         return 0 if report.ok else 1
+    if args.command == "spec":
+        factories = {
+            "dipole-paper-em1": paper_dipole_em1_spec,
+            "beta-paper-em1": paper_beta_em1_spec,
+            "beta-paper-em2": paper_beta_em2_spec,
+        }
+        print(json.dumps(factories[args.kind]().to_dict(), indent=2, sort_keys=True))
+        return 0
 
     parser.error("unknown command")
     return 2
