@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -47,6 +48,18 @@ class StrengthGridSpec:
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "StrengthGridSpec":
+        return cls(
+            data_dir=str(data["data_dir"]),
+            filename_regex=str(data["filename_regex"]),
+            parameter_names=tuple(data["parameter_names"]),
+            min_files=int(data.get("min_files", 1)),
+            min_columns=int(data.get("min_columns", 2)),
+            require_rectangular_grid=bool(data.get("require_rectangular_grid", True)),
+            allow_negative_strength=bool(data.get("allow_negative_strength", False)),
+        )
+
 
 @dataclass(frozen=True)
 class ObservableSpec:
@@ -62,6 +75,20 @@ class ObservableSpec:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any] | None) -> "ObservableSpec | None":
+        if data is None:
+            return None
+        return cls(
+            name=str(data["name"]),
+            data_dir=data.get("data_dir"),
+            filename_regex=data.get("filename_regex"),
+            parameter_names=tuple(data.get("parameter_names", ())),
+            min_columns=int(data.get("min_columns", 1)),
+            log_scale=bool(data.get("log_scale", False)),
+            units=data.get("units"),
+        )
 
 
 @dataclass(frozen=True)
@@ -98,6 +125,19 @@ class EmulatorRunSpec:
             "output_dir": self.output_dir,
             "metadata": dict(self.metadata),
         }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "EmulatorRunSpec":
+        return cls(
+            name=str(data["name"]),
+            strength=StrengthGridSpec.from_dict(data["strength"]),
+            observable=ObservableSpec.from_dict(data.get("observable")),
+            model=dict(data.get("model", {})),
+            train_filter_ranges=data.get("train_filter_ranges"),
+            central_point=tuple(data["central_point"]) if data.get("central_point") is not None else None,
+            output_dir=str(data.get("output_dir", "runs")),
+            metadata=dict(data.get("metadata", {})),
+        )
 
 
 def paper_dipole_em1_spec(
@@ -193,3 +233,45 @@ def h2_2d_strength_spec(
         output_dir=output_dir,
         metadata={"domain": "synthetic_lrt", "example": "aaron_H2"},
     )
+
+
+BUILTIN_SPECS = {
+    "dipole-paper-em1": paper_dipole_em1_spec,
+    "beta-paper-em1": paper_beta_em1_spec,
+    "beta-paper-em2": paper_beta_em2_spec,
+    "h2-2d-strength": h2_2d_strength_spec,
+}
+
+
+def load_run_spec(path: str | Path) -> EmulatorRunSpec:
+    path = Path(path)
+    text = path.read_text()
+    if path.suffix.lower() in {".yaml", ".yml"}:
+        try:
+            import yaml
+        except ImportError as exc:  # pragma: no cover
+            raise RuntimeError("YAML specs require PyYAML. Install `smlr[yaml]` to load YAML config files.") from exc
+        payload = yaml.safe_load(text)
+    else:
+        payload = json.loads(text)
+    return EmulatorRunSpec.from_dict(payload)
+
+
+def save_run_spec(spec: EmulatorRunSpec, path: str | Path) -> None:
+    path = Path(path)
+    payload = spec.to_dict()
+    if path.suffix.lower() in {".yaml", ".yml"}:
+        try:
+            import yaml
+        except ImportError as exc:  # pragma: no cover
+            raise RuntimeError("YAML specs require PyYAML. Install `smlr[yaml]` to save YAML config files.") from exc
+        path.write_text(yaml.safe_dump(payload, sort_keys=True))
+    else:
+        path.write_text(json.dumps(payload, indent=2, sort_keys=True))
+
+
+def get_builtin_spec(name: str) -> EmulatorRunSpec:
+    try:
+        return BUILTIN_SPECS[name]()
+    except KeyError as exc:
+        raise ValueError(f"Unknown built-in spec {name!r}. Available: {sorted(BUILTIN_SPECS)}") from exc

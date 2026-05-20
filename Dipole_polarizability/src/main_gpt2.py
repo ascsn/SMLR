@@ -18,12 +18,18 @@ import helper_gpt as helper_gpt
 try:
     from smlr.core import training as core_training
     from smlr.core import splitting as core_splitting
+    from smlr.core import RetainedModePolicy
+    from smlr.serialization import save_emulator
+    from smlr.specs import EmulatorRunSpec, ObservableSpec, StrengthGridSpec
 except ModuleNotFoundError:  # pragma: no cover - source-tree execution before install
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
     from smlr.core import training as core_training
     from smlr.core import splitting as core_splitting
+    from smlr.core import RetainedModePolicy
+    from smlr.serialization import save_emulator
+    from smlr.specs import EmulatorRunSpec, ObservableSpec, StrengthGridSpec
 
 
 # -----------------------------------------------------------------------------
@@ -412,8 +418,7 @@ def main():
     np.savetxt(os.path.join(args.save_dir, "train_param_values.txt"), dataset.param_values)
     if test_dataset is not None:
         np.savetxt(os.path.join(args.save_dir, "test_param_values.txt"), test_dataset.param_values)
-    with open(os.path.join(args.save_dir, "run_summary.json"), "w") as f:
-        json.dump({
+    summary = {
             "dataset_param_names": dataset.param_names,
             "n_total_samples": len(all_dataset.strengths),
             "n_train_samples": len(dataset.strengths),
@@ -424,7 +429,45 @@ def main():
             "global_best_cost": global_best_cost,
             "global_best_meta": global_best_meta,
             "args": vars(args),
-        }, f, indent=2)
+        }
+    with open(os.path.join(args.save_dir, "run_summary.json"), "w") as f:
+        json.dump(summary, f, indent=2)
+    run_spec = EmulatorRunSpec(
+        name="dipole_em1",
+        strength=StrengthGridSpec(
+            data_dir=args.strength_dir,
+            filename_regex=args.strength_regex,
+            parameter_names=tuple(dataset.param_names),
+        ),
+        observable=ObservableSpec(
+            name="alphaD",
+            data_dir=args.alphaD_dir,
+            filename_regex=args.alphaD_regex,
+            parameter_names=tuple(dataset.param_names),
+        ) if args.alphaD_dir is not None else None,
+        model={
+            "n": args.n,
+            "n_params": int(dataset.param_values.shape[1]),
+            "retain": args.retain,
+            "fold": args.fold,
+            "ansatz": args.ansatz,
+            "width_model": args.width_model,
+            "use_vector_terms": not args.no_vector_terms,
+        },
+        train_filter_ranges=split_filters,
+        central_point=tuple(float(x) for x in dataset.central_point),
+        output_dir=args.save_dir,
+        metadata={"domain": "dipole", "paper_behavior": args.ansatz == "paper_dipole"},
+    )
+    save_emulator(
+        args.save_dir,
+        params=global_best_params,
+        name="dipole_em1",
+        adapter="PaperDipoleAdapter" if args.ansatz == "paper_dipole" else "DipoleAdapter",
+        spec=run_spec,
+        retained_modes=RetainedModePolicy(kind="centered", retain=args.retain),
+        metadata={"global_best_cost": global_best_cost, "global_best_meta": global_best_meta},
+    )
 
     print(f"\n*** GLOBAL BEST *** cost={global_best_cost:.6e} (seed={global_best_meta['seed']}, iter={global_best_meta['iter']})")
     print(f"Saved outputs in {args.save_dir}")

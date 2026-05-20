@@ -27,11 +27,15 @@ except ImportError:  # pragma: no cover - direct script execution
     import helper_gpt as helper
 try:
     from smlr.core import training as core_training
+    from smlr.serialization import save_emulator
+    from smlr.specs import paper_beta_em2_spec
 except ModuleNotFoundError:  # pragma: no cover - source-tree execution before install
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
     from smlr.core import training as core_training
+    from smlr.serialization import save_emulator
+    from smlr.specs import paper_beta_em2_spec
 
 
 # -----------------------------
@@ -321,6 +325,25 @@ def main():
     with open(os.path.join(SAVE_DIR, "train_set.txt"), "w") as f:
         for tup in train_set:
             f.write(",".join(map(str, tup)) + "\n")
+    spec = paper_beta_em2_spec(data_dir=str(strength_dir), nucnam=nucnam, output_dir=SAVE_DIR)
+    spec = spec.__class__(
+        name=spec.name,
+        strength=spec.strength,
+        observable=spec.observable,
+        model={**dict(spec.model), "n": n},
+        train_filter_ranges=spec.train_filter_ranges,
+        central_point=tuple(float(x) for x in central_point),
+        output_dir=SAVE_DIR,
+        metadata=spec.metadata,
+    )
+    save_emulator(
+        SAVE_DIR,
+        params=global_best_params,
+        name="paper_beta_em2",
+        adapter="PaperBetaDecayAdapter",
+        spec=spec,
+        metadata={"global_best_cost": global_best_cost, "global_best_meta": global_best_meta},
+    )
 
 
 if __name__ == "__main__":

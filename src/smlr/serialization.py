@@ -10,6 +10,7 @@ import numpy as np
 
 from smlr import __version__
 from smlr.core.retention import RetainedModePolicy
+from smlr.specs import get_builtin_spec, load_run_spec
 
 
 METADATA_FILENAME = "emulator.json"
@@ -272,3 +273,12 @@ def load_emulator(path: str | Path) -> LoadedEmulator:
     record = EmulatorRecord.from_dict(json.loads(metadata_path.read_text()))
     params = np.loadtxt(root / record.params_file)
     return LoadedEmulator(record=record, params=params, root=root)
+
+
+def spec_from_selector(selector: str | None):
+    if selector is None:
+        return None
+    path = Path(selector)
+    if path.exists():
+        return load_run_spec(path)
+    return get_builtin_spec(selector)

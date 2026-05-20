@@ -2932,6 +2932,9 @@ tensorflow = [
 torch = [
     { name = "torch" },
 ]
+yaml = [
+    { name = "pyyaml" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -2943,13 +2946,14 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.0" },
     { name = "pandas", marker = "extra == 'paper'", specifier = ">=2.2" },
     { name = "pydata-sphinx-theme", marker = "extra == 'docs'", specifier = ">=0.15" },
+    { name = "pyyaml", marker = "extra == 'yaml'", specifier = ">=6.0" },
     { name = "scipy", marker = "extra == 'paper'", specifier = ">=1.14" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.0" },
     { name = "tensorflow", marker = "extra == 'paper'", specifier = ">=2.20" },
     { name = "tensorflow", marker = "extra == 'tensorflow'", specifier = ">=2.20" },
     { name = "torch", marker = "extra == 'torch'", specifier = ">=2.3" },
 ]
-provides-extras = ["paper", "tensorflow", "torch", "jax", "examples", "docs"]
+provides-extras = ["paper", "tensorflow", "torch", "jax", "yaml", "examples", "docs"]
 
 [[package]]
 name = "snowballstemmer"
