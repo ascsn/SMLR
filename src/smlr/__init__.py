@@ -6,6 +6,7 @@ for the SMLR software package.
 
 __version__ = "0.1.0"
 
+from .core.retention import RetainedModePolicy
 from .validation import (
     ValidationIssue,
     ValidationReport,
@@ -20,22 +21,37 @@ from .specs import (
     paper_beta_em1_spec,
     paper_beta_em2_spec,
     paper_dipole_em1_spec,
+    h2_2d_strength_spec,
+)
+from .serialization import (
+    EmulatorRecord,
+    LoadedEmulator,
+    load_emulator,
+    package_existing_emulator,
+    save_emulator,
 )
 
 __all__ = [
     "BetaDecayAdapter",
     "DipoleAdapter",
+    "EmulatorRecord",
     "EmulatorRunSpec",
+    "LoadedEmulator",
     "ObservableSpec",
     "PaperBetaDecayAdapter",
     "PaperDipoleAdapter",
+    "RetainedModePolicy",
     "StrengthGridSpec",
     "ValidationIssue",
     "ValidationReport",
     "__version__",
+    "load_emulator",
+    "h2_2d_strength_spec",
+    "package_existing_emulator",
     "paper_beta_em1_spec",
     "paper_beta_em2_spec",
     "paper_dipole_em1_spec",
+    "save_emulator",
     "validate_paper_beta_data",
     "validate_paper_dipole_data",
     "validate_strength_grid",

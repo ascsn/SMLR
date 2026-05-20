@@ -5,6 +5,7 @@ from typing import Optional, Tuple
 import numpy as np
 import tensorflow as tf
 
+from .retention import RetainedModePolicy, centered_keep_indices
 
 def _infer_float_dtype(*values, default=tf.float32):
     for value in values:
@@ -54,16 +55,6 @@ def give_me_lorentzian_batched(omega, poles_batch, strengths_batch, half_width_b
     return tf.reduce_sum(numerator / denominator, axis=1)
 
 
-def centered_keep_indices(n: int, retain: float) -> Tuple[int, int, int]:
-    """Return (left, right, k_keep) for centered mode retention."""
-    n = int(n)
-    k_keep = int(round(float(retain) * n))
-    k_keep = max(1, min(k_keep, n))
-    left = (n - k_keep) // 2
-    right = left + k_keep
-    return left, right, k_keep
-
-
 def centered_spectrum_initialization(E, B, n: int, retain: float, *, dtype=np.float32, step: float = 2.0):
     """Build full diagonal and v0 arrays from a centered retained spectrum."""
     left, right, k_keep = centered_keep_indices(n, retain)
@@ -92,4 +83,3 @@ def centered_spectrum_initialization(E, B, n: int, retain: float, *, dtype=np.fl
     v0_full = np.zeros(int(n), dtype=dtype)
     v0_full[left:right] = np.sqrt(np.maximum(B_sel, 0.0)).astype(dtype)
     return D_full, v0_full, (left, right, k_keep)
-

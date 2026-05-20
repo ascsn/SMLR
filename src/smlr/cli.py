@@ -4,8 +4,11 @@ import argparse
 import json
 import sys
 
-from .specs import paper_beta_em1_spec, paper_beta_em2_spec, paper_dipole_em1_spec
+from .specs import h2_2d_strength_spec, paper_beta_em1_spec, paper_beta_em2_spec, paper_dipole_em1_spec
+from .training.paper import run_beta_paper_em1, run_beta_paper_em2, run_dipole_paper_em1
 from .validation import validate_paper_beta_data, validate_paper_dipole_data, validate_strength_grid
+from .diagnostics.entrypoints import run_beta as run_beta_diagnostics
+from .diagnostics.entrypoints import run_dipole_paper_em1 as run_dipole_paper_em1_diagnostics
 
 
 def _print_report(report, *, as_json: bool) -> None:
@@ -52,8 +55,20 @@ def build_parser() -> argparse.ArgumentParser:
 
     specs = subparsers.add_parser("spec", help="print built-in emulator run specs")
     specs_sub = specs.add_subparsers(dest="kind", required=True)
-    for name in ("dipole-paper-em1", "beta-paper-em1", "beta-paper-em2"):
+    for name in ("dipole-paper-em1", "beta-paper-em1", "beta-paper-em2", "h2-2d-strength"):
         specs_sub.add_parser(name)
+
+    train = subparsers.add_parser("train", help="run package training entry points")
+    train_sub = train.add_subparsers(dest="kind", required=True)
+    for name in ("dipole-paper-em1", "beta-paper-em1", "beta-paper-em2"):
+        sub = train_sub.add_parser(name, help=f"run {name} training")
+        sub.add_argument("training_args", nargs=argparse.REMAINDER, help="arguments forwarded to the trainer")
+
+    diagnose = subparsers.add_parser("diagnose", help="run package diagnostic entry points")
+    diagnose_sub = diagnose.add_subparsers(dest="kind", required=True)
+    for name in ("dipole-paper-em1", "beta-paper"):
+        sub = diagnose_sub.add_parser(name, help=f"run {name} diagnostics")
+        sub.add_argument("diagnostic_args", nargs=argparse.REMAINDER, help="arguments forwarded to diagnostics")
     return parser
 
 
@@ -87,8 +102,30 @@ def main(argv: list[str] | None = None) -> int:
             "dipole-paper-em1": paper_dipole_em1_spec,
             "beta-paper-em1": paper_beta_em1_spec,
             "beta-paper-em2": paper_beta_em2_spec,
+            "h2-2d-strength": h2_2d_strength_spec,
         }
         print(json.dumps(factories[args.kind]().to_dict(), indent=2, sort_keys=True))
+        return 0
+    if args.command == "train":
+        runners = {
+            "dipole-paper-em1": run_dipole_paper_em1,
+            "beta-paper-em1": run_beta_paper_em1,
+            "beta-paper-em2": run_beta_paper_em2,
+        }
+        forwarded = list(args.training_args)
+        if forwarded and forwarded[0] == "--":
+            forwarded = forwarded[1:]
+        runners[args.kind](forwarded)
+        return 0
+    if args.command == "diagnose":
+        runners = {
+            "dipole-paper-em1": run_dipole_paper_em1_diagnostics,
+            "beta-paper": run_beta_diagnostics,
+        }
+        forwarded = list(args.diagnostic_args)
+        if forwarded and forwarded[0] == "--":
+            forwarded = forwarded[1:]
+        runners[args.kind](forwarded)
         return 0
 
     parser.error("unknown command")

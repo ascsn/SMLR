@@ -12,6 +12,7 @@ from .ansatz import (
 )
 from .fitting import fit_strength_with_tf_lorentzian
 from .numerics import (
+    RetainedModePolicy,
     centered_keep_indices,
     centered_spectrum_initialization,
     give_me_lorentzian,
@@ -28,6 +29,7 @@ from .training import make_optimizer, moving_average, set_all_seeds
 __all__ = [
     "PackedLayout",
     "ParameterSplit",
+    "RetainedModePolicy",
     "build_model_matrices_and_vectors",
     "centered_keep_indices",
     "centered_spectrum_initialization",

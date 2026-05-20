@@ -165,3 +165,31 @@ def paper_beta_em2_spec(
         output_dir=output_dir,
         metadata={"paper_behavior": True, "domain": "beta_decay", "nucnam": nucnam},
     )
+
+
+def h2_2d_strength_spec(
+    *,
+    strength_dir: str = "extra_docs/aaron_H2/total_strength",
+    output_dir: str = "extra_docs/aaron_H2/runs_strength",
+) -> EmulatorRunSpec:
+    """Synthetic two-parameter H2 strength-only example spec."""
+
+    return EmulatorRunSpec(
+        name="h2_2d_strength",
+        strength=StrengthGridSpec(
+            data_dir=strength_dir,
+            filename_regex=r"strength_(?P<q>[0-9.]+)_(?P<theta>[0-9.]+)\.out",
+            parameter_names=("q", "theta"),
+        ),
+        observable=None,
+        model={
+            "n": 13,
+            "retain": 1.0,
+            "fold": 2.0,
+            "ansatz": "linear_exp",
+            "width_model": "affine",
+            "strength_only": True,
+        },
+        output_dir=output_dir,
+        metadata={"domain": "synthetic_lrt", "example": "aaron_H2"},
+    )

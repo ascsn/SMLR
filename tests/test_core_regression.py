@@ -15,11 +15,12 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from smlr.core import numerics
+from smlr.core import RetainedModePolicy, numerics
 from smlr.core import split_by_parameter_ranges
 from smlr.domains import PaperBetaDecayAdapter
 from smlr.metrics import integrated_strength_error, observable_error_summary, relative_error, weighted_spectral_loss
-from smlr.specs import StrengthGridSpec, paper_beta_em2_spec, paper_dipole_em1_spec
+from smlr.serialization import load_emulator, package_existing_emulator, save_emulator
+from smlr.specs import StrengthGridSpec, h2_2d_strength_spec, paper_beta_em2_spec, paper_dipole_em1_spec
 from smlr.validation import validate_strength_grid
 
 
@@ -40,6 +41,12 @@ class CoreNumericsRegressionTest(unittest.TestCase):
         self.assertEqual(info, (1, 4, 3))
         np.testing.assert_allclose(diag, [-3.0, -1.0, 0.0, 1.0, 3.0, 5.0])
         np.testing.assert_allclose(v0, [0.0, 2.0, 3.0, 4.0, 0.0, 0.0])
+
+    def test_retained_mode_policy(self):
+        policy = RetainedModePolicy(kind="centered", retain=0.5)
+        self.assertEqual(policy.indices(6), (1, 4, 3))
+        np.testing.assert_array_equal(policy.apply(np.arange(6)), [1, 2, 3])
+        self.assertEqual(RetainedModePolicy.from_dict(policy.to_dict()).indices(6), (1, 4, 3))
 
     def test_parameter_range_split(self):
         points = np.array([[0.0, 0.0], [0.0, 2.0], [1.0, 0.0], [1.0, 2.0]])
@@ -140,6 +147,51 @@ class DataSpecRegressionTest(unittest.TestCase):
         points = np.array([[0.2, 1.0], [0.4, 1.5], [1.0, 2.0], [2.0, 4.5]])
         split = spec.split(points)
         np.testing.assert_array_equal(split.train_mask, [False, True, True, False])
+
+    def test_h2_example_spec_validates_available_data(self):
+        spec = h2_2d_strength_spec(strength_dir=str(ROOT / "extra_docs/aaron_H2/total_strength"))
+        report = spec.validate_data()
+        self.assertTrue(report.ok)
+        self.assertEqual(report.parameter_names, ("q", "theta"))
+
+
+class SerializationRegressionTest(unittest.TestCase):
+    def test_save_and_load_emulator_record(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            params = np.array([1.0, 2.0, 3.0])
+            spec = paper_beta_em2_spec(data_dir="beta_decay_data_Ni_80")
+            policy = RetainedModePolicy(kind="centered", retain=0.9)
+            save_emulator(
+                tmp,
+                params=params,
+                name="toy",
+                adapter="PaperBetaDecayAdapter",
+                spec=spec,
+                retained_modes=policy,
+                metadata={"seed": 42},
+            )
+            loaded = load_emulator(tmp)
+            np.testing.assert_array_equal(loaded.params, params)
+            self.assertEqual(loaded.record.name, "toy")
+            self.assertEqual(loaded.record.retained_mode_policy.indices(10), (0, 9, 9))
+            self.assertEqual(loaded.record.metadata["seed"], 42)
+
+    def test_loaded_beta_em2_prediction_is_finite(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            params_file = ROOT / "Beta_decay_package/runs_em2/n6_seed42/params_6_only_HL.txt"
+            package_existing_emulator(
+                tmp,
+                params_file=params_file,
+                name="beta_em2_n6",
+                adapter="PaperBetaDecayAdapter",
+                spec={"model": {"n": 6}, "central_point": [1.0, 0.5]},
+                metadata={"mode": "em2"},
+            )
+            loaded = load_emulator(tmp)
+            pred = loaded.predict_beta_em2([[1.0, 0.5]])["half_life"]
+            self.assertEqual(pred.shape, (1,))
+            self.assertTrue(np.isfinite(pred[0]))
+            self.assertGreater(pred[0], 0.0)
 
 
 class BetaRunRegressionTest(unittest.TestCase):
