@@ -34,6 +34,8 @@ def parse_args():
     p.add_argument("--Z", type=int, default=28)
     p.add_argument("--g-A", dest="g_A", type=float, default=1.2)
     p.add_argument("--plots", choices=["save", "none"], default="save")
+    p.add_argument("--detail-idx", type=int, default=None)
+    p.add_argument("--dpi", type=int, default=200)
     return p.parse_args()
 
 
@@ -75,12 +77,23 @@ def tensor_float(value):
         return float(value)
 
 
+def choose_detail_idx(n_samples, requested=None):
+    if requested is None:
+        return n_samples // 2
+    if not 0 <= requested < n_samples:
+        raise IndexError(f"detail_idx={requested} outside [0, {n_samples})")
+    return requested
+
+
 def predict_em1(params, n, retain, points, coeffs, g_A, nucnam, central_point):
     Lors, HLs_true = helper.data_table(points, coeffs, g_A, nucnam)
     D, S1, S2, v0, fold, x1, x2, x3 = helper.modified_DS(params, n)
 
     strengths = []
     half_lives = []
+    eigs = []
+    Bs = []
+    widths = []
     for idx, point in enumerate(points):
         alpha = float(point[0])
         beta = float(point[1])
@@ -103,8 +116,19 @@ def predict_em1(params, n, retain, points, coeffs, g_A, nucnam, central_point):
         width = tf.sqrt(tf.square(fold) + tf.square(x1 + x2 * alpha + x3 * beta))
         strengths.append(helper.give_me_Lorentzian(x, eigenvalues, B, width).numpy())
         half_lives.append(tensor_float(helper.half_life_loss(eigenvalues, B, coeffs, g_A)))
+        eigs.append(eigenvalues.numpy())
+        Bs.append(B.numpy())
+        widths.append(tensor_float(width))
 
-    return np.asarray(strengths), np.asarray(half_lives), np.asarray([tensor_float(v) for v in HLs_true]), Lors
+    return {
+        "strengths": np.asarray(strengths),
+        "half_lives": np.asarray(half_lives),
+        "half_lives_true": np.asarray([tensor_float(v) for v in HLs_true]),
+        "Lors": Lors,
+        "eigs": eigs,
+        "Bs": Bs,
+        "widths": np.asarray(widths),
+    }
 
 
 def predict_em2(params, n, points, coeffs, g_A, nucnam, central_point):
@@ -120,7 +144,7 @@ def predict_em2(params, n, points, coeffs, g_A, nucnam, central_point):
     return np.asarray(half_lives), np.asarray([tensor_float(v) for v in HLs_true])
 
 
-def save_half_life_outputs(fig_dir, points, pred, true, plots):
+def save_half_life_outputs(fig_dir, points, pred, true, plots, dpi):
     rel = np.abs(pred - true) / np.maximum(np.abs(true), 1e-12)
     with open(fig_dir / "half_life_predictions.csv", "w", newline="") as f:
         writer = csv.writer(f)
@@ -140,8 +164,8 @@ def save_half_life_outputs(fig_dir, points, pred, true, plots):
     if plots == "none":
         return summary
 
-    plt.figure(figsize=(5, 4))
-    plt.scatter(true, pred)
+    plt.figure(figsize=(6, 5))
+    plt.scatter(true, pred, s=18)
     lo = min(float(np.min(true)), float(np.min(pred)))
     hi = max(float(np.max(true)), float(np.max(pred)))
     plt.plot([lo, hi], [lo, hi], color="black")
@@ -149,18 +173,56 @@ def save_half_life_outputs(fig_dir, points, pred, true, plots):
     plt.yscale("log")
     plt.xlabel("True half-life")
     plt.ylabel("Predicted half-life")
-    plt.savefig(fig_dir / "half_life_true_vs_pred.png", bbox_inches="tight", dpi=180)
+    plt.title("Half-life: prediction vs truth")
+    plt.savefig(fig_dir / "half_life_true_vs_pred.png", bbox_inches="tight", dpi=dpi)
     plt.close()
 
     xy = np.asarray(points, dtype=float)
-    plt.figure(figsize=(5, 4))
+    plt.figure(figsize=(6, 5))
     plt.scatter(xy[:, 0], xy[:, 1], c=np.clip(rel, 1e-12, None), marker="s", cmap="Spectral", norm=LogNorm())
     plt.colorbar(label="Half-life relative error")
     plt.xlabel("V0_is")
     plt.ylabel("g0")
-    plt.savefig(fig_dir / "half_life_error_map.png", bbox_inches="tight", dpi=180)
+    plt.title("Parameter-space half-life error")
+    plt.savefig(fig_dir / "parameter_error_map.png", bbox_inches="tight", dpi=dpi)
     plt.close()
     return summary
+
+
+def save_em1_detail_spectrum(fig_dir, points, outputs, detail_idx, dpi):
+    Lors = outputs["Lors"]
+    x = Lors[detail_idx][:, 0]
+    y_true = Lors[detail_idx][:, 1]
+    y_pred = outputs["strengths"][detail_idx]
+    eigs = outputs["eigs"][detail_idx]
+    Bs = outputs["Bs"][detail_idx]
+    point = points[detail_idx]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(x, y_pred, label="pred")
+    ax.plot(x, y_true, label="true", alpha=0.85)
+    ax.stem(eigs, Bs, basefmt=" ", linefmt="C2-", markerfmt="C2o", label="poles")
+    ax.set_xlabel("E (MeV)")
+    ax.set_ylabel("Strength (1/MeV)")
+    ax.set_title(f"Detailed spectrum (idx={detail_idx}, V0_is={point[0]}, g0={point[1]})")
+    ax.set_ylim(bottom=0)
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(fig_dir / "detail_spectrum.png", bbox_inches="tight", dpi=dpi)
+    plt.close(fig)
+
+
+def save_em2_detail_observable(fig_dir, points, pred, true, detail_idx, dpi):
+    point = points[detail_idx]
+    rel = abs(pred[detail_idx] - true[detail_idx]) / max(abs(true[detail_idx]), 1e-12)
+    fig, ax = plt.subplots(figsize=(5, 4))
+    ax.bar(["true", "pred"], [true[detail_idx], pred[detail_idx]], color=["black", "tab:red"], alpha=0.8)
+    ax.set_yscale("log")
+    ax.set_ylabel("Half-life")
+    ax.set_title(f"Detailed half-life (idx={detail_idx}, rel={rel:.3e})\nV0_is={point[0]}, g0={point[1]}")
+    fig.tight_layout()
+    fig.savefig(fig_dir / "detail_observable.png", bbox_inches="tight", dpi=dpi)
+    plt.close(fig)
 
 
 def main():
@@ -179,17 +241,23 @@ def main():
     central_point = central_point_from(points)
 
     coeffs = Polynomial(helper.fit_phase_space(0, args.Z, args.A, 15)).coef
+    detail_idx = choose_detail_idx(len(points), args.detail_idx)
 
     if args.mode == "em1":
-        _, pred, true, _ = predict_em1(params, args.n, args.retain, points, coeffs, args.g_A, args.nucnam, central_point)
+        outputs = predict_em1(params, args.n, args.retain, points, coeffs, args.g_A, args.nucnam, central_point)
+        pred = outputs["half_lives"]
+        true = outputs["half_lives_true"]
+        if args.plots == "save":
+            save_em1_detail_spectrum(fig_dir, points, outputs, detail_idx, args.dpi)
     else:
         pred, true = predict_em2(params, args.n, points, coeffs, args.g_A, args.nucnam, central_point)
+        if args.plots == "save":
+            save_em2_detail_observable(fig_dir, points, pred, true, detail_idx, args.dpi)
 
-    summary = save_half_life_outputs(fig_dir, points, pred, true, args.plots)
+    summary = save_half_life_outputs(fig_dir, points, pred, true, args.plots, args.dpi)
     print("Diagnostics written to", fig_dir)
     print(summary)
 
 
 if __name__ == "__main__":
     main()
-

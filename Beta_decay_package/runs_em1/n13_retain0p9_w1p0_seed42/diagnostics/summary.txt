@@ -1,0 +1,3 @@
+mean_relative_error=0.001844147006461545
+median_relative_error=0.0013437315813338378
+max_relative_error=0.009202152056843806
