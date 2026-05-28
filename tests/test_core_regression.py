@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import csv
 import json
+import os
+import re
 import sys
 import tempfile
 import unittest
@@ -21,7 +23,7 @@ from smlr.domains import PaperBetaDecayAdapter
 from smlr.metrics import integrated_strength_error, observable_error_summary, relative_error, weighted_spectral_loss
 from smlr.serialization import load_emulator, package_existing_emulator, save_emulator
 from smlr.specs import StrengthGridSpec, h2_2d_strength_spec, paper_beta_em2_spec, paper_dipole_em1_spec
-from smlr.validation import validate_strength_grid
+from smlr.validation import GENERIC_2D_PARAMETER_NAMES, validate_strength_grid
 
 
 class CoreNumericsRegressionTest(unittest.TestCase):
@@ -78,17 +80,14 @@ class UserDataValidationTest(unittest.TestCase):
     def test_valid_strength_grid_passes(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            for alpha in ("0.0", "1.0"):
-                for beta in ("0.0", "2.0"):
-                    (root / f"strength_{beta}_{alpha}.out").write_text("0.0 1.0\n1.0 2.0\n")
-            report = validate_strength_grid(
-                root,
-                r"strength_(?P<beta>[0-9.]+)_(?P<alpha>[0-9.]+)\.out",
-                parameter_names=("alpha", "beta"),
-            )
+            for p1 in ("0.0", "1.0"):
+                for p2 in ("0.0", "2.0"):
+                    (root / f"strength_{p1}_{p2}.out").write_text("0.0 1.0\n1.0 2.0\n")
+            report = validate_strength_grid(root)
             self.assertTrue(report.ok)
             self.assertEqual(report.files_checked, 4)
             self.assertEqual(len(report.points), 4)
+            self.assertEqual(report.parameter_names, GENERIC_2D_PARAMETER_NAMES)
 
     def test_nonrectangular_strength_grid_fails_before_training(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -98,8 +97,6 @@ class UserDataValidationTest(unittest.TestCase):
             (root / "strength_0.0_1.0.out").write_text("0.0 1.0\n1.0 2.0\n")
             report = validate_strength_grid(
                 root,
-                r"strength_(?P<beta>[0-9.]+)_(?P<alpha>[0-9.]+)\.out",
-                parameter_names=("alpha", "beta"),
             )
             self.assertFalse(report.ok)
             self.assertIn("not rectangular", "\n".join(issue.message for issue in report.issues))
@@ -110,12 +107,18 @@ class UserDataValidationTest(unittest.TestCase):
             (root / "strength_0.0_0.0.out").write_text("not numeric\n")
             report = validate_strength_grid(
                 root,
-                r"strength_(?P<beta>[0-9.]+)_(?P<alpha>[0-9.]+)\.out",
-                parameter_names=("alpha", "beta"),
                 require_rectangular_grid=False,
             )
             self.assertFalse(report.ok)
             self.assertIn("could not read numeric strength table", "\n".join(issue.message for issue in report.issues))
+
+    def test_extra_numeric_strength_column_fails_generic_format(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "strength_0.0_0.0.out").write_text("0.0 1.0 2.0\n1.0 2.0 3.0\n")
+            report = validate_strength_grid(root, require_rectangular_grid=False)
+            self.assertFalse(report.ok)
+            self.assertIn("expected at most 2 numeric columns", "\n".join(issue.message for issue in report.issues))
 
 
 class DataSpecRegressionTest(unittest.TestCase):
@@ -314,6 +317,70 @@ class BetaRunRegressionTest(unittest.TestCase):
         spectrum = adapter.lorentzian(x, eigvals, strengths, width).numpy()
         expected = np.array([4.380955784300, 6.755414970570, 4.894853976940])
         np.testing.assert_allclose(spectrum, expected, rtol=0.0, atol=1e-6)
+
+
+class BetaEM1SmokeParityTest(unittest.TestCase):
+    def test_core_backed_package_em1_matches_project_legacy_for_short_training(self):
+        from numpy.polynomial.polynomial import Polynomial
+
+        import Beta_decay.helper as legacy
+        import Beta_decay_package.src.helper_gpt as package
+
+        nucnam = "Ni_80"
+        coeffs = Polynomial(legacy.fit_phase_space(0, 28, 80, 15)).coef
+        pattern = re.compile(r"lorm_" + re.escape(nucnam) + r"_([0-9.]+)_([0-9.]+)\.out")
+        combined = []
+        for fname in sorted(os.listdir(legacy.beta_data_dir(nucnam))):
+            match = pattern.match(fname)
+            if not match:
+                continue
+            beta = match.group(1)
+            alpha = match.group(2)
+            if 0.1 <= float(beta) <= 0.9 and 0.2 <= float(alpha) <= 1.8:
+                combined.append((alpha, beta))
+
+        points = combined[:3]
+        values = np.asarray(combined, dtype=float)
+        center = 0.5 * (values.min(axis=0) + values.max(axis=0))
+        central_point = tuple(combined[int(np.argmin(np.linalg.norm(values - center, axis=1)))])
+
+        for n, retain, weight in ((4, 0.75, 1.0), (6, 0.9, 1.0), (8, 0.9, 0.5)):
+            with self.subTest(n=n, retain=retain, weight=weight):
+                n_params = n + 2 * int(n * (n + 1) / 2) + n + 4
+                initial = np.random.default_rng(42).uniform(0.0, 1.0, size=n_params)
+                legacy_lors, legacy_hls = legacy.data_table(points, coeffs, 1.2, nucnam)
+                package_lors, package_hls = package.data_table(points, coeffs, 1.2, nucnam)
+
+                for legacy_table, package_table in zip(legacy_lors, package_lors):
+                    np.testing.assert_array_equal(legacy_table, package_table)
+                np.testing.assert_array_equal(legacy_hls, package_hls)
+
+                legacy_params = tf.Variable(initial.copy(), dtype=tf.float64)
+                package_params = tf.Variable(initial.copy(), dtype=tf.float64)
+                legacy_optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+                package_optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+                legacy_costs = []
+                package_costs = []
+
+                for _ in range(3):
+                    with tf.GradientTape() as tape:
+                        legacy_cost, *_ = legacy.cost_function(
+                            legacy_params, n, points, legacy_lors, legacy_hls, coeffs, 1.2, weight, central_point, retain
+                        )
+                    grads = tape.gradient(legacy_cost, [legacy_params])
+                    legacy_optimizer.apply_gradients(zip(grads, [legacy_params]))
+                    legacy_costs.append(legacy_cost.numpy())
+
+                    with tf.GradientTape() as tape:
+                        package_cost, *_ = package.cost_function(
+                            package_params, n, points, package_lors, package_hls, coeffs, 1.2, weight, central_point, retain
+                        )
+                    grads = tape.gradient(package_cost, [package_params])
+                    package_optimizer.apply_gradients(zip(grads, [package_params]))
+                    package_costs.append(package_cost.numpy())
+
+                np.testing.assert_array_equal(legacy_costs, package_costs)
+                np.testing.assert_array_equal(legacy_params.numpy(), package_params.numpy())
 
 
 if __name__ == "__main__":

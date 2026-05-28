@@ -12,7 +12,13 @@ from .serialization import load_emulator, package_existing_emulator, spec_from_s
 from .specs import BUILTIN_SPECS, get_builtin_spec, h2_2d_strength_spec, load_run_spec, paper_beta_em1_spec, paper_beta_em2_spec, paper_dipole_em1_spec, save_run_spec
 from .training import strength_only
 from .training.paper import run_beta_paper_em1, run_beta_paper_em2, run_dipole_paper_em1
-from .validation import validate_paper_beta_data, validate_paper_dipole_data, validate_strength_grid
+from .validation import (
+    GENERIC_2D_PARAMETER_NAMES,
+    GENERIC_2D_STRENGTH_REGEX,
+    validate_paper_beta_data,
+    validate_paper_dipole_data,
+    validate_strength_grid,
+)
 from .diagnostics.entrypoints import run_beta as run_beta_diagnostics
 from .diagnostics.entrypoints import run_dipole_paper_em1 as run_dipole_paper_em1_diagnostics
 
@@ -51,10 +57,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     generic = validate_sub.add_parser("strength-grid", help="validate a generic strength-function grid")
     generic.add_argument("data_dir")
-    generic.add_argument("--regex", required=True, help="filename regex with named parameter groups")
+    generic.add_argument(
+        "--regex",
+        default=GENERIC_2D_STRENGTH_REGEX,
+        help="filename regex with named parameter groups; defaults to strength_<p1>_<p2>.out",
+    )
     generic.add_argument("--parameter", action="append", dest="parameters", help="parameter group name, in grid order")
     generic.add_argument("--min-files", type=int, default=1)
     generic.add_argument("--min-columns", type=int, default=2)
+    generic.add_argument("--max-columns", type=int, default=2)
     generic.add_argument("--allow-negative-strength", action="store_true")
     generic.add_argument("--no-rectangular-grid", action="store_true")
     generic.add_argument("--json", action="store_true")
@@ -130,13 +141,14 @@ def main(argv: list[str] | None = None) -> int:
         _print_report(report, as_json=args.json)
         return 0 if report.ok else 1
     if args.command == "validate" and args.kind == "strength-grid":
-        parameter_names = tuple(args.parameters) if args.parameters else None
+        parameter_names = tuple(args.parameters) if args.parameters else GENERIC_2D_PARAMETER_NAMES
         report = validate_strength_grid(
             args.data_dir,
             args.regex,
             parameter_names=parameter_names,
             min_files=args.min_files,
             min_columns=args.min_columns,
+            max_columns=args.max_columns,
             require_rectangular_grid=not args.no_rectangular_grid,
             allow_negative_strength=args.allow_negative_strength,
         )

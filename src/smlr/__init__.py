@@ -8,6 +8,8 @@ __version__ = "0.1.0"
 
 from .core.retention import RetainedModePolicy
 from .validation import (
+    GENERIC_2D_PARAMETER_NAMES,
+    GENERIC_2D_STRENGTH_REGEX,
     ValidationIssue,
     ValidationReport,
     validate_paper_beta_data,
@@ -18,6 +20,7 @@ from .specs import (
     EmulatorRunSpec,
     ObservableSpec,
     StrengthGridSpec,
+    generic_2d_strength_spec,
     load_run_spec,
     paper_beta_em1_spec,
     paper_beta_em2_spec,
@@ -37,6 +40,8 @@ __all__ = [
     "DipoleAdapter",
     "EmulatorRecord",
     "EmulatorRunSpec",
+    "GENERIC_2D_PARAMETER_NAMES",
+    "GENERIC_2D_STRENGTH_REGEX",
     "LoadedEmulator",
     "ObservableSpec",
     "PaperBetaDecayAdapter",
@@ -46,6 +51,7 @@ __all__ = [
     "ValidationIssue",
     "ValidationReport",
     "__version__",
+    "generic_2d_strength_spec",
     "load_emulator",
     "h2_2d_strength_spec",
     "load_run_spec",

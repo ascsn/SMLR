@@ -7,6 +7,9 @@ from typing import Iterable, Mapping, Pattern
 
 import numpy as np
 
+GENERIC_2D_STRENGTH_REGEX = r"strength_(?P<p1>[0-9.]+)_(?P<p2>[0-9.]+)\.out"
+GENERIC_2D_PARAMETER_NAMES = ("p1", "p2")
+
 
 @dataclass(frozen=True)
 class ValidationIssue:
@@ -47,12 +50,14 @@ def _compile_regex(pattern: str | Pattern[str]) -> Pattern[str]:
     return re.compile(pattern) if isinstance(pattern, str) else pattern
 
 
-def _load_numeric_table(path: Path, *, min_columns: int) -> np.ndarray:
+def _load_numeric_table(path: Path, *, min_columns: int, max_columns: int | None = None) -> np.ndarray:
     table = np.loadtxt(path, comments="#", ndmin=2)
     if table.size == 0:
         raise ValueError("file has no numeric rows")
     if table.shape[1] < min_columns:
         raise ValueError(f"expected at least {min_columns} numeric columns, got {table.shape[1]}")
+    if max_columns is not None and table.shape[1] > max_columns:
+        raise ValueError(f"expected at most {max_columns} numeric columns, got {table.shape[1]}")
     if not np.all(np.isfinite(table[:, :min_columns])):
         raise ValueError("numeric table contains NaN or inf values")
     return table
@@ -72,18 +77,22 @@ def _rectangular_grid_missing(points: Iterable[tuple[str, ...]]) -> list[tuple[s
 
 def validate_strength_grid(
     data_dir: str | Path,
-    filename_regex: str | Pattern[str],
+    filename_regex: str | Pattern[str] = GENERIC_2D_STRENGTH_REGEX,
     *,
     parameter_names: tuple[str, ...] | None = None,
     min_files: int = 1,
     min_columns: int = 2,
+    max_columns: int | None = 2,
     require_rectangular_grid: bool = True,
     allow_negative_strength: bool = False,
 ) -> ValidationReport:
     """Validate strength-function files before setting up an emulator run.
 
     The regex must match filenames in ``data_dir`` and contain named groups for
-    each model parameter. Numeric contents are checked with ``numpy.loadtxt``.
+    each model parameter. By default, this validates the release-supported
+    generic 2D format ``strength_<p1>_<p2>.out`` with two numeric columns:
+    column 0 is omega and column 1 is B strength. Numeric contents are checked
+    with ``numpy.loadtxt``.
     """
 
     data_path = Path(data_dir)
@@ -137,7 +146,7 @@ def validate_strength_grid(
         point = tuple(groups[name] for name in parameter_names)
         points.append(point)
         try:
-            table = _load_numeric_table(path, min_columns=min_columns)
+            table = _load_numeric_table(path, min_columns=min_columns, max_columns=max_columns)
         except Exception as exc:
             issues.append(ValidationIssue("error", f"could not read numeric strength table: {exc}", str(path)))
             continue
@@ -173,6 +182,7 @@ def validate_paper_beta_data(data_dir: str | Path = "beta_decay_data_Ni_80", nuc
         parameter_names=("alpha", "beta"),
         min_files=1,
         min_columns=2,
+        max_columns=2,
         require_rectangular_grid=True,
     )
 
@@ -186,5 +196,6 @@ def validate_paper_dipole_data(strength_dir: str | Path = "dipoles_data_all/tota
         parameter_names=("p1", "p2"),
         min_files=1,
         min_columns=2,
+        max_columns=2,
         require_rectangular_grid=True,
     )

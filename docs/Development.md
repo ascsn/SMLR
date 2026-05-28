@@ -11,13 +11,27 @@ This section describes the development workflow for the SMLR package.
 
 ## Packaging with uv
 
+Install the development environment with `uv`:
+
+```bash
+uv sync --extra paper --extra docs
+```
+
+Run commands through the managed virtual environment:
+
+```bash
+uv run smlr --help
+uv run python -m unittest
+```
+
 Build the package with:
 
 ```bash
 uv build
 ```
 
-Install development dependencies as needed using `uv add`.
+Add dependencies with `uv add` so `pyproject.toml` and `uv.lock` stay in sync.
+For `0.1.0`, TensorFlow is the only supported training backend.
 
 ## Contributing
 

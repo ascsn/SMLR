@@ -1,6 +1,6 @@
 # SMLR: Surrogate Models for Linear Response
 
-![Logo](SMLR.png)
+![Logo](logos/SMLR.png)
 
 This repository accompanies *L. Jin et al., “Surrogate Models for Linear Response”*.  
 It provides user-ready **emulators**, **training workflows**, and **documentation**.
@@ -25,8 +25,23 @@ It provides user-ready **emulators**, **training workflows**, and **documentatio
 ## Home
 
 SMLR is a software package for building surrogate models of linear response
-observables in nuclear structure. The current repository includes emulator scripts
-for dipole polarizability and beta-decay strength calculations.
+observables in nuclear structure.
+
+For the `0.1.0` release, the supported scope is:
+
+- Paper reproduction for the dipole polarizability and beta-decay examples.
+- Two-parameter spectral emulation for linear-response strength data.
+- Paper-style diagnostics for the supported workflows.
+- TensorFlow-backed training and prediction.
+- Documentation for installation, validation, reproduction, diagnostics, and basic package development.
+
+The supported observables for this release are dipole polarizability and
+beta-decay half-life. Other observables and non-TensorFlow backends are planned
+future work.
+
+Code outside the documented `smlr` package commands should be treated as
+research or archival code. Archival code will either remain available through
+the git history or be moved to a separate archive branch.
 
 ## Getting Started
 

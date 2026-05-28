@@ -45,6 +45,7 @@ def parse_args():
     p.add_argument("--n-restarts",   type=int,   default=1,       help="Number of different seeds")
     p.add_argument("--seed0",        type=int,   default=42,      help="Base seed (seeds = seed0..seed0+n_restarts-1)")
     p.add_argument("--num-iter",     type=int,   default=30000,   help="Max iterations per restart")
+    p.add_argument("--min-iter",     type=int,   default=20000,   help=argparse.SUPPRESS)
     p.add_argument("--print-every",  type=int,   default=1000,     help="Logging cadence (iterations)")
     p.add_argument("--save-dir",     type=str,   default="Beta_decay_package/runs_em1", help="Directory to save run artifacts")
 
@@ -66,6 +67,7 @@ def main():
     N_RESTARTS     = args.n_restarts
     SEED0          = args.seed0
     NUM_ITERATIONS = args.num_iter
+    MIN_ITERATIONS = args.min_iter
     PRINT_EVERY    = args.print_every
     SAVE_DIR       = args.save_dir
     PLOTS_MODE     = args.plots              # "none" | "save"
@@ -74,8 +76,6 @@ def main():
     os.makedirs(SAVE_DIR, exist_ok=True)
 
     # -------------------- policy: minimum iterations --------------------
-    MIN_ITERATIONS = 20000  # enforce at least this many iterations per restart
-
     if NUM_ITERATIONS < MIN_ITERATIONS:
         raise ValueError(
             f"--num-iter ({NUM_ITERATIONS}) must be >= {MIN_ITERATIONS}. "

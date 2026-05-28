@@ -8,7 +8,12 @@ from typing import Any, Mapping, Sequence
 import numpy as np
 
 from smlr.core.splitting import ParameterSplit, split_by_parameter_ranges
-from smlr.validation import ValidationReport, validate_strength_grid
+from smlr.validation import (
+    GENERIC_2D_PARAMETER_NAMES,
+    GENERIC_2D_STRENGTH_REGEX,
+    ValidationReport,
+    validate_strength_grid,
+)
 
 
 @dataclass(frozen=True)
@@ -20,6 +25,7 @@ class StrengthGridSpec:
     parameter_names: tuple[str, ...]
     min_files: int = 1
     min_columns: int = 2
+    max_columns: int | None = 2
     require_rectangular_grid: bool = True
     allow_negative_strength: bool = False
 
@@ -30,6 +36,7 @@ class StrengthGridSpec:
             parameter_names=self.parameter_names,
             min_files=self.min_files,
             min_columns=self.min_columns,
+            max_columns=self.max_columns,
             require_rectangular_grid=self.require_rectangular_grid,
             allow_negative_strength=self.allow_negative_strength,
         )
@@ -41,6 +48,7 @@ class StrengthGridSpec:
             parameter_names=self.parameter_names,
             min_files=self.min_files,
             min_columns=self.min_columns,
+            max_columns=self.max_columns,
             require_rectangular_grid=self.require_rectangular_grid,
             allow_negative_strength=self.allow_negative_strength,
         )
@@ -56,6 +64,7 @@ class StrengthGridSpec:
             parameter_names=tuple(data["parameter_names"]),
             min_files=int(data.get("min_files", 1)),
             min_columns=int(data.get("min_columns", 2)),
+            max_columns=data.get("max_columns", 2),
             require_rectangular_grid=bool(data.get("require_rectangular_grid", True)),
             allow_negative_strength=bool(data.get("allow_negative_strength", False)),
         )
@@ -232,6 +241,36 @@ def h2_2d_strength_spec(
         },
         output_dir=output_dir,
         metadata={"domain": "synthetic_lrt", "example": "aaron_H2"},
+    )
+
+
+def generic_2d_strength_spec(
+    *,
+    strength_dir: str,
+    output_dir: str = "runs_strength",
+) -> EmulatorRunSpec:
+    """Release-supported generic two-parameter strength-only run spec."""
+
+    return EmulatorRunSpec(
+        name="generic_2d_strength",
+        strength=StrengthGridSpec(
+            data_dir=strength_dir,
+            filename_regex=GENERIC_2D_STRENGTH_REGEX,
+            parameter_names=GENERIC_2D_PARAMETER_NAMES,
+            min_columns=2,
+            max_columns=2,
+        ),
+        observable=None,
+        model={
+            "ansatz": "linear_exp",
+            "width_model": "affine",
+            "strength_only": True,
+        },
+        output_dir=output_dir,
+        metadata={
+            "domain": "generic_2d_lrt",
+            "format": "strength_<p1>_<p2>.out with columns omega, B",
+        },
     )
 
 

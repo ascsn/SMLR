@@ -31,8 +31,8 @@ def give_me_lorentzian(energy, poles, strength, width, dtype: Optional[tf.DType]
     width = tf.convert_to_tensor(width, dtype=dtype)
 
     energy_expanded = tf.expand_dims(energy, axis=-1)
-    numerator = strength * (width / tf.cast(2.0 * np.pi, dtype))
-    denominator = tf.square(energy_expanded - poles) + tf.square(width) / tf.cast(4.0, dtype)
+    numerator = strength * (width / 2 / np.pi)
+    denominator = (energy_expanded - poles) ** 2 + (width ** 2 / 4)
     return tf.reduce_sum(numerator / denominator, axis=-1)
 
 
