@@ -151,8 +151,8 @@ class EmulatorRunSpec:
 
 def paper_dipole_em1_spec(
     *,
-    strength_dir: str = "dipoles_data_all/total_strength",
-    alphaD_dir: str = "dipoles_data_all/total_alphaD",
+    strength_dir: str = "dipole_polarizability_160Yb/total_strength",
+    alphaD_dir: str = "dipole_polarizability_160Yb/total_alphaD",
     output_dir: str = "Dipole_polarizability/runs_em1",
 ) -> EmulatorRunSpec:
     return EmulatorRunSpec(
@@ -167,6 +167,7 @@ def paper_dipole_em1_spec(
             data_dir=alphaD_dir,
             filename_regex=r"alphaD_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out",
             parameter_names=("p1", "p2"),
+            min_columns=3,
             units="fm^3",
         ),
         model={"n": 10, "retain": 0.5, "fold": 2.0, "ansatz": "paper_dipole", "width_model": "affine"},
@@ -178,18 +179,25 @@ def paper_dipole_em1_spec(
 
 def paper_beta_em1_spec(
     *,
-    data_dir: str = "beta_decay_data_Ni_80",
+    data_dir: str = "beta_decay_80Ni",
     nucnam: str = "Ni_80",
     output_dir: str = "Beta_decay_package/runs_em1",
 ) -> EmulatorRunSpec:
     return EmulatorRunSpec(
         name="paper_beta_em1",
         strength=StrengthGridSpec(
-            data_dir=data_dir,
+            data_dir=str(Path(data_dir) / "total_lorm") if (Path(data_dir) / "total_lorm").is_dir() else data_dir,
             filename_regex=rf"lorm_{nucnam}_(?P<beta>[0-9.]+)_(?P<alpha>[0-9.]+)\.out",
             parameter_names=("alpha", "beta"),
         ),
-        observable=ObservableSpec(name="half_life", parameter_names=("alpha", "beta"), log_scale=True),
+        observable=ObservableSpec(
+            name="half_life",
+            data_dir=str(Path(data_dir) / "total_half_life") if (Path(data_dir) / "total_half_life").is_dir() else None,
+            filename_regex=rf"half_life_{nucnam}_(?P<beta>[0-9.]+)_(?P<alpha>[0-9.]+)\.txt",
+            parameter_names=("alpha", "beta"),
+            min_columns=1,
+            log_scale=True,
+        ),
         model={"n": 8, "retain": 0.9, "ansatz": "paper_beta_decay"},
         output_dir=output_dir,
         metadata={"paper_behavior": True, "domain": "beta_decay", "nucnam": nucnam},
@@ -198,18 +206,25 @@ def paper_beta_em1_spec(
 
 def paper_beta_em2_spec(
     *,
-    data_dir: str = "beta_decay_data_Ni_80",
+    data_dir: str = "beta_decay_80Ni",
     nucnam: str = "Ni_80",
     output_dir: str = "Beta_decay_package/runs_em2",
 ) -> EmulatorRunSpec:
     return EmulatorRunSpec(
         name="paper_beta_em2",
         strength=StrengthGridSpec(
-            data_dir=data_dir,
+            data_dir=str(Path(data_dir) / "total_lorm") if (Path(data_dir) / "total_lorm").is_dir() else data_dir,
             filename_regex=rf"lorm_{nucnam}_(?P<beta>[0-9.]+)_(?P<alpha>[0-9.]+)\.out",
             parameter_names=("alpha", "beta"),
         ),
-        observable=ObservableSpec(name="half_life", parameter_names=("alpha", "beta"), log_scale=True),
+        observable=ObservableSpec(
+            name="half_life",
+            data_dir=str(Path(data_dir) / "total_half_life") if (Path(data_dir) / "total_half_life").is_dir() else None,
+            filename_regex=rf"half_life_{nucnam}_(?P<beta>[0-9.]+)_(?P<alpha>[0-9.]+)\.txt",
+            parameter_names=("alpha", "beta"),
+            min_columns=1,
+            log_scale=True,
+        ),
         model={"n": 9, "ansatz": "paper_beta_decay_half_life_only"},
         output_dir=output_dir,
         metadata={"paper_behavior": True, "domain": "beta_decay", "nucnam": nucnam},

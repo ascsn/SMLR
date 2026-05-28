@@ -98,8 +98,8 @@ class DipoleAdapter:
 class PaperDipoleAdapter(DipoleAdapter):
     """Paper-reproduction dipole adapter with current project defaults."""
 
-    strength_dir: str = "../dipoles_data_all/total_strength/"
-    observable_dir: Optional[str] = "../dipoles_data_all/total_alphaD/"
+    strength_dir: str = "dipole_polarizability_160Yb/total_strength"
+    observable_dir: Optional[str] = "dipole_polarizability_160Yb/total_alphaD"
     strength_regex: str = r"strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out"
     observable_regex: Optional[str] = None
     n: int = 10
@@ -113,4 +113,3 @@ class PaperDipoleAdapter(DipoleAdapter):
     w_mminus1: float = 2.0
     w_mplus1: float = 0.0
     m1_target: float = 875.0
-

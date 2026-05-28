@@ -441,21 +441,127 @@ def cost_function_batched_mixed(
     else:
         param_values = np.asarray(fmt_data, dtype=np.float32)
 
-    config = AnsatzConfig(n=int(n), n_params=param_values.shape[1], ansatz="paper_dipole", width_model="affine", use_vector_terms=True)
-    return cost_function_batched_generic(
-        params=params,
-        config=config,
-        param_values=tf.convert_to_tensor(param_values, tf.float32),
-        strength_true=strength_true,
-        alphaD_true=alphaD_true,
-        central_point=tf.convert_to_tensor(central_point, tf.float32),
-        retain=retain,
-        w_strength=w_strength,
-        w_mminus1=w_mminus1,
-        w_mplus1=w_mplus1,
-        m1_target=m1_target,
-        eps=eps,
+    central_point = np.asarray(central_point, dtype=np.float32)
+    D_mod, S1_mod, S2_mod, S3_mod, _, v0_mod, v1_mod, v2_mod, eta, x1, x2, x3, x4 = _modified_ds_affine_v_legacy(
+        params, int(n)
     )
+
+    alpha_tensor = tf.constant(param_values[:, 0], tf.float32)
+    beta_tensor = tf.constant(param_values[:, 1], tf.float32)
+    alpha_c = tf.constant(float(central_point[0]), tf.float32)
+    beta_c = tf.constant(float(central_point[1]), tf.float32)
+
+    alpha_shift = alpha_tensor - alpha_c
+    beta_shift = beta_tensor - beta_c
+    exp1 = tf.exp(-alpha_shift * x1)
+
+    M_batch = (
+        D_mod[None, :, :]
+        + alpha_shift[:, None, None] * S1_mod[None, :, :]
+        + beta_shift[:, None, None] * S2_mod[None, :, :]
+        + beta_shift[:, None, None] * exp1[:, None, None] * S3_mod[None, :, :]
+    )
+    eta_b = tf.broadcast_to(eta, tf.shape(alpha_tensor))
+    eta_new = tf.sqrt(tf.square(eta_b) + tf.square(x2 + x3 * alpha_shift + x4 * beta_shift))
+
+    eigenvalues, eigenvectors = tf.linalg.eigh(M_batch)
+    v_eff_batch = v0_mod[None, :] + alpha_shift[:, None] * v1_mod[None, :] + beta_shift[:, None] * v2_mod[None, :]
+
+    n_i = tf.shape(eigenvalues)[1]
+    r = tf.convert_to_tensor(retain, tf.float32)
+    k_keep = tf.cast(tf.round(r * tf.cast(n_i, tf.float32)), tf.int32)
+    k_keep = tf.clip_by_value(k_keep, 1, n_i)
+    left = (n_i - k_keep) // 2
+    right = left + k_keep
+
+    eigenvalues = eigenvalues[:, left:right]
+    eigvecsT_full = tf.transpose(eigenvectors, [0, 2, 1])
+    eigenvectors_T = eigvecsT_full[:, left:right, :]
+
+    proj = tf.matmul(eigenvectors_T, v_eff_batch[:, :, None])
+    proj = tf.squeeze(proj, axis=-1)
+    B_batch = tf.square(proj)
+
+    omega_tensor = tf.cast(strength_true[0][:, 0], tf.float32)
+    strength_true_tensor = tf.stack([tf.cast(s[:, 1], tf.float32) for s in strength_true], axis=0)
+    Lor_batch = give_me_Lorentzian_batched(omega_tensor[None, :], eigenvalues, B_batch, eta_new / 2.0)
+
+    d = omega_tensor[1:] - omega_tensor[:-1]
+    w0 = d[0] / 2.0
+    wN = d[-1] / 2.0
+    w_mid = (omega_tensor[2:] - omega_tensor[:-2]) / 2.0 if tf.shape(omega_tensor)[0] > 2 else tf.zeros([0], tf.float32)
+    w = tf.concat([[w0], w_mid, [wN]], axis=0)
+    w = tf.maximum(w, 0.0)
+
+    diff = Lor_batch - strength_true_tensor
+    num = tf.reduce_sum(tf.square(diff) * w[None, :], axis=1)
+    den = tf.cast(285.66404867541524, tf.float32)
+    L_strength = tf.reduce_mean(num / den)
+
+    mask = tf.cast(eigenvalues > 1.0, tf.float32)
+    denom = tf.where(mask > 0.0, eigenvalues, tf.ones_like(eigenvalues))
+    fac = tf.constant(ALPHAD_FAC, tf.float32)
+    alphaD_calc = tf.reduce_sum((B_batch * mask) / denom, axis=1) * fac
+    alphaD_true_tensor = tf.cast(alphaD_true, tf.float32)
+    w_alphaD = tf.cast(7.1110237745439, tf.float32)
+    L_mminus1 = tf.reduce_mean(tf.square((alphaD_calc - alphaD_true_tensor) / (w_alphaD + eps)))
+
+    m1_calc = tf.reduce_sum(B_batch * eigenvalues * mask, axis=1)
+    w_m1 = tf.cast(58.703055785984134, tf.float32)
+    L_mplus1 = tf.reduce_mean(tf.square((m1_calc - tf.cast(m1_target, tf.float32)) / (w_m1 + eps)))
+
+    total_cost = (
+        tf.cast(w_strength, tf.float32) * L_strength
+        + tf.cast(w_mminus1, tf.float32) * L_mminus1
+        + tf.cast(w_mplus1, tf.float32) * L_mplus1
+    )
+    strength_cost = tf.cast(w_strength, tf.float32) * L_strength
+    alphaD_cost = tf.cast(w_mminus1, tf.float32) * L_mminus1
+    m1_cost = tf.cast(w_mplus1, tf.float32) * L_mplus1
+
+    return (
+        total_cost,
+        strength_cost,
+        alphaD_cost,
+        m1_cost,
+        Lor_batch[-1, :],
+        strength_true_tensor[-1, :],
+        omega_tensor,
+        alphaD_calc,
+        (B_batch * mask)[-1, :],
+        eigenvalues[-1, :],
+    )
+
+
+def _modified_ds_affine_v_legacy(params, n):
+    idx = 0
+    eta = tf.convert_to_tensor(params[idx])
+    idx += 1
+    v0_mod = tf.convert_to_tensor(params[idx:idx + n])
+    idx += n
+    v1_mod = tf.convert_to_tensor(params[idx:idx + n])
+    idx += n
+    v2_mod = tf.convert_to_tensor(params[idx:idx + n])
+    idx += n
+    D_mod = tf.linalg.diag(params[idx:idx + n])
+    idx += n
+    num_upper = n * (n + 1) // 2
+    S1_mod = _sym_from_upper(params[idx:idx + num_upper], n)
+    idx += num_upper
+    S2_mod = _sym_from_upper(params[idx:idx + num_upper], n)
+    idx += num_upper
+    S3_mod = _sym_from_upper(params[idx:idx + num_upper], n)
+    idx += num_upper
+    S4_mod = _sym_from_upper(params[idx:idx + num_upper], n)
+    idx += num_upper
+    x1 = tf.convert_to_tensor(params[idx])
+    idx += 1
+    x2 = tf.convert_to_tensor(params[idx])
+    idx += 1
+    x3 = tf.convert_to_tensor(params[idx])
+    idx += 1
+    x4 = tf.convert_to_tensor(params[idx])
+    return D_mod, S1_mod, S2_mod, S3_mod, S4_mod, v0_mod, v1_mod, v2_mod, eta, x1, x2, x3, x4
 
 
 # -----------------------------------------------------------------------------
@@ -470,7 +576,7 @@ def nec_mat(n):
 
 
 
-def data_table(fmt_data, strength_dir='../dipoles_data_all/total_strength/', alphaD_dir='../dipoles_data_all/total_alphaD/'):
+def data_table(fmt_data, strength_dir='dipole_polarizability_160Yb/total_strength', alphaD_dir='dipole_polarizability_160Yb/total_alphaD'):
     strength = []
     alphaD = []
     for frmt in fmt_data:

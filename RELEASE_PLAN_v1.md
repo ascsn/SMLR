@@ -50,9 +50,9 @@ Out of scope for the first release:
 ## 2. Consolidate Package Entry Points
 
 - [ ] Make `src/smlr/` the canonical implementation location.
-- [ ] Ensure `smlr validate` covers all first-release data layouts.
+- [x] Ensure `smlr validate` covers all first-release data layouts.
 - [ ] Ensure `smlr spec` prints all first-release built-in specs.
-- [ ] Ensure `smlr train beta-paper-em1` reproduces the intended beta EM1 workflow.
+- [x] Ensure `smlr train beta-paper-em1` reproduces the intended beta EM1 workflow.
 - [ ] Ensure `smlr train beta-paper-em2` reproduces the intended beta EM2 workflow.
 - [ ] Ensure `smlr train dipole-paper-em1` reproduces the intended dipole EM1 workflow.
 - [ ] Ensure `smlr train strength-only` supports a documented 2D spectral-emulation example.
@@ -63,14 +63,14 @@ Out of scope for the first release:
 
 ## 3. Paper Reproduction
 
-- [ ] Define the exact paper reproduction commands in `docs/Reproducibility.md`.
-- [ ] Record expected input data locations for beta decay and dipole polarizability.
-- [ ] Record expected output directories and filenames.
+- [x] Define the exact paper reproduction commands in `docs/Reproducibility.md`.
+- [x] Record expected input data locations for beta decay and dipole polarizability.
+- [x] Record expected output directories and filenames.
 - [ ] Record expected reference metrics for each reproduced run.
 - [ ] Add checks that trained parameter files are serialized with enough metadata to reproduce the run.
 - [ ] Add checks that diagnostic summaries match expected reference bounds.
-- [ ] Add a compact "fast smoke test" reproduction path with reduced iterations.
-- [ ] Add a full reproduction path for paper-quality results.
+- [x] Add a compact "fast smoke test" reproduction path with reduced iterations.
+- [x] Add a full reproduction path for paper-quality results.
 - [ ] Make clear which generated figures correspond to which paper figures.
 - [ ] Add a troubleshooting section for missing data, bad filenames, and failed TensorFlow imports.
 
@@ -114,11 +114,12 @@ Out of scope for the first release:
 
 ## 7. Tests And Quality Gates
 
-- [ ] Keep core numerical regression tests passing.
-- [ ] Keep data-validation tests passing.
-- [ ] Keep spec serialization tests passing.
-- [ ] Keep paper-run reference tests passing.
+- [x] Keep core numerical regression tests passing.
+- [x] Keep data-validation tests passing.
+- [x] Keep spec serialization tests passing.
+- [x] Keep paper-run reference tests passing.
 - [x] Add beta EM1 short-training parity smoke test against the project legacy code.
+- [x] Add dipole EM1 short-training parity smoke test against the project legacy code.
 - [ ] Add CLI smoke tests for each supported command group.
 - [ ] Add tests for graceful missing-optional-dependency errors.
 - [ ] Add tests for package import without TensorFlow installed, if TensorFlow remains optional.

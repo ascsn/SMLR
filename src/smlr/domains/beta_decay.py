@@ -102,7 +102,7 @@ class BetaDecayAdapter:
 class PaperBetaDecayAdapter(BetaDecayAdapter):
     """Paper-reproduction beta-decay adapter with Ni-80 defaults."""
 
-    data_dir: str = "beta_decay_data_Ni_80"
+    data_dir: str = "beta_decay_80Ni"
     nucnam: str = "Ni_80"
     n: int = 8
     n_params: int = 2
@@ -166,4 +166,3 @@ class PaperBetaDecayAdapter(BetaDecayAdapter):
 
     def em2_matrix(self, D, S1, S2, alpha: float, beta: float, central_point):
         return D + (float(alpha) - float(central_point[0])) * S1 + (float(beta) - float(central_point[1])) * S2
-

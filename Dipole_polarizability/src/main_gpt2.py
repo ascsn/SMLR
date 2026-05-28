@@ -41,9 +41,9 @@ def parse_args():
     )
 
     # Data
-    p.add_argument("--strength-dir", type=str, default="../dipoles_data_all/total_strength/",
+    p.add_argument("--strength-dir", type=str, default="dipole_polarizability_160Yb/total_strength",
                    help="Directory containing strength files.")
-    p.add_argument("--alphaD-dir", type=str, default="../dipoles_data_all/total_alphaD/",
+    p.add_argument("--alphaD-dir", type=str, default="dipole_polarizability_160Yb/total_alphaD",
                    help="Directory containing alphaD files. Can be omitted if alphaD is computed from strength.")
     p.add_argument("--strength-regex", type=str,
                    default=r"strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out",

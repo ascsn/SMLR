@@ -53,8 +53,8 @@ data checks with:
 
 ```bash
 uv sync --extra paper
-uv run smlr validate beta-paper --data-dir beta_decay_data_Ni_80
-uv run smlr validate dipole-paper --strength-dir dipoles_data_all/total_strength
+uv run smlr validate beta-paper --data-dir beta_decay_80Ni
+uv run smlr validate dipole-paper --strength-dir dipole_polarizability_160Yb/total_strength
 ```
 
 The `smlr validate strength-grid` command is the general entry point for a
@@ -89,8 +89,8 @@ Development notes and package build instructions are available in `docs/Developm
 - **`Beta_decay/`** — Emulators for *charge-exchange QRPA* (strengths & $\beta$-decay half-lives).
 - **`figs/`** — Jupyter notebooks to recreate paper figures.
 - **Data (external)** — High-fidelity QRPA inputs expected under:
-  - `dipoles_data_all/` (dipole strengths & $\alpha_D$)
-  - `beta_decay_data_Ni_80/` (GT strengths & half-lives)
+  - `dipole_polarizability_160Yb/` (dipole strengths & $\alpha_D$)
+  - `beta_decay_80Ni/` (GT strengths, excitation data, and half-lives)
 
 ---
 
@@ -145,7 +145,7 @@ More flags: `python main_only_alphaD.py --help`
 
 ## Beta decay
 
-Contains emulators for **charge-exchange QRPA** using the `beta_decay_data_Ni_80/` dataset.
+Contains emulators for **charge-exchange QRPA** using the `beta_decay_80Ni/` dataset.
 
 **Main files**
 1. `main.py` — train **EM1** (strengths + half-lives)  
@@ -194,11 +194,13 @@ More flags: `python -m Beta_decay.main_only_HL --help`
 ## Data
 
 High-fidelity QRPA inputs should be placed at:
-- `dipoles_data_all/`  
+- `dipole_polarizability_160Yb/`  
   - `total_strength/strength_<beta>_<alpha>.out`
-  - `total_alphaD/…`
-- `beta_decay_data_Ni_80/`  
-  - strength files and half-life tables used by the Beta-decay emulators
+  - `total_alphaD/alphaD_<beta>_<alpha>.out`
+- `beta_decay_80Ni/`  
+  - `total_lorm/lorm_Ni_80_<beta>_<alpha>.out`
+  - `total_excm/excm_Ni_80_<beta>_<alpha>.out`
+  - `total_half_life/half_life_Ni_80_<beta>_<alpha>.txt`
 
 The Beta-decay scripts resolve this data directory relative to the repository root.
 

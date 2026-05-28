@@ -48,8 +48,24 @@ PACKAGE_ROOT = os.path.dirname(MODULE_DIR)
 REPO_ROOT = os.path.dirname(PACKAGE_ROOT)
 
 
+def beta_data_root(nucnam):
+    return os.environ.get("SMLR_BETA_DATA_DIR", os.path.join(REPO_ROOT, "beta_decay_80Ni"))
+
+
 def beta_data_dir(nucnam):
-    return os.path.join(REPO_ROOT, f"beta_decay_data_{nucnam}")
+    root = beta_data_root(nucnam)
+    lorm_dir = os.path.join(root, "total_lorm")
+    if os.path.isdir(lorm_dir):
+        return lorm_dir
+    return root
+
+
+def beta_excm_dir(nucnam):
+    root = beta_data_root(nucnam)
+    excm_dir = os.path.join(root, "total_excm")
+    if os.path.isdir(excm_dir):
+        return excm_dir
+    return root
 
 
 
@@ -374,7 +390,7 @@ def data_table(fmt_data, coeffs, g_A, nucnam):
         Lors.append(file)  
         
         # now calculate half-lives the old way
-        file = np.loadtxt(os.path.join(beta_data_dir(nucnam), f"excm_{nucnam}_{beta}_{alpha}.out"))
+        file = np.loadtxt(os.path.join(beta_excm_dir(nucnam), f"excm_{nucnam}_{beta}_{alpha}.out"))
         file = file[file[:,0]<del_nH]
         file = file[file[:,0]>-10]
         HLs.append(half_life_loss(file[:,0], file[:,1],coeffs, g_A))
@@ -655,7 +671,7 @@ def data_table_only_HL(fmt_data,coeffs, g_A, nucnam):
         beta = frmt[1]
 
         # now calculate half-lives the old way
-        file = np.loadtxt(os.path.join(beta_data_dir(nucnam), f"excm_{nucnam}_{beta}_{alpha}.out"))
+        file = np.loadtxt(os.path.join(beta_excm_dir(nucnam), f"excm_{nucnam}_{beta}_{alpha}.out"))
         file = file[file[:,0]<del_nH]
         file = file[file[:,0]>-10]
         HLs.append(half_life_loss(file[:,0], file[:,1],coeffs, g_A))

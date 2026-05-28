@@ -138,8 +138,8 @@ class DataSpecRegressionTest(unittest.TestCase):
             self.assertEqual(report.parameter_names, ("alpha", "beta"))
 
     def test_builtin_paper_specs_validate_available_data(self):
-        dipole = paper_dipole_em1_spec(strength_dir=str(ROOT / "dipoles_data_all/total_strength"))
-        beta = paper_beta_em2_spec(data_dir=str(ROOT / "beta_decay_data_Ni_80"))
+        dipole = paper_dipole_em1_spec(strength_dir=str(ROOT / "dipole_polarizability_160Yb/total_strength"))
+        beta = paper_beta_em2_spec(data_dir=str(ROOT / "beta_decay_80Ni"))
         self.assertTrue(dipole.validate_data().ok)
         self.assertTrue(beta.validate_data().ok)
         self.assertEqual(dipole.observable.name, "alphaD")
@@ -162,7 +162,7 @@ class SerializationRegressionTest(unittest.TestCase):
     def test_save_and_load_emulator_record(self):
         with tempfile.TemporaryDirectory() as tmp:
             params = np.array([1.0, 2.0, 3.0])
-            spec = paper_beta_em2_spec(data_dir="beta_decay_data_Ni_80")
+            spec = paper_beta_em2_spec(data_dir="beta_decay_80Ni")
             policy = RetainedModePolicy(kind="centered", retain=0.9)
             save_emulator(
                 tmp,
@@ -330,7 +330,9 @@ class BetaEM1SmokeParityTest(unittest.TestCase):
         coeffs = Polynomial(legacy.fit_phase_space(0, 28, 80, 15)).coef
         pattern = re.compile(r"lorm_" + re.escape(nucnam) + r"_([0-9.]+)_([0-9.]+)\.out")
         combined = []
-        for fname in sorted(os.listdir(legacy.beta_data_dir(nucnam))):
+        lorm_dir = ROOT / "beta_decay_80Ni/total_lorm"
+        excm_dir = ROOT / "beta_decay_80Ni/total_excm"
+        for fname in sorted(os.listdir(lorm_dir)):
             match = pattern.match(fname)
             if not match:
                 continue
@@ -348,7 +350,18 @@ class BetaEM1SmokeParityTest(unittest.TestCase):
             with self.subTest(n=n, retain=retain, weight=weight):
                 n_params = n + 2 * int(n * (n + 1) / 2) + n + 4
                 initial = np.random.default_rng(42).uniform(0.0, 1.0, size=n_params)
-                legacy_lors, legacy_hls = legacy.data_table(points, coeffs, 1.2, nucnam)
+                legacy_lors = []
+                legacy_hls = []
+                for alpha, beta in points:
+                    lorm = np.loadtxt(lorm_dir / f"lorm_{nucnam}_{beta}_{alpha}.out")
+                    lorm = lorm[lorm[:, 0] < legacy.del_nH]
+                    lorm = lorm[lorm[:, 0] > -10]
+                    legacy_lors.append(lorm)
+                    excm = np.loadtxt(excm_dir / f"excm_{nucnam}_{beta}_{alpha}.out")
+                    excm = excm[excm[:, 0] < legacy.del_nH]
+                    excm = excm[excm[:, 0] > -10]
+                    legacy_hls.append(legacy.half_life_loss(excm[:, 0], excm[:, 1], coeffs, 1.2))
+                os.environ["SMLR_BETA_DATA_DIR"] = str(ROOT / "beta_decay_80Ni")
                 package_lors, package_hls = package.data_table(points, coeffs, 1.2, nucnam)
 
                 for legacy_table, package_table in zip(legacy_lors, package_lors):
@@ -374,6 +387,75 @@ class BetaEM1SmokeParityTest(unittest.TestCase):
                     with tf.GradientTape() as tape:
                         package_cost, *_ = package.cost_function(
                             package_params, n, points, package_lors, package_hls, coeffs, 1.2, weight, central_point, retain
+                        )
+                    grads = tape.gradient(package_cost, [package_params])
+                    package_optimizer.apply_gradients(zip(grads, [package_params]))
+                    package_costs.append(package_cost.numpy())
+
+                np.testing.assert_array_equal(legacy_costs, package_costs)
+                np.testing.assert_array_equal(legacy_params.numpy(), package_params.numpy())
+
+
+class DipoleEM1SmokeParityTest(unittest.TestCase):
+    def test_core_backed_package_dipole_em1_matches_project_legacy_for_short_training(self):
+        sys.path.insert(0, str(ROOT / "Dipole_polarizability"))
+        import scrap.helper as legacy
+        import Dipole_polarizability.src.helper_gpt as package
+
+        strength_dir = ROOT / "dipole_polarizability_160Yb/total_strength"
+        alphaD_dir = ROOT / "dipole_polarizability_160Yb/total_alphaD"
+        pattern = re.compile(r"strength_([0-9.]+)_([0-9.]+)\.out")
+        combined = []
+        for path in sorted(strength_dir.iterdir()):
+            match = pattern.match(path.name)
+            if not match:
+                continue
+            beta = match.group(1)
+            alpha = match.group(2)
+            if 1.5 <= float(beta) <= 4.0 and 0.4 <= float(alpha) <= 1.8:
+                combined.append((alpha, beta))
+
+        points = combined[:3]
+        values = np.asarray(combined, dtype=float)
+        center = 0.5 * (values.min(axis=0) + values.max(axis=0))
+        central_point = min(
+            combined,
+            key=lambda item: (float(item[0]) - center[0]) ** 2 + (float(item[1]) - center[1]) ** 2,
+        )
+
+        strengths = []
+        alphaD_values = []
+        for alpha, beta in points:
+            strengths.append(np.loadtxt(strength_dir / f"strength_{beta}_{alpha}.out"))
+            alphaD_values.append(np.loadtxt(alphaD_dir / f"alphaD_{beta}_{alpha}.out"))
+        alphaD_values = [float(row[2]) for row in np.vstack(alphaD_values)]
+
+        for n, retain, fold in ((4, 0.5, 2.0), (6, 0.5, 2.0), (8, 0.75, 1.5)):
+            with self.subTest(n=n, retain=retain, fold=fold):
+                n_params = 1 + 3 * n + n + 4 * int(n * (n + 1) / 2) + 4
+                initial = np.random.default_rng(42).uniform(0.0, 1.0, size=n_params).astype(np.float32)
+                initial[0] = np.float32(fold)
+                initial[-4:] = np.array([1, 1, 1, 1], dtype=np.float32)
+
+                legacy_params = tf.Variable(initial.copy(), dtype=tf.float32)
+                package_params = tf.Variable(initial.copy(), dtype=tf.float32)
+                legacy_optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+                package_optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+                legacy_costs = []
+                package_costs = []
+
+                for _ in range(3):
+                    with tf.GradientTape() as tape:
+                        legacy_cost, *_ = legacy.cost_function_batched_mixed(
+                            legacy_params, n, points, strengths, alphaD_values, central_point, retain, 1, 2, 0, 875.0, 1e-8
+                        )
+                    grads = tape.gradient(legacy_cost, [legacy_params])
+                    legacy_optimizer.apply_gradients(zip(grads, [legacy_params]))
+                    legacy_costs.append(legacy_cost.numpy())
+
+                    with tf.GradientTape() as tape:
+                        package_cost, *_ = package.cost_function_batched_mixed(
+                            package_params, n, points, strengths, alphaD_values, central_point, retain, 1, 2, 0, 875.0, 1e-8
                         )
                     grads = tape.gradient(package_cost, [package_params])
                     package_optimizer.apply_gradients(zip(grads, [package_params]))

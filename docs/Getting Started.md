@@ -30,8 +30,8 @@ commands with `uv run`.
 Check the paper data layout before training:
 
 ```bash
-uv run smlr validate beta-paper --data-dir beta_decay_data_Ni_80
-uv run smlr validate dipole-paper --strength-dir dipoles_data_all/total_strength
+uv run smlr validate beta-paper --data-dir beta_decay_80Ni
+uv run smlr validate dipole-paper --strength-dir dipole_polarizability_160Yb/total_strength
 ```
 
 For general two-parameter linear-response strength data, use the strength-grid

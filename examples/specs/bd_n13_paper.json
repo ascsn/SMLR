@@ -1,0 +1,44 @@
+{
+  "central_point": null,
+  "metadata": {
+    "domain": "beta_decay",
+    "example": "paper_bd_n13",
+    "excitation_data_dir": "beta_decay_80Ni/total_excm",
+    "nucnam": "Ni_80",
+    "paper_behavior": true
+  },
+  "model": {
+    "ansatz": "paper_beta_decay",
+    "n": 13,
+    "retain": 0.9,
+    "weight": 1.0
+  },
+  "name": "paper_beta_em1_n13",
+  "observable": {
+    "data_dir": "beta_decay_80Ni/total_half_life",
+    "filename_regex": "half_life_Ni_80_(?P<beta>[0-9.]+)_(?P<alpha>[0-9.]+)\\.txt",
+    "log_scale": true,
+    "min_columns": 1,
+    "name": "half_life",
+    "parameter_names": [
+      "alpha",
+      "beta"
+    ],
+    "units": "s"
+  },
+  "output_dir": "runs/bd_n13_paper",
+  "strength": {
+    "allow_negative_strength": false,
+    "data_dir": "beta_decay_80Ni/total_lorm",
+    "filename_regex": "lorm_Ni_80_(?P<beta>[0-9.]+)_(?P<alpha>[0-9.]+)\\.out",
+    "max_columns": 2,
+    "min_columns": 2,
+    "min_files": 1,
+    "parameter_names": [
+      "alpha",
+      "beta"
+    ],
+    "require_rectangular_grid": true
+  },
+  "train_filter_ranges": null
+}

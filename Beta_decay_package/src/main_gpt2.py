@@ -48,6 +48,7 @@ def parse_args():
     p.add_argument("--min-iter",     type=int,   default=20000,   help=argparse.SUPPRESS)
     p.add_argument("--print-every",  type=int,   default=1000,     help="Logging cadence (iterations)")
     p.add_argument("--save-dir",     type=str,   default="Beta_decay_package/runs_em1", help="Directory to save run artifacts")
+    p.add_argument("--data-dir",     type=str,   default="beta_decay_80Ni", help="Root directory for beta-decay data")
 
     # plot controls (no on-screen display ever)
     p.add_argument("--plots", choices=["none", "save"], default="save",
@@ -70,10 +71,12 @@ def main():
     MIN_ITERATIONS = args.min_iter
     PRINT_EVERY    = args.print_every
     SAVE_DIR       = args.save_dir
+    DATA_DIR       = args.data_dir
     PLOTS_MODE     = args.plots              # "none" | "save"
     DO_PHASE_PLOT  = args.phase_plot         # True/False
 
     os.makedirs(SAVE_DIR, exist_ok=True)
+    os.environ["SMLR_BETA_DATA_DIR"] = DATA_DIR
 
     # -------------------- policy: minimum iterations --------------------
     if NUM_ITERATIONS < MIN_ITERATIONS:
@@ -355,7 +358,7 @@ def main():
     with open(os.path.join(SAVE_DIR, "train_set.txt"), "w") as f:
         for tup in train_set:
             f.write(",".join(map(str, tup)) + "\n")
-    spec = paper_beta_em1_spec(data_dir=str(strength_dir), nucnam=nucnam, output_dir=SAVE_DIR)
+    spec = paper_beta_em1_spec(data_dir=str(DATA_DIR), nucnam=nucnam, output_dir=SAVE_DIR)
     spec = spec.__class__(
         name=spec.name,
         strength=spec.strength,

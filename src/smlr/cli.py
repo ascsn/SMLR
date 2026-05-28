@@ -47,12 +47,13 @@ def build_parser() -> argparse.ArgumentParser:
     validate_sub = validate.add_subparsers(dest="kind", required=True)
 
     beta = validate_sub.add_parser("beta-paper", help="validate paper beta-decay Ni-80 data")
-    beta.add_argument("--data-dir", default="beta_decay_data_Ni_80")
+    beta.add_argument("--data-dir", default="beta_decay_80Ni")
     beta.add_argument("--nucnam", default="Ni_80")
     beta.add_argument("--json", action="store_true")
 
     dipole = validate_sub.add_parser("dipole-paper", help="validate paper dipole strength data")
-    dipole.add_argument("--strength-dir", default="dipoles_data_all/total_strength")
+    dipole.add_argument("--strength-dir", default="dipole_polarizability_160Yb/total_strength")
+    dipole.add_argument("--alphaD-dir", default=None)
     dipole.add_argument("--json", action="store_true")
 
     generic = validate_sub.add_parser("strength-grid", help="validate a generic strength-function grid")
@@ -137,7 +138,7 @@ def main(argv: list[str] | None = None) -> int:
         _print_report(report, as_json=args.json)
         return 0 if report.ok else 1
     if args.command == "validate" and args.kind == "dipole-paper":
-        report = validate_paper_dipole_data(args.strength_dir)
+        report = validate_paper_dipole_data(args.strength_dir, args.alphaD_dir)
         _print_report(report, as_json=args.json)
         return 0 if report.ok else 1
     if args.command == "validate" and args.kind == "strength-grid":
@@ -219,9 +220,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "backend" and args.kind == "list":
         print(json.dumps({
-            "optimizers": ["tensorflow", "torch", "jax"],
+            "optimizers": ["tensorflow"],
             "default": "tensorflow",
-            "notes": "Backends share the same scalar loss contract; paper trainers still use TensorFlow until their loops are fully migrated.",
+            "notes": "TensorFlow is the only supported optimizer backend for the v0.1.0 release scope.",
         }, indent=2, sort_keys=True))
         return 0
     if args.command == "example" and args.kind == "list":
