@@ -1,0 +1,14 @@
+python Beta_decay_package/src/main_gpt2.py \
+  --data-dir extra_docs/yukiya_4d/total_strength \
+  --n 30 \
+  --retain 0.9 \
+  --weight 0.0 \
+  --fixed-width 1.0 \
+  --s-init-sweep 0.05 0.1 0.2 \
+  --reference-index 0 \
+  --n-restarts 1 \
+  --seed0 42 \
+  --num-iter 20000 \
+  --print-every 2000 \
+  --plots save \
+  --save-dir runs_em1/yukiya_4d_n30_retain0p9_seed42

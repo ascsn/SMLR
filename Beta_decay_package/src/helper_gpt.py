@@ -69,7 +69,7 @@ def beta_excm_dir(nucnam):
 
 
 
-def encode_initial_guess(random_initial_guess, E, B, n, retain):
+def encode_initial_guess(random_initial_guess, E, B, n, retain, num_components=2):
     """
     Centered retain: place k=round(retain*n) fitted (E,B) in the middle of the n-diagonal.
     D outside the kept block is filled by +/-2 stepping:
@@ -105,9 +105,8 @@ def encode_initial_guess(random_initial_guess, E, B, n, retain):
     idx += 1                                   # eta (keep as-is)
     params[idx:idx + n] = v0_full; idx += n    # v0
     params[idx:idx + n] = D_full; idx += n     # D diagonal
-    idx += num_upper                           # S1 (leave)
-    idx += num_upper                           # S2 (leave)
-    # x1..x4 unchanged
+    idx += int(num_components) * num_upper     # S1..Sk (leave)
+    # width parameters unchanged
 
     return params
 
@@ -340,29 +339,46 @@ def give_me_Lorentzian(energy, poles, strength, width):
 
 
 
-# nec_mat for M_true(a) = D + a * S1 + b * S2
-def nec_mat(n):
+def nec_mat(n, num_components=2):
     D = np.diag(np.random.uniform(1, 10, n))
-    A = np.random.uniform(1, 10, (n, n))
-    S1 = np.abs(A + A.T) / 2
-    S2 = np.abs(A + A.T) / 2
-    return D, S1, S2
+    S_list = []
+    for _ in range(int(num_components)):
+        A = np.random.uniform(1, 10, (n, n))
+        S_list.append(np.abs(A + A.T) / 2)
+    return (D, *S_list)
+
+
+def dataset_entry_params(entry):
+    if (
+        isinstance(entry, (tuple, list))
+        and len(entry) == 2
+        and isinstance(entry[1], (str, os.PathLike))
+    ):
+        entry = entry[0]
+    return tuple(float(v) for v in entry)
+
+
+def dataset_entry_path(entry):
+    if (
+        isinstance(entry, (tuple, list))
+        and len(entry) == 2
+        and isinstance(entry[1], (str, os.PathLike))
+    ):
+        return os.fspath(entry[1])
+    return None
 
 
 
 
-def data_table(fmt_data, coeffs, g_A, nucnam):
+def data_table(fmt_data, coeffs, g_A, nucnam=None, *, strength_window=None):
     '''
-    
     Here split the dataset from "beta_decay_data" folder
     into: training set, validation set and test set
-    use any ratio you like (e.g. 0.8 0.1 0.1)
     
-    For the optimizatio use only training set, and after you finish
+    For the optimization use only training set, and after you finish
     test it on validation set
     
     returns also number of QRPA poles n_QRPA
-    
     '''
 
     Lors = []
@@ -371,11 +387,17 @@ def data_table(fmt_data, coeffs, g_A, nucnam):
 
     for frmt in fmt_data:
         
-        alpha = frmt[0]
-        beta = frmt[1]
+        params = dataset_entry_params(frmt)
+        alpha = params[0]
+        beta = params[1] if len(params) > 1 else None
 
         # first open the file with the data
-        file = np.loadtxt(os.path.join(beta_data_dir(nucnam), f"lorm_{nucnam}_{beta}_{alpha}.out"))
+        strength_path = dataset_entry_path(frmt)
+        if strength_path is None:
+            if nucnam is None or beta is None:
+                raise ValueError("Old beta-decay data needs nucnam and two parameters.")
+            strength_path = os.path.join(beta_data_dir(nucnam), f"lorm_{nucnam}_{beta}_{alpha}.out")
+        file = np.loadtxt(strength_path)
         
         # normalize the Lorentzians
         #norm = np.sum(file[:,1])
@@ -383,35 +405,42 @@ def data_table(fmt_data, coeffs, g_A, nucnam):
         
         #print(alpha, beta, norm**2)
 
-        file = file[file[:,0]<del_nH]
-        #file = file[file[:,0]<10]
-        file = file[file[:,0]>-10]
+        if strength_window is None:
+            if nucnam is not None:
+                file = file[file[:,0]<del_nH]
+            file = file[file[:,0]>0]
+        else:
+            lo, hi = strength_window
+            if lo is not None:
+                file = file[file[:, 0] >= float(lo)]
+            if hi is not None:
+                file = file[file[:, 0] <= float(hi)]
 
         Lors.append(file)  
         
         # now calculate half-lives the old way
-        file = np.loadtxt(os.path.join(beta_excm_dir(nucnam), f"excm_{nucnam}_{beta}_{alpha}.out"))
-        file = file[file[:,0]<del_nH]
-        file = file[file[:,0]>-10]
-        HLs.append(half_life_loss(file[:,0], file[:,1],coeffs, g_A))
+        if nucnam is None:
+            HLs.append(tf.constant(1.0, dtype=tf.float64))
+        else:
+            if strength_path is not None and os.path.basename(strength_path).startswith(f"lorm_{nucnam}_"):
+                excm_name = os.path.basename(strength_path).replace(f"lorm_{nucnam}_", f"excm_{nucnam}_", 1)
+                excm_path = os.path.join(beta_excm_dir(nucnam), excm_name)
+            else:
+                excm_path = os.path.join(beta_excm_dir(nucnam), f"excm_{nucnam}_{beta}_{alpha}.out")
+            file = np.loadtxt(excm_path)
+            file = file[file[:,0]<del_nH]
+            file = file[file[:,0]>0]
+            HLs.append(half_life_loss(file[:,0], file[:,1],coeffs, g_A))
 
      
     return Lors, HLs
 
 
 
-'''
-    data table is now constructed for alpha & beta parameters
-'''
-
-
-
-
-
 def modified_DS(params, n):
     ''''
     Build PMM matrices:
-    M = D + (alpha-alpha_0)*exp(-(beta-beta_0)*x1)*S1 + (alpha-alpha_0)*exp(-(beta-beta_0)*x2)*S2
+    M = D + \alpha*S1 + \beta*S2
     and external field:
     v(alpha,beta) = v0 + (alpha-alpha_0)*v1 + (beta-beta_0)*v2
     '''
@@ -449,6 +478,73 @@ def modified_DS(params, n):
 
 
     return D_mod, S1_mod, S2_mod, v0_mod, eta, x1, x2, x3
+
+
+def modified_DS_general(params, n, num_components=2):
+    idx = 0
+    eta = tf.convert_to_tensor(params[idx])
+    idx += 1
+
+    v0_mod = tf.convert_to_tensor(params[idx:idx+n])
+    idx += n
+
+    D_mod = tf.linalg.diag(params[idx:idx+n])
+    idx += n
+
+    num_upper = n * (n + 1) // 2
+    S_list = []
+    for _ in range(int(num_components)):
+        S_list.append(core_ansatz.sym_from_upper(params[idx:idx+num_upper], n, dtype=tf.float64))
+        idx += num_upper
+
+    width_params = tf.convert_to_tensor(params[idx:idx + int(num_components) + 1], dtype=tf.float64)
+    if int(width_params.shape[0]) != int(num_components) + 1:
+        raise ValueError(
+            f"Expected {int(num_components) + 1} width parameters for "
+            f"{num_components} components, got {int(width_params.shape[0])}."
+        )
+    return D_mod, S_list, v0_mod, eta, width_params
+
+
+def normalized_coordinates(point, central_point, coordinate_scales=None):
+    point = dataset_entry_params(point)
+    central_point = tuple(float(v) for v in central_point)
+    if coordinate_scales is None:
+        return tuple(float(value) - float(center) for value, center in zip(point, central_point))
+
+    coordinate_scales = tuple(float(v) for v in coordinate_scales)
+    if len(point) != len(coordinate_scales):
+        raise ValueError(
+            f"Point has {len(point)} components, but coordinate scales has {len(coordinate_scales)}."
+        )
+    return tuple(
+        (float(value) - float(center)) / float(scale)
+        for value, center, scale in zip(point, central_point, coordinate_scales)
+    )
+
+
+def linear_matrix(D_mod, S_list, point, central_point, coordinate_scales=None):
+    q_point = normalized_coordinates(point, central_point, coordinate_scales)
+    if len(q_point) != len(S_list):
+        raise ValueError(f"Point has {len(q_point)} components, but model has {len(S_list)} S matrices.")
+
+    M_true = D_mod
+    for value, S_mod in zip(q_point, S_list):
+        M_true = M_true + float(value) * S_mod
+    return M_true
+
+
+def affine_width(eta, width_params, point, central_point=None, coordinate_scales=None):
+    if central_point is None:
+        point = dataset_entry_params(point)
+        width_linear = tf.constant(point, dtype=tf.float64)
+    else:
+        width_linear = tf.constant(
+            normalized_coordinates(point, central_point, coordinate_scales),
+            dtype=tf.float64,
+        )
+    raw_width = width_params[0] + tf.reduce_sum(width_params[1:] * width_linear)
+    return tf.sqrt(tf.square(eta) + tf.square(raw_width))
 
 # cost_function
 # def cost_function(params, n, fmt_data, Lors_true, HLs_true,coeffs,g_A, weight, central_point, retain):
@@ -540,9 +636,10 @@ def tf_trapz(y, x):
     return tf.reduce_sum(avg * dx)             # scalar (float64)
 
 # cost_function
-def cost_function(params, n, fmt_data, Lors_true, HLs_true, coeffs, g_A, weight, central_point, retain):
+def cost_function(params, n, fmt_data, Lors_true, HLs_true, coeffs, g_A, weight, central_point, retain,
+                  num_components=2, fixed_width=None, coordinate_scales=None):
 
-    D_mod, S1_mod, S2_mod, v0_mod, eta, x1, x2, x3 = modified_DS(params, n)
+    D_mod, S_list, v0_mod, eta, width_params = modified_DS_general(params, n, num_components)
 
     total_cost = tf.constant(0.0, dtype=tf.float64)
     HLs_calc   = []
@@ -551,9 +648,7 @@ def cost_function(params, n, fmt_data, Lors_true, HLs_true, coeffs, g_A, weight,
     EPS_DEN = tf.constant(1e-16, dtype=tf.float64)  # protect against /0
 
     for idx, alpha in enumerate(fmt_data):
-        M_true = D_mod \
-                 + (float(alpha[0]) - float(central_point[0])) * S1_mod \
-                 + (float(alpha[1]) - float(central_point[1])) * S2_mod
+        M_true = linear_matrix(D_mod, S_list, alpha, central_point, coordinate_scales)
 
         eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
 
@@ -571,7 +666,7 @@ def cost_function(params, n, fmt_data, Lors_true, HLs_true, coeffs, g_A, weight,
         B = tf.square(projections)
 
         # mask eigenvalues outside window
-        mask = tf.cast((eigenvalues > -10) & (eigenvalues < 15), dtype=tf.float64)
+        mask = tf.cast((eigenvalues > 0) & (eigenvalues < 30), dtype=tf.float64)
         B = B * mask
 
         # true spectrum (E grid x, values S_true)
@@ -579,7 +674,10 @@ def cost_function(params, n, fmt_data, Lors_true, HLs_true, coeffs, g_A, weight,
         x        = tf.constant(Lors_true[count][:, 0], dtype=tf.float64)
 
         # width(E; alpha) and predicted spectrum
-        width = tf.sqrt(tf.square(eta) + tf.square(x1 + x2*float(alpha[0]) + x3*float(alpha[1])))
+        if fixed_width is None:
+            width = affine_width(eta, width_params, alpha, central_point, coordinate_scales)
+        else:
+            width = tf.constant(float(fixed_width), dtype=tf.float64)
         Lor   = give_me_Lorentzian(x, eigenvalues, B, width)
 
         # ---------- normalized L2(E) loss ----------
@@ -590,12 +688,15 @@ def cost_function(params, n, fmt_data, Lors_true, HLs_true, coeffs, g_A, weight,
         total_cost += spec_loss
         # ------------------------------------------
 
-        # ---------- half-life term (unchanged) ----------
-        hls = half_life_loss(eigenvalues, B, coeffs, g_A)
-        HLs_calc.append(hls)
-        total_cost += tf.constant(weight, dtype=tf.float64) * \
-                      tf.reduce_sum((tf.math.log(hls) - tf.math.log(HLs_true[idx])) ** 2)
-        # -----------------------------------------------
+        # ---------- half-life term ----------
+        if float(weight) != 0.0:
+            hls = half_life_loss(eigenvalues, B, coeffs, g_A)
+            HLs_calc.append(hls)
+            total_cost += tf.constant(weight, dtype=tf.float64) * \
+                          tf.reduce_sum((tf.math.log(hls) - tf.math.log(HLs_true[idx])) ** 2)
+        else:
+            HLs_calc.append(tf.constant(1.0, dtype=tf.float64))
+        # ------------------------------------
 
         count += 1
 
@@ -673,7 +774,7 @@ def data_table_only_HL(fmt_data,coeffs, g_A, nucnam):
         # now calculate half-lives the old way
         file = np.loadtxt(os.path.join(beta_excm_dir(nucnam), f"excm_{nucnam}_{beta}_{alpha}.out"))
         file = file[file[:,0]<del_nH]
-        file = file[file[:,0]>-10]
+        file = file[file[:,0]>0]
         HLs.append(half_life_loss(file[:,0], file[:,1],coeffs, g_A))
 
      
@@ -958,7 +1059,7 @@ def plot_half_lives(test_set, params, n, coeffs, g_A, central_point, nucnam, ret
             B = tf.square(projections)
 
             # Mask eigenvalues (dtype-safe)
-            mask = tf.cast((eigenvalues > -10) & (eigenvalues < 15), dtype=eigenvalues.dtype)
+            mask = tf.cast((eigenvalues > 0) & (eigenvalues < 30), dtype=eigenvalues.dtype)
             B = B * mask
 
             # Half-life (may return tf.Tensor)
