@@ -1,0 +1,11 @@
+python src/main_gpt2.py \
+  --data-dir ../beta_decay_80Ni \
+  --n 13 \
+  --retain 0.9 \
+  --weight 1.0 \
+  --n-restarts 1 \
+  --seed0 42 \
+  --num-iter 30000 \
+  --print-every 1000 \
+  --plots save \
+  --save-dir runs_em1/n13_retain0p9_w1p0_seed42
