@@ -1,0 +1,58 @@
+{
+  "total_available_points": 225,
+  "square_side": 9,
+  "square_sides_for_later_sweep": [
+    9,
+    11,
+    13,
+    15
+  ],
+  "selected_total_points": 81,
+  "train_points": 45,
+  "test_points": 36,
+  "train_fraction_requested": 0.55,
+  "train_fraction_actual": 0.5555555555555556,
+  "selection_rule": "complete centered square in parameter grid; train subset chosen by nearest-center order within selected square",
+  "square_axis_selection": {
+    "p1": [
+      0.5860000252723694,
+      1.6139999628067017,
+      9
+    ],
+    "p2": [
+      1.75,
+      3.75,
+      9
+    ]
+  },
+  "selected_filter_box": {
+    "p1": [
+      0.5860000252723694,
+      1.6139999628067017
+    ],
+    "p2": [
+      1.75,
+      3.75
+    ]
+  },
+  "train_filter_box": {
+    "p1": [
+      0.7139999866485596,
+      1.4859999418258667
+    ],
+    "p2": [
+      2.0,
+      3.5
+    ]
+  },
+  "upper_bound_train_filter_reference": {
+    "p1": [
+      0.4,
+      1.8
+    ],
+    "p2": [
+      1.5,
+      4.0
+    ]
+  }
+}

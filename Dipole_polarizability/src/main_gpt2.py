@@ -44,7 +44,7 @@ def parse_args():
     p.add_argument("--strength-dir", type=str, default="dipole_polarizability_160Yb/total_strength",
                    help="Directory containing strength files.")
     p.add_argument("--alphaD-dir", type=str, default="dipole_polarizability_160Yb/total_alphaD",
-                   help="Directory containing alphaD files. Can be omitted if alphaD is computed from strength.")
+                   help="Directory containing alphaD files.") #Can be omitted if alphaD is computed from strength.")
     p.add_argument("--strength-regex", type=str,
                    default=r"strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out",
                    help="Regex used to parse parameters from strength filenames.")
@@ -177,7 +177,7 @@ def evaluate_dataset(params_np, config, dataset, retain, w_strength, w_alphaD, w
 # -----------------------------------------------------------------------------
 def main():
     args = parse_args()
-    #print(args)
+    print(args)
     os.makedirs(args.save_dir, exist_ok=True)
 
     central_point = parse_optional_json(args.central_point)
