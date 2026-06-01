@@ -1,0 +1,88 @@
+{
+  "adapter": "PaperDipoleAdapter",
+  "backend": "tensorflow",
+  "metadata": {
+    "global_best_cost": 0.11825507879257202,
+    "global_best_meta": {
+      "iter": 19952,
+      "seed": 1234,
+      "test_metrics": {
+        "alphaD_cost": 0.747692883014679,
+        "alphaD_rel": 0.006949413102120161,
+        "cost": 1.068241000175476,
+        "m1_cost": 0.0,
+        "strength_cost": 0.32054808735847473
+      },
+      "train_metrics": {
+        "alphaD_cost": 0.0003308317100163549,
+        "alphaD_rel": 0.00045316052273847163,
+        "cost": 0.11826374381780624,
+        "m1_cost": 0.0,
+        "strength_cost": 0.11793291568756104
+      }
+    }
+  },
+  "name": "dipole_em1",
+  "package_version": "0.1.0",
+  "params_file": "params.txt",
+  "retained_modes": {
+    "kind": "centered",
+    "retain": 0.6
+  },
+  "spec": {
+    "central_point": [
+      1.100000023841858,
+      2.75
+    ],
+    "metadata": {
+      "domain": "dipole",
+      "paper_behavior": true
+    },
+    "model": {
+      "ansatz": "paper_dipole",
+      "fold": 2.0,
+      "n": 13,
+      "n_params": 2,
+      "retain": 0.6,
+      "use_vector_terms": true,
+      "width_model": "affine"
+    },
+    "name": "dipole_em1",
+    "observable": {
+      "data_dir": "dipole_polarizability_160Yb/total_alphaD/",
+      "filename_regex": null,
+      "log_scale": false,
+      "min_columns": 1,
+      "name": "alphaD",
+      "parameter_names": [
+        "p1",
+        "p2"
+      ],
+      "units": null
+    },
+    "output_dir": "runs_em1",
+    "strength": {
+      "allow_negative_strength": false,
+      "data_dir": "dipole_polarizability_160Yb/total_strength/",
+      "filename_regex": "strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\\.out",
+      "max_columns": 2,
+      "min_columns": 2,
+      "min_files": 1,
+      "parameter_names": [
+        "p1",
+        "p2"
+      ],
+      "require_rectangular_grid": true
+    },
+    "train_filter_ranges": {
+      "p1": [
+        0.4,
+        1.8
+      ],
+      "p2": [
+        1.5,
+        4.0
+      ]
+    }
+  }
+}
