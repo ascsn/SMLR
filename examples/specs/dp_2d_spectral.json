@@ -1,0 +1,64 @@
+{
+  "central_point": [
+    1.1,
+    2.75
+  ],
+  "metadata": {
+    "domain": "generic_2d_lrt",
+    "example": "dipole_polarizability_160Yb",
+    "format": "strength_<p2>_<p1>.out with columns omega, B(E1)",
+    "paper_adapter_required": false,
+    "physical_parameter_names": {
+      "p1": "alpha",
+      "p2": "beta"
+    }
+  },
+  "model": {
+    "ansatz": "linear_exp",
+    "fold": 2.0,
+    "n": 10,
+    "retain": 0.5,
+    "use_vector_terms": true,
+    "w_alphaD": 1.0,
+    "w_m1": 0.0,
+    "w_strength": 1.0,
+    "width_model": "affine"
+  },
+  "name": "dp_2d_spectral_example",
+  "observable": {
+    "data_dir": "dipole_polarizability_160Yb/total_alphaD",
+    "filename_regex": "alphaD_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\\.out",
+    "log_scale": false,
+    "min_columns": 3,
+    "name": "alphaD",
+    "parameter_names": [
+      "p1",
+      "p2"
+    ],
+    "units": "fm^3"
+  },
+  "output_dir": "runs/dp_2d_spectral",
+  "strength": {
+    "allow_negative_strength": false,
+    "data_dir": "dipole_polarizability_160Yb/total_strength",
+    "filename_regex": "strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\\.out",
+    "max_columns": 2,
+    "min_columns": 2,
+    "min_files": 1,
+    "parameter_names": [
+      "p1",
+      "p2"
+    ],
+    "require_rectangular_grid": true
+  },
+  "train_filter_ranges": {
+    "p1": [
+      0.4,
+      1.8
+    ],
+    "p2": [
+      1.5,
+      4.0
+    ]
+  }
+}

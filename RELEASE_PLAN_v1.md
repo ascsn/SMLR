@@ -83,11 +83,11 @@ Out of scope for the first release:
 - [x] Add or confirm validation for non-rectangular grids.
 - [x] Add or confirm validation for malformed numeric files.
 - [ ] Provide one small example dataset that can be shipped with the repo.
-- [ ] Provide one example spec for the small 2D spectral-emulation dataset.
-- [ ] Provide one training command for that example.
-- [ ] Provide one prediction command for a new 2D parameter point.
+- [x] Provide one example spec for the small 2D spectral-emulation dataset.
+- [x] Provide one training command for that example.
+- [x] Provide one prediction command for a new 2D parameter point.
 - [ ] Provide one diagnostics command for the example.
-- [ ] Explain how users adapt the example to their own two-parameter strength data.
+- [x] Explain how users adapt the example to their own two-parameter strength data.
 
 ## 5. Diagnostics
 

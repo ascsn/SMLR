@@ -9,9 +9,9 @@ from pathlib import Path
 import numpy as np
 
 from .serialization import load_emulator, package_existing_emulator, spec_from_selector
-from .specs import BUILTIN_SPECS, get_builtin_spec, h2_2d_strength_spec, load_run_spec, paper_beta_em1_spec, paper_beta_em2_spec, paper_dipole_em1_spec, save_run_spec
+from .specs import BUILTIN_SPECS, dipole_2d_spectral_example_spec, get_builtin_spec, h2_2d_strength_spec, load_run_spec, paper_beta_em1_spec, paper_beta_em2_spec, paper_dipole_em1_spec, save_run_spec
 from .training import strength_only
-from .training.paper import run_beta_paper_em1, run_beta_paper_em2, run_dipole_paper_em1
+from .training.paper import run_beta_paper_em1, run_beta_paper_em2, run_dipole_2d_example, run_dipole_paper_em1
 from .validation import (
     GENERIC_2D_PARAMETER_NAMES,
     GENERIC_2D_STRENGTH_REGEX,
@@ -73,7 +73,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     specs = subparsers.add_parser("spec", help="print built-in emulator run specs")
     specs_sub = specs.add_subparsers(dest="kind", required=True)
-    for name in ("dipole-paper-em1", "beta-paper-em1", "beta-paper-em2", "h2-2d-strength"):
+    for name in ("dipole-2d-example", "dipole-paper-em1", "beta-paper-em1", "beta-paper-em2", "h2-2d-strength"):
         specs_sub.add_parser(name)
     spec_file = specs_sub.add_parser("file", help="print a spec JSON file")
     spec_file.add_argument("path")
@@ -83,7 +83,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     train = subparsers.add_parser("train", help="run package training entry points")
     train_sub = train.add_subparsers(dest="kind", required=True)
-    for name in ("dipole-paper-em1", "beta-paper-em1", "beta-paper-em2"):
+    for name in ("dipole-2d-example", "dipole-paper-em1", "beta-paper-em1", "beta-paper-em2"):
         sub = train_sub.add_parser(name, help=f"run {name} training")
         sub.add_argument("training_args", nargs=argparse.REMAINDER, help="arguments forwarded to the trainer")
     strength = train_sub.add_parser("strength-only", help="validate/stage generic strength-only training from a spec")
@@ -166,6 +166,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         factories = {
             "dipole-paper-em1": paper_dipole_em1_spec,
+            "dipole-2d-example": dipole_2d_spectral_example_spec,
             "beta-paper-em1": paper_beta_em1_spec,
             "beta-paper-em2": paper_beta_em2_spec,
             "h2-2d-strength": h2_2d_strength_spec,
@@ -174,6 +175,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "train":
         runners = {
+            "dipole-2d-example": run_dipole_2d_example,
             "dipole-paper-em1": run_dipole_paper_em1,
             "beta-paper-em1": run_beta_paper_em1,
             "beta-paper-em2": run_beta_paper_em2,

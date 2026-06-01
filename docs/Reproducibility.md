@@ -79,7 +79,7 @@ outputs include:
 - `runs/bd_n13_paper/seed_42/meta.txt`
 - optional plot files under `runs/bd_n13_paper/seed_42/` when `--plots save`
 
-For the dipole EM1 paper workflow, expected package outputs include:
+<!-- For the dipole EM1 paper workflow, expected package outputs include:
 
 - `runs/dp_em1_paper/best_params_global.txt`
 - `runs/dp_em1_paper/train_param_values.txt`
@@ -90,4 +90,4 @@ For the dipole EM1 paper workflow, expected package outputs include:
 - `runs/dp_em1_paper/seed_42/best_params.txt`
 - `runs/dp_em1_paper/seed_42/cost_history.txt`
 - `runs/dp_em1_paper/seed_42/meta.json`
-- `runs/dp_em1_paper/seed_42/metrics.json`
+- `runs/dp_em1_paper/seed_42/metrics.json` -->

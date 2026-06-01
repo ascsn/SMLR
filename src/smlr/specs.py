@@ -177,6 +177,55 @@ def paper_dipole_em1_spec(
     )
 
 
+def dipole_2d_spectral_example_spec(
+    *,
+    strength_dir: str = "dipole_polarizability_160Yb/total_strength",
+    alphaD_dir: str = "dipole_polarizability_160Yb/total_alphaD",
+    output_dir: str = "runs/dp_2d_spectral",
+) -> EmulatorRunSpec:
+    """General two-parameter spectral-emulation example using the DP dataset."""
+
+    return EmulatorRunSpec(
+        name="dp_2d_spectral_example",
+        strength=StrengthGridSpec(
+            data_dir=strength_dir,
+            filename_regex=r"strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out",
+            parameter_names=("p1", "p2"),
+            min_columns=2,
+            max_columns=2,
+        ),
+        observable=ObservableSpec(
+            name="alphaD",
+            data_dir=alphaD_dir,
+            filename_regex=r"alphaD_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out",
+            parameter_names=("p1", "p2"),
+            min_columns=3,
+            units="fm^3",
+        ),
+        model={
+            "n": 10,
+            "retain": 0.5,
+            "fold": 2.0,
+            "ansatz": "linear_exp",
+            "width_model": "affine",
+            "use_vector_terms": True,
+            "w_strength": 1.0,
+            "w_alphaD": 1.0,
+            "w_m1": 0.0,
+        },
+        train_filter_ranges={"p1": (0.4, 1.8), "p2": (1.5, 4.0)},
+        central_point=(1.1, 2.75),
+        output_dir=output_dir,
+        metadata={
+            "domain": "generic_2d_lrt",
+            "example": "dipole_polarizability_160Yb",
+            "physical_parameter_names": {"p1": "alpha", "p2": "beta"},
+            "format": "strength_<p2>_<p1>.out with columns omega, B(E1)",
+            "paper_adapter_required": False,
+        },
+    )
+
+
 def paper_beta_em1_spec(
     *,
     data_dir: str = "beta_decay_80Ni",
@@ -290,6 +339,7 @@ def generic_2d_strength_spec(
 
 
 BUILTIN_SPECS = {
+    "dipole-2d-example": dipole_2d_spectral_example_spec,
     "dipole-paper-em1": paper_dipole_em1_spec,
     "beta-paper-em1": paper_beta_em1_spec,
     "beta-paper-em2": paper_beta_em2_spec,
