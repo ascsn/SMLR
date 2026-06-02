@@ -510,7 +510,7 @@ def cost_function_batched_mixed(
     w_m1 = tf.cast(58.703055785984134, tf.float32)
     L_mplus1 = tf.reduce_mean(tf.square((m1_calc - tf.cast(m1_target, tf.float32)) / (w_m1 + eps)))
 
-    total_cost = (
+    total_cost = ( #X^2 = w_S * L_S + w_-1 * L_m-1 + w_+1 * L_m+1 
         tf.cast(w_strength, tf.float32) * L_strength
         + tf.cast(w_mminus1, tf.float32) * L_mminus1
         + tf.cast(w_mplus1, tf.float32) * L_mplus1
