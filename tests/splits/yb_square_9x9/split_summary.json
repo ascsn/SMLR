@@ -3,8 +3,11 @@
   "square_side": 9,
   "square_sides_for_later_sweep": [
     9,
+    10,
     11,
+    12,
     13,
+    14,
     15
   ],
   "selected_total_points": 81,
