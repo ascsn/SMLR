@@ -1,0 +1,28 @@
+{
+  "n": 8,
+  "retain": 1.0,
+  "seed": 1234,
+  "num_iter": 20000,
+  "best_cost": 0.17784257233142853,
+  "best_iter": 19999,
+  "filter_ranges": {
+    "p1": [
+      0.4,
+      1.8
+    ],
+    "p2": [
+      1.5,
+      4.0
+    ]
+  },
+  "config": {
+    "n": 8,
+    "n_params": 2,
+    "ansatz": "paper_dipole",
+    "width_model": "affine",
+    "use_vector_terms": true,
+    "n_basis": 3,
+    "n_upper": 36,
+    "n_trainable": 145
+  }
+}
