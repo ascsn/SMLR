@@ -1,5 +1,5 @@
-"""Backend adapters for optimizer and tensor-library experiments."""
+"""TensorFlow backend utilities."""
 
-from .base import BackendCapabilities, BackendUnavailableError
+from .optimizers import OptimizationResult, TensorFlowAdamOptimizer, get_optimizer_backend
 
-__all__ = ["BackendCapabilities", "BackendUnavailableError"]
+__all__ = ["OptimizationResult", "TensorFlowAdamOptimizer", "get_optimizer_backend"]

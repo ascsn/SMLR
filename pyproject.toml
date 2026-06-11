@@ -23,9 +23,6 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 
-[project.scripts]
-smlr = "smlr.cli:main"
-
 [build-system]
 requires = ["uv_build>=0.9.29,<0.10.0"]
 build-backend = "uv_build"
@@ -39,12 +36,6 @@ paper = [
 ]
 tensorflow = [
     "tensorflow>=2.20",
-]
-torch = [
-    "torch>=2.3",
-]
-jax = [
-    "jax>=0.5",
 ]
 yaml = [
     "pyyaml>=6.0",

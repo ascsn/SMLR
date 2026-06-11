@@ -225,7 +225,12 @@ def validate_paper_beta_data(data_dir: str | Path = "beta_decay_80Ni", nucnam: s
 
     escaped = re.escape(nucnam)
     data_dir = Path(data_dir)
-    lorm_dir = data_dir / "total_lorm" if (data_dir / "total_lorm").is_dir() else data_dir
+    if (data_dir / "total_strength").is_dir():
+        lorm_dir = data_dir / "total_strength"
+    elif (data_dir / "total_lorm").is_dir():
+        lorm_dir = data_dir / "total_lorm"
+    else:
+        lorm_dir = data_dir
     report = validate_strength_grid(
         lorm_dir,
         rf"lorm_{escaped}_(?P<beta>[0-9.]+)_(?P<alpha>[0-9.]+)\.out",
@@ -238,7 +243,7 @@ def validate_paper_beta_data(data_dir: str | Path = "beta_decay_80Ni", nucnam: s
     expected_points = set(report.points)
     issues = list(report.issues)
     files_checked = report.files_checked
-    if expected_points and (data_dir / "total_lorm").is_dir():
+    if expected_points and (lorm_dir.parent == data_dir):
         extra_issues, count = _validate_matching_table_grid(
             data_dir / "total_excm",
             rf"excm_{escaped}_(?P<beta>[0-9.]+)_(?P<alpha>[0-9.]+)\.out",
@@ -311,3 +316,64 @@ def validate_paper_dipole_data(
         parameter_names=report.parameter_names,
         issues=issues,
     )
+
+
+def _print_report(report: ValidationReport) -> None:
+    status = "ok" if report.ok else "failed"
+    print(f"validation: {status}")
+    print(f"files_checked: {report.files_checked}")
+    if report.parameter_names:
+        print(f"parameters: {', '.join(report.parameter_names)}")
+    if report.points:
+        print(f"grid_points: {len(report.points)}")
+    for issue in report.issues:
+        where = f" ({issue.path})" if issue.path else ""
+        print(f"{issue.level}: {issue.message}{where}")
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+    import json
+
+    parser = argparse.ArgumentParser(description="Validate SMLR reproduction datasets.")
+    subparsers = parser.add_subparsers(dest="kind", required=True)
+
+    beta = subparsers.add_parser("beta-paper")
+    beta.add_argument("--data-dir", default="data/beta_decay_80Ni")
+    beta.add_argument("--nucnam", default="Ni_80")
+    beta.add_argument("--json", action="store_true")
+
+    dipole = subparsers.add_parser("dipole-paper")
+    dipole.add_argument("--strength-dir", default="data/dipole_polarizability_160Yb/total_strength")
+    dipole.add_argument("--alphaD-dir", default=None)
+    dipole.add_argument("--json", action="store_true")
+
+    strength = subparsers.add_parser("strength-grid")
+    strength.add_argument("data_dir")
+    strength.add_argument("--regex", default=GENERIC_2D_STRENGTH_REGEX)
+    strength.add_argument("--parameter", action="append", dest="parameters")
+    strength.add_argument("--allow-negative-strength", action="store_true")
+    strength.add_argument("--json", action="store_true")
+
+    args = parser.parse_args(argv)
+    if args.kind == "beta-paper":
+        report = validate_paper_beta_data(args.data_dir, args.nucnam)
+    elif args.kind == "dipole-paper":
+        report = validate_paper_dipole_data(args.strength_dir, args.alphaD_dir)
+    else:
+        report = validate_strength_grid(
+            args.data_dir,
+            args.regex,
+            parameter_names=tuple(args.parameters) if args.parameters else GENERIC_2D_PARAMETER_NAMES,
+            allow_negative_strength=args.allow_negative_strength,
+        )
+
+    if args.json:
+        print(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+    else:
+        _print_report(report)
+    return 0 if report.ok else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
