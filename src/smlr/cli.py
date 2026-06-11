@@ -10,8 +10,7 @@ import numpy as np
 
 from .serialization import load_emulator, package_existing_emulator, spec_from_selector
 from .specs import BUILTIN_SPECS, get_builtin_spec, h2_2d_strength_spec, load_run_spec, paper_beta_em1_spec, paper_beta_em2_spec, paper_dipole_em1_spec, save_run_spec
-from .training import strength_only
-from .training.paper import run_beta_paper_em1, run_beta_paper_em2, run_dipole_paper_em1
+from .training import beta_em1, beta_em2, dipole_em1, strength_only
 from .validation import (
     GENERIC_2D_PARAMETER_NAMES,
     GENERIC_2D_STRENGTH_REGEX,
@@ -174,9 +173,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "train":
         runners = {
-            "dipole-paper-em1": run_dipole_paper_em1,
-            "beta-paper-em1": run_beta_paper_em1,
-            "beta-paper-em2": run_beta_paper_em2,
+            "dipole-paper-em1": dipole_em1.run,
+            "beta-paper-em1": beta_em1.run,
+            "beta-paper-em2": beta_em2.run,
             "strength-only": strength_only.run,
         }
         forwarded = list(args.training_args)
