@@ -323,8 +323,8 @@ class BetaEM1SmokeParityTest(unittest.TestCase):
     def test_core_backed_package_em1_matches_project_legacy_for_short_training(self):
         from numpy.polynomial.polynomial import Polynomial
 
-        import Beta_decay.helper as legacy
-        import Beta_decay_package.src.helper_gpt as package
+        import archive.Beta_decay.helper as legacy
+        import archive.Beta_decay_package.src.helper_gpt as package
 
         nucnam = "Ni_80"
         coeffs = Polynomial(legacy.fit_phase_space(0, 28, 80, 15)).coef
@@ -400,7 +400,7 @@ class DipoleEM1SmokeParityTest(unittest.TestCase):
     def test_core_backed_package_dipole_em1_matches_project_legacy_for_short_training(self):
         sys.path.insert(0, str(ROOT / "Dipole_polarizability"))
         import scrap.helper as legacy
-        import Dipole_polarizability.src.helper_gpt as package
+        import archive.Dipole_polarizability.src.helper_gpt as package
 
         strength_dir = ROOT / "dipole_polarizability_160Yb/total_strength"
         alphaD_dir = ROOT / "dipole_polarizability_160Yb/total_alphaD"

@@ -19,8 +19,8 @@ from numpy.polynomial.polynomial import Polynomial
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from Beta_decay_package.src import diagnostics_general_gpt as diag
-from Beta_decay_package.src import helper_gpt as helper
+from archive.Beta_decay_package.src import diagnostics_general_gpt as diag
+from archive.Beta_decay_package.src import helper_gpt as helper
 
 
 NUCNAM = "Ni_80"
