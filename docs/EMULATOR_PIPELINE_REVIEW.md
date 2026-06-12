@@ -6,13 +6,13 @@ file or task is kept, discarded, reorganized, or reimplemented.
 
 ## Canonical Data And Results
 
-- [ ] Keep `data/beta_decay_80Ni/` as canonical beta-decay paper data.
-- [ ] Confirm `data/beta_decay_80Ni/total_lorm/` is the strength-function input for beta EM1.
-- [ ] Confirm `data/beta_decay_80Ni/total_excm/` is the discrete excitation-strength input for half-life calculations.
-- [ ] Confirm `data/beta_decay_80Ni/total_half_life/` is the scalar half-life target set.
-- [ ] Keep `data/dipole_polarizability_160Yb/` as canonical dipole paper data.
-- [ ] Confirm `data/dipole_polarizability_160Yb/total_strength/` is the dipole strength-function input.
-- [ ] Confirm `data/dipole_polarizability_160Yb/total_alphaD/` is the scalar polarizability target set.
+- [x] Keep `data/beta_decay_80Ni/` as canonical beta-decay paper data.
+- [x] Confirm `data/beta_decay_80Ni/total_lorm/` is the strength-function input for beta EM1.
+- [x] Confirm `data/beta_decay_80Ni/total_excm/` is the discrete excitation-strength input for half-life calculations.
+- [x] Confirm `data/beta_decay_80Ni/total_half_life/` is the scalar half-life target set.
+- [x] Keep `data/dipole_polarizability_160Yb/` as canonical dipole paper data.
+- [x] Confirm `data/dipole_polarizability_160Yb/total_strength/` is the dipole strength-function input.
+- [x] Confirm `data/dipole_polarizability_160Yb/total_alphaD/` is the scalar polarizability target set.
 - [ ] Review `results/data_beta/` and choose gold reference parameter/result files for tests.
 - [ ] Review `results/data_dipole/` and choose gold reference parameter/result files for tests.
 
