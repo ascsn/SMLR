@@ -7,7 +7,8 @@ file or task is kept, discarded, reorganized, or reimplemented.
 ## Canonical Data And Results
 
 - [x] Keep `data/beta_decay_80Ni/` as canonical beta-decay paper data.
-- [x] Confirm `data/beta_decay_80Ni/total_lorm/` is the strength-function input for beta EM1.
+- [x] Confirm beta strength files are currently under `data/beta_decay_80Ni/total_strength/` with `lorm_*.out` names.
+- [ ] Decide whether the beta strength directory should be named `total_strength/` or `total_lorm/` permanently.
 - [x] Confirm `data/beta_decay_80Ni/total_excm/` is the discrete excitation-strength input for half-life calculations.
 - [x] Confirm `data/beta_decay_80Ni/total_half_life/` is the scalar half-life target set.
 - [x] Keep `data/dipole_polarizability_160Yb/` as canonical dipole paper data.
@@ -18,21 +19,28 @@ file or task is kept, discarded, reorganized, or reimplemented.
 
 ## Core Code To Keep And Harden
 
+- [ ] Implement reusable data discovery/loading for strength grids and scalar observables.
 - [ ] Keep and review `src/smlr/core/ansatz.py`.
   Owns packed trainable parameters, feature construction, matrix/vector construction, and random initialization.
+- [ ] Make parameter packing/unpacking a tested reusable core capability.
 - [ ] Check `src/smlr/core/ansatz.py` against both legacy beta and dipole parameter layouts.
 - [ ] Keep and review `src/smlr/core/numerics.py`.
   Owns Lorentzian evaluation, batched Lorentzian evaluation, and centered spectrum initialization.
+- [ ] Keep Lorentzian evaluation in reusable core code.
+- [ ] Implement eigensolver-based prediction as a reusable core path.
 - [ ] Keep and review `src/smlr/core/fitting.py`.
   Owns central-spectrum Lorentzian fitting used to initialize emulator poles and strengths.
 - [ ] Keep and review `src/smlr/core/retention.py`.
   Owns retained-mode policy.
 - [ ] Keep and extend `src/smlr/core/objectives.py`.
   Baseline for shared strength-plus-observable loss composition.
+- [ ] Keep loss-function composition in reusable core code.
+- [ ] Keep generic artifact saving in shared training or utility code, not in paper notebooks.
 - [ ] Add paper-scaling options to `src/smlr/core/objectives.py` if exact legacy reproduction requires fixed denominators.
 - [ ] Keep `src/smlr/core/splitting.py` if training/test split logic remains code-driven.
 - [ ] Move split definitions into explicit config files if splits should be reproducibility artifacts.
 - [ ] Keep `src/smlr/core/training.py` for seed setting, moving averages, and TensorFlow Adam construction.
+- [ ] Implement training/restart driver as shared code.
 - [ ] Decide whether restart bookkeeping and early stopping should move into `src/smlr/core/training.py`.
 
 ## Metrics And Validation
@@ -50,6 +58,7 @@ file or task is kept, discarded, reorganized, or reimplemented.
 
 - [ ] Keep and simplify `src/smlr/domains/dipole.py`.
   It should own alphaD calculation, dipole constants, dipole file naming, and dipole-specific initialization choices.
+- [ ] Keep observable calculation formulas in domain code when they are physics-specific.
 - [ ] Remove package-adapter language from `src/smlr/domains/dipole.py` once the native trainer exists.
 - [ ] Keep and simplify `src/smlr/domains/beta_decay.py`.
   It should own beta-decay constants, phase-space/half-life calculation, beta file naming, and paper-specific EM1/EM2 unpacking.
@@ -81,6 +90,18 @@ file or task is kept, discarded, reorganized, or reimplemented.
 - [x] Remove root `uv.lock` from the baseline if present.
 - [ ] Decide later whether config dataclasses should return as a lightweight `configs/` format after paper configs are known.
 - [ ] Decide later whether emulator serialization should return after the native trainers are stable.
+
+## Config To Externalize
+
+- [ ] Externalize data paths for each emulator run.
+- [ ] Externalize parameter-grid filters and train/test split rules.
+- [ ] Externalize central-point selection or explicitly pin the central point.
+- [ ] Externalize physics constants used by domain formulas.
+- [ ] Externalize loss weights for strength and scalar observables.
+- [ ] Externalize minimum iterations and early-stopping policy.
+- [ ] Externalize optimizer settings, including optimizer name and learning rate.
+- [ ] Externalize output filenames and output directory conventions.
+- [ ] Keep these configs outside source code so paper reproduction runs are auditable.
 
 ## Backends
 
@@ -171,6 +192,19 @@ file or task is kept, discarded, reorganized, or reimplemented.
 - [ ] Include output directory in each reproducibility config.
 - [ ] Include expected reference parameter/result file in each reproducibility config.
 - [ ] Add regression tests comparing cleaned-code outputs to selected files in `results/`.
+
+## Reproducibility Additions
+
+- [ ] Create one shared config file per emulator.
+- [ ] Pin the environment used for paper reproduction.
+- [ ] Make seed handling deterministic across Python, NumPy, and TensorFlow.
+- [ ] Save a manifest with every run.
+- [ ] Include git commit hash in the run manifest.
+- [ ] Include resolved config contents in the run manifest.
+- [ ] Include resolved data paths in the run manifest.
+- [ ] Include output filenames in the run manifest.
+- [ ] Add tests for parameter-vector packing/unpacking.
+- [ ] Add one tiny synthetic training-pass test.
 
 ## Suggested Migration Order
 

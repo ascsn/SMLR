@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ._compat import run_legacy_entrypoint
+from ..src.smlr.training._compat import run_legacy_entrypoint
 
 
 def run(argv: list[str] | None = None) -> None:
