@@ -1,6 +1,6 @@
 """Core structure-preserving emulator primitives."""
 
-from .ansatz import (
+from .ansatz.ansatz import (
     PackedLayout,
     build_model_matrices_and_vectors,
     compute_ansatz_features,
