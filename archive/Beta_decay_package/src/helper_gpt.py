@@ -24,14 +24,14 @@ import matplotlib.ticker as ticker
 from scipy.optimize import least_squares, nnls
 
 try:
-    from smlr.core.ansatz import ansatz as core_ansatz
+    from smlr.core.ansatz import EDIT_ansatz as core_ansatz
     from smlr.core import fitting as core_fitting
     from smlr.core import numerics as core_numerics
 except ModuleNotFoundError:  # pragma: no cover - source-tree execution before install
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-    from smlr.core.ansatz import ansatz as core_ansatz
+    from smlr.core.ansatz import EDIT_ansatz as core_ansatz
     from smlr.core import fitting as core_fitting
     from smlr.core import numerics as core_numerics
 

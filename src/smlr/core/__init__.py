@@ -1,6 +1,6 @@
 """Core structure-preserving emulator primitives."""
 
-from .ansatz.ansatz import (
+from .ansatz.EDIT_ansatz import (
     PackedLayout,
     build_model_matrices_and_vectors,
     compute_ansatz_features,
@@ -26,13 +26,13 @@ from .objectives import (
     strength_plus_observable_objective,
     trapezoid_weights,
 )
-from .splitting import (
+from .EDIT_splitting import (
     ParameterSplit,
     choose_central_parameter_point,
     parse_filter_ranges,
     split_by_parameter_ranges,
 )
-from .training import make_optimizer, moving_average, set_all_seeds
+from .EDIT_training import make_optimizer, moving_average, set_all_seeds
 
 __all__ = [
     "PackedLayout",

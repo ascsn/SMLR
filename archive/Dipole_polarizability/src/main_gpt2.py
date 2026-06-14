@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 
 import archive.Dipole_polarizability.src.helper_gpt as helper_gpt
 try:
-    from smlr.core import training as core_training
-    from smlr.core import splitting as core_splitting
+    from smlr.core import EDIT_training as core_training
+    from smlr.core import EDIT_splitting as core_splitting
     from smlr.core import RetainedModePolicy
     from smlr.serialization import save_emulator
     from smlr.specs import EmulatorRunSpec, ObservableSpec, StrengthGridSpec
@@ -25,8 +25,8 @@ except ModuleNotFoundError:  # pragma: no cover - source-tree execution before i
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-    from smlr.core import training as core_training
-    from smlr.core import splitting as core_splitting
+    from smlr.core import EDIT_training as core_training
+    from smlr.core import EDIT_splitting as core_splitting
     from smlr.core import RetainedModePolicy
     from smlr.serialization import save_emulator
     from smlr.specs import EmulatorRunSpec, ObservableSpec, StrengthGridSpec

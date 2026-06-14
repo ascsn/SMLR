@@ -7,7 +7,7 @@ from typing import Optional
 import numpy as np
 import tensorflow as tf
 
-from smlr.core.ansatz import ansatz as core_ansatz
+from smlr.core.ansatz import EDIT_ansatz as core_ansatz
 from smlr.core import fitting as core_fitting
 from smlr.core import numerics as core_numerics
 from .common import MatrixAnsatzConfig

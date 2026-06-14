@@ -26,14 +26,14 @@ try:
 except ImportError:  # pragma: no cover - direct script execution
     import archive.Beta_decay_package.src.helper_gpt as helper
 try:
-    from smlr.core import training as core_training
+    from smlr.core import EDIT_training as core_training
     from smlr.serialization import save_emulator
     from smlr.specs import paper_beta_em2_spec
 except ModuleNotFoundError:  # pragma: no cover - source-tree execution before install
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-    from smlr.core import training as core_training
+    from smlr.core import EDIT_training as core_training
     from smlr.serialization import save_emulator
     from smlr.specs import paper_beta_em2_spec
 
