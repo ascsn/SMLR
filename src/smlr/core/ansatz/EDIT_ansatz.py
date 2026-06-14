@@ -6,6 +6,19 @@ from typing import Dict, Optional, Tuple
 import numpy as np
 import tensorflow as tf
 
+'''
+Reusable ansatz core:
+1. parameter vector layout
+2. packed-to-structured conversion
+3. symmetric matrix reconstruction
+4. generic feature maps
+5. matrix batch construction
+6. vector batch construction
+7. width batch construction
+8. eigensolver-based prediction
+9. deterministic initialization primitives
+'''
+
 
 @dataclass
 class PackedLayout:
