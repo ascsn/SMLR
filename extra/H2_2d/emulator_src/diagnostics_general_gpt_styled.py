@@ -13,7 +13,7 @@ from matplotlib.colors import LogNorm
 import matplotlib.colors as mcolors
 import matplotlib.patches as patches
 
-import data.H2_2d.emulator_src.helper_gpt as helper_gpt #as helper_gpt
+import extra.H2_2d.emulator_src.helper_gpt as helper_gpt #as helper_gpt
 
 
 """

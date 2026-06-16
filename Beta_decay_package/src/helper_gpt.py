@@ -68,7 +68,6 @@ def beta_excm_dir(nucnam):
     return root
 
 
-
 def encode_initial_guess(random_initial_guess, E, B, n, retain, num_components=2):
     """
     Centered retain: place k=round(retain*n) fitted (E,B) in the middle of the n-diagonal.
@@ -109,9 +108,6 @@ def encode_initial_guess(random_initial_guess, E, B, n, retain, num_components=2
     # width parameters unchanged
 
     return params
-
-
-
 
 '''
 List of helper functions for the central point
@@ -163,8 +159,6 @@ def fit_strength_with_tf_lorentzian(omega, y, n, eta,
         np_dtype=np.float64, tf_dtype=tf.float64, gap_floor=1e-6,
     )
 
-
-
 # define the Fermi function as a function of electron energy
 def Fermi(Z,A,W):
     
@@ -183,10 +177,8 @@ def Fermi(Z,A,W):
     return part_1*part_2*gamma_part*L_0
 
 
-
 # define the phase factor integral
 # p W ( W0 - W)**2 F(Z,W)
-
 def phase_factor_integrand(kind,Z,A,W_0,W):
     '''
     Based on the kind argument I can have different types
@@ -212,7 +204,6 @@ def phase_factor_integrand(kind,Z,A,W_0,W):
         print('Wrong kind in phase_factor_integrand!')
         exit(-1)
 
-
 def phase_factor(kind,Z,A,W_0):
 
     '''
@@ -231,8 +222,6 @@ def theta2(K_val):
         return 1
     else:
         return 2
-    
-    
     
 def fit_phase_space(kind, Z, A, ala_np):
 
@@ -368,8 +357,6 @@ def dataset_entry_path(entry):
     return None
 
 
-
-
 def data_table(fmt_data, coeffs, g_A, nucnam=None, *, strength_window=None):
     '''
     Here split the dataset from "beta_decay_data" folder
@@ -435,8 +422,6 @@ def data_table(fmt_data, coeffs, g_A, nucnam=None, *, strength_window=None):
      
     return Lors, HLs
 
-
-
 def modified_DS(params, n):
     ''''
     Build PMM matrices:
@@ -447,6 +432,8 @@ def modified_DS(params, n):
     D_shape = (n, n)
     S1_shape = (n, n)
     S2_shape = (n, n)
+    S3_shape = (n, n)
+    S4_shape = (n, n)
 
     # Indices in param vector
     idx = 0
@@ -467,7 +454,6 @@ def modified_DS(params, n):
     S2_mod = core_ansatz.sym_from_upper(params[idx:idx+num_upper2], n, dtype=tf.float64)
     idx += num_upper2
     
-    
     # Add new learned params x1 and x2 and x3
     x1 = tf.convert_to_tensor(params[idx])
     idx += 1
@@ -475,7 +461,6 @@ def modified_DS(params, n):
     idx += 1
     x3 = tf.convert_to_tensor(params[idx])
     idx += 1
-
 
     return D_mod, S1_mod, S2_mod, v0_mod, eta, x1, x2, x3
 
@@ -703,9 +688,6 @@ def cost_function(params, n, fmt_data, Lors_true, HLs_true, coeffs, g_A, weight,
     return total_cost, Lor, Lor_true, x, HLs_calc, B, eigenvalues
 
 
-
-
-
 def cost_function_only_HL(params, n, fmt_data, HLs_true, central_point):
     
     '''
@@ -717,33 +699,24 @@ def cost_function_only_HL(params, n, fmt_data, HLs_true, central_point):
     calculates the cost function by subtracting only the half-lives !
     
     '''
-
-
-    
     D_mod, S1_mod, S2_mod = modified_DS_only_HL(params, n)
 
-    
     total_cost = 0
     HLs_calc = []
     
-
     for idx, alpha in enumerate(fmt_data):
-
         M_true = D_mod + (float(alpha[0]) - float(central_point[0])) * S1_mod \
-                       + (float(alpha[1]) - float(central_point[1])) * S2_mod
-        
-        
-
+                       + (float(alpha[1]) - float(central_point[1])) * S2_mod \
+                       + (float(alpha[2]) - float(central_point[0])) * S3_mod \
+                       + (float(alpha[3]) - float(central_point[0])) * S4_mod
+    
         eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
 
-
-        
         ''' Add half-lives to optimization as well'''
         log_hls = eigenvalues[int(n/2)] #tf.reduce_sum((eigenvalues))
         
         total_cost += (log_hls - np.log10(HLs_true[idx])) ** 2
 
-        
         # save the half lives for CV check
         HLs_calc.append(10**log_hls)
             
@@ -751,7 +724,6 @@ def cost_function_only_HL(params, n, fmt_data, HLs_true, central_point):
 
 def data_table_only_HL(fmt_data,coeffs, g_A, nucnam):
     '''
-    
     Here split the dataset from "beta_decay_data" folder
     into: training set, validation set and test set
     use any ratio you like (e.g. 0.8 0.1 0.1)
@@ -760,12 +732,10 @@ def data_table_only_HL(fmt_data,coeffs, g_A, nucnam):
     test it on validation set
     
     returns also number of QRPA poles n_QRPA
-    
     '''
 
     HLs = []
     
-
     for frmt in fmt_data:
         
         alpha = frmt[0]
@@ -776,15 +746,11 @@ def data_table_only_HL(fmt_data,coeffs, g_A, nucnam):
         file = file[file[:,0]<del_nH]
         file = file[file[:,0]>0]
         HLs.append(half_life_loss(file[:,0], file[:,1],coeffs, g_A))
-
-     
     return HLs
 
 
 def modified_DS_only_HL(params, n):
     '''
-
-     
      added S1_shape & S2_shape 
      
      params: tf.Variable
@@ -792,9 +758,7 @@ def modified_DS_only_HL(params, n):
      S1_shape : int
      S2_shape : int
      
-     given params, construct D, S1 and S2 matrices , 
-
-    
+     given params, construct D, S1 and S2 matrices ,     
     '''
     # initialize D, S1 and S2
     D_mod = tf.linalg.diag(params[:n])
@@ -807,13 +771,11 @@ def modified_DS_only_HL(params, n):
     return D_mod, S1_mod, S2_mod
 
 
-       # generalized_eigen for M_true(a)
+# generalized_eigen for M_true(a)
 def generalized_eigen(D, S1, S2, alpha):
-    M_true = D + float(alpha[0]) * S1 + float(alpha[1]) * S2
+    M_true = D + float(alpha[0]) * S1 + float(alpha[1]) * S2 + float(alpha[2]) * S3 + float(alpha[3]) * S4
     eigenvalues, eigenvectors = eigh(M_true)
     return np.real(eigenvalues), np.real(eigenvectors) 
-
-
 
 
 def plot_Lorentzian_for_idx(idx, test_set,n,params, coeffs, g_A):
@@ -829,11 +791,7 @@ def plot_Lorentzian_for_idx(idx, test_set,n,params, coeffs, g_A):
     opt_eigenvalues, opt_eigenvectors = generalized_eigen(opt_D.numpy(), opt_S1.numpy(), opt_S2.numpy(), test_set[idx])
     opt_dot_products = [np.square(np.dot(opt_eigenvectors[:, i], opt_v0.numpy())) for i in range(opt_eigenvectors.shape[1])]
     
-    
-    
     fig, ax = plt.subplots()
-    
-    
     
     # plot the Lorentzian for the original data
     x = Lors_orig[:,0]
@@ -843,11 +801,9 @@ def plot_Lorentzian_for_idx(idx, test_set,n,params, coeffs, g_A):
     
     plt.plot(x, Lors_orig[:,1], 'b--',label='QRPA calculation')    
     plt.plot(x, opt_Lor, 'r-',label='emulated Lorentzian')
-        
     
     ax.set_title(r'$V_0^{is}$ = '+str(round(alpha,1))+r', $g_0 = $'+str(round(beta,1)), size = 18)
     ax.legend(frameon = False)
-    
     
     plt.xlabel(r'$\omega$ (MeV)', size = 18)
     plt.ylabel('$S$ (1/MeV)', size = 18)
@@ -867,9 +823,6 @@ def plot_Lorentzian_for_idx(idx, test_set,n,params, coeffs, g_A):
     
     
 def data_Lorentzian_for_idx(idx, test_set,n,params, coeffs, g_A):
-
-    
-    
     Lors_test, HLs_test = data_table(test_set, coeffs, g_A)
     Lors_orig = Lors_test[idx]
     

@@ -11,7 +11,7 @@ import numpy as np
 import tensorflow as tf
 from matplotlib.colors import LogNorm
 
-import data.H2_2d.emulator_src.helper_gpt as helper_gpt #as helper_gpt
+import extra.H2_2d.emulator_src.helper_gpt as helper_gpt #as helper_gpt
 
 
 """

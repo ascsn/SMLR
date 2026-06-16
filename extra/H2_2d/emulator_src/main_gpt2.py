@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-import data.H2_2d.emulator_src.helper_gpt as helper_gpt
+import extra.H2_2d.emulator_src.helper_gpt as helper_gpt
 
 
 # -----------------------------------------------------------------------------
