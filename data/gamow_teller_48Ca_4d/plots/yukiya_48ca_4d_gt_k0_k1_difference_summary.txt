@@ -1,0 +1,5 @@
+num_samples = 50
+global_max_abs_K0_minus_K1 = 1.1000000000027654e-04
+mean_sample_mean_abs_K0_minus_K1 = 1.8209485582084743e-06
+max_sample_mean_abs_K0_minus_K1 = 4.1231144278616801e-06
+max_sample_max_abs_K0_minus_K1 = 1.1000000000027654e-04

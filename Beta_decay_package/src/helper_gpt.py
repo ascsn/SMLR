@@ -367,13 +367,10 @@ def data_table(fmt_data, coeffs, g_A, nucnam=None, *, strength_window=None):
     
     returns also number of QRPA poles n_QRPA
     '''
-
     Lors = []
     HLs = []
     
-
     for frmt in fmt_data:
-        
         params = dataset_entry_params(frmt)
         alpha = params[0]
         beta = params[1] if len(params) > 1 else None
@@ -419,7 +416,6 @@ def data_table(fmt_data, coeffs, g_A, nucnam=None, *, strength_window=None):
             file = file[file[:,0]>0]
             HLs.append(half_life_loss(file[:,0], file[:,1],coeffs, g_A))
 
-     
     return Lors, HLs
 
 def modified_DS(params, n):
@@ -733,7 +729,6 @@ def data_table_only_HL(fmt_data,coeffs, g_A, nucnam):
     
     returns also number of QRPA poles n_QRPA
     '''
-
     HLs = []
     
     for frmt in fmt_data:
