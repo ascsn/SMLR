@@ -176,35 +176,6 @@ def plot_k0_k1_difference(root: Path, out_dir: Path, params: np.ndarray) -> Path
     return out
 
 
-def plot_total_strength_overlay(root: Path, out_dir: Path, params: np.ndarray) -> Path:
-    out = out_dir / "yukiya_48ca_4d_gt_total_strength_overlay.png"
-    fig, ax = plt.subplots(figsize=(10, 6))
-
-    norm = plt.Normalize(params[:, 0].min(), params[:, 0].max())
-    cmap = plt.get_cmap("viridis")
-
-    ymax = 0.0
-    for i, point in enumerate(params, start=1):
-        x, y0, y1 = aligned_k0_k1(root, i)
-        total = y0 + 2.0 * y1
-        ymax = max(ymax, float(np.nanmax(total)))
-        ax.plot(x, total, lw=1.0, alpha=0.58, color=cmap(norm(point[0])))
-
-    sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
-    cbar = fig.colorbar(sm, ax=ax, pad=0.015)
-    cbar.set_label("p1")
-    ax.set_title("Yukiya 48Ca 4D GT total strength: K0 + 2*K1")
-    ax.set_xlabel("Energy")
-    ax.set_ylabel("S_total")
-    ax.set_xlim(0, 30)
-    ax.set_ylim(0, ymax * 1.08 if ymax > 0 else 1)
-    ax.grid(alpha=0.25)
-    fig.tight_layout()
-    fig.savefig(out, dpi=180)
-    plt.close(fig)
-    return out
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -226,7 +197,6 @@ def main() -> None:
         plot_k1_overlay(root, out_dir, params),
         plot_k0_k1_overlay(root, out_dir, params),
         plot_k0_k1_difference(root, out_dir, params),
-        plot_total_strength_overlay(root, out_dir, params),
     ]
     for path in outputs:
         print(path)
