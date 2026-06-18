@@ -61,6 +61,8 @@ def parse_args():
                    help="Disable coordinate normalization in the matrix and affine-width ansatz.")
     p.add_argument("--reference-index", type=int, default=0,
                    help="Dataset index to use as the linear expansion/reference point.")
+    p.add_argument("--diag-index", type=int, default=None,
+                   help="1-based train-set row to show in train_diag_iter plots. Defaults to the last training row.")
 
     # plot controls (no on-screen display ever)
     p.add_argument("--plots", choices=["none", "save"], default="save",
@@ -89,6 +91,7 @@ def main():
     S_INIT_SCALE   = args.s_init_scale
     S_INIT_SWEEP   = args.s_init_sweep
     REFERENCE_INDEX = args.reference_index
+    DIAG_INDEX     = args.diag_index
     NORMALIZE_COORDINATES = not args.no_coordinate_normalization
     PLOTS_MODE     = args.plots              # "none" | "save"
     DO_PHASE_PLOT  = args.phase_plot         # True/False
@@ -182,6 +185,14 @@ def main():
     print('Reference data point:', central_point)
     print('Sizes -> test:', len(test_set), 'cv:', len(cv_set), 'train:', len(train_set))
 
+    if DIAG_INDEX is None:
+        diag_train_idx = len(train_set) - 1
+    else:
+        diag_train_idx = int(DIAG_INDEX) - 1
+        if diag_train_idx < 0 or diag_train_idx >= len(train_set):
+            raise ValueError(f"--diag-index must be between 1 and {len(train_set)}, got {DIAG_INDEX}.")
+    print('Diagnostic train row:', diag_train_idx + 1, helper.dataset_entry_params(train_set[diag_train_idx]))
+
     num_components = len(helper.dataset_entry_params(combined[0]))
     coordinate_scales = None
     if NORMALIZE_COORDINATES:
@@ -258,29 +269,59 @@ def main():
     def moving_average(arr, k):
         return core_training.moving_average(arr, k)
 
-    def maybe_training_plots(iter_idx, rel, E_last, B_last, x, Lor, Lor_true, seed, out_dir):
-        """Save training-time diagnostics if requested. Never shows on screen."""
+    def predict_strength_for_train_row(params_value, train_idx):
+        D_mod, S_list_mod, v0_mod, eta, width_params = helper.modified_DS_general(
+            params_value, n, num_components
+        )
+        entry = train_set[train_idx]
+        M_true = helper.linear_matrix(D_mod, S_list_mod, entry, central_point, coordinate_scales)
+        eigenvalues, eigenvectors = tf.linalg.eigh(M_true)
+
+        n_i = eigenvalues.shape[0]
+        k_keep = int(round(retain * n_i))
+        k_keep = max(1, min(k_keep, n_i))
+        left = (n_i - k_keep) // 2
+        right = left + k_keep
+        eigenvalues = eigenvalues[left:right]
+        eigenvectors = eigenvectors[:, left:right]
+
+        projections = tf.linalg.matvec(tf.transpose(eigenvectors), v0_mod)
+        B = tf.square(projections)
+        B = B * tf.cast((eigenvalues > 0) & (eigenvalues < 30), dtype=tf.float64)
+
+        x = tf.constant(Lors[train_idx][:, 0], dtype=tf.float64)
+        Lor_true = tf.constant(Lors[train_idx][:, 1], dtype=tf.float64)
+        if FIXED_WIDTH is None:
+            width = helper.affine_width(eta, width_params, entry, central_point, coordinate_scales)
+        else:
+            width = tf.constant(float(FIXED_WIDTH), dtype=tf.float64)
+        Lor = helper.give_me_Lorentzian(x, eigenvalues, B, width)
+        return x, Lor, Lor_true, B, eigenvalues
+
+    def maybe_training_plots(iter_idx, x, Lor, Lor_true, B_last, E_last, out_dir):
+        """Save training-time diagnostics for the selected train row. Never shows on screen."""
         if PLOTS_MODE != "save":
             return
-        fig = plt.figure(figsize=(10, 4))
-        ax1 = fig.add_subplot(1, 2, 1)
-        ax1.plot(np.arange(len(rel)), rel, marker='.', ls='--')
-        ax1.axhline(np.mean(rel), color='k', ls='--')
-        ax1.set_yscale('log')
-        ax1.set_title(f'Half-life rel. err. (iter={iter_idx})')
-
-        ax2 = fig.add_subplot(1, 2, 2)
-        ax2.stem(E_last, B_last) #, use_line_collection=True)
-        ax2.plot(x, Lor, label='pred')
-        ax2.plot(x, Lor_true, label='true')
-        ax2.set_ylim(0)
-        ax2.set_xlim(-10, np.max(x))
-        ax2.axvline(0.8, ls='--')
-        ax2.legend()
+        fig = plt.figure(figsize=(8, 5))
+        ax = fig.add_subplot(111)
+        markerline, stemlines, baseline = ax.stem(
+            E_last, B_last, linefmt="0.55", markerfmt="o", basefmt=" "
+        )
+        plt.setp(markerline, markersize=3, alpha=0.55)
+        plt.setp(stemlines, linewidth=0.8, alpha=0.35)
+        ax.plot(x, Lor, label="pred", lw=1.8)
+        ax.plot(x, Lor_true, label="true", lw=1.5)
+        ax.set_ylim(0)
+        ax.set_xlim(0, np.max(x))
+        ax.set_xlabel("Energy")
+        ax.set_ylabel("Strength")
+        ax.set_title(f"Train row {diag_train_idx + 1} pred vs true (iter={iter_idx})")
+        ax.legend()
+        ax.grid(alpha=0.25)
         fig.tight_layout()
 
-        out = os.path.join(out_dir, f"train_diag_iter{iter_idx}.png")
-        fig.savefig(out, bbox_inches='tight', dpi=130)
+        out = os.path.join(out_dir, f"train_diag_iter{iter_idx}_row{diag_train_idx + 1}.png")
+        fig.savefig(out, bbox_inches="tight", dpi=130)
         plt.close(fig)
 
     # -------------------- training --------------------
@@ -353,8 +394,9 @@ def main():
                     print(f"[s_init {s_init_scale:.1e} seed {seed}] iter {i:6d} | cost={cost_val:.6e} "
                           f"| lr={current_lr:.3e} | mean r={np.mean(rel):.3e} | no_improve={no_improve_cnt}")
 
-                    # diagnostics plot (saved only if requested) -> in seed subdir
-                    maybe_training_plots(i, rel, E_last, B_last, x, Lor, Lor_true, seed, run_dir)
+                    # diagnostics plot for selected train row (saved only if requested) -> in seed subdir
+                    diag_x, diag_lor, diag_true, diag_B, diag_E = predict_strength_for_train_row(params, diag_train_idx)
+                    maybe_training_plots(i, diag_x, diag_lor, diag_true, diag_B, diag_E, run_dir)
 
                     # plateau check at logging cadence
                     ds_costs = cost_history[::PRINT_EVERY] if PRINT_EVERY > 0 else cost_history[:]
@@ -393,6 +435,7 @@ def main():
                 f.write(f"s_init_scale={s_init_scale}\n")
                 f.write(f"coordinate_scales={coordinate_scales}\n")
                 f.write(f"n={n}\nretain={retain}\nweight={weight}\n")
+                f.write(f"diag_train_row={diag_train_idx + 1}\n")
                 f.write(f"stopped_at={len(cost_history)-1}\n")
                 f.write(f"min_iterations_enforced={MIN_ITERATIONS}\n")
 

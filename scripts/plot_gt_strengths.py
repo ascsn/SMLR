@@ -176,15 +176,94 @@ def plot_k0_k1_difference(root: Path, out_dir: Path, params: np.ndarray) -> Path
     return out
 
 
+def plot_individual_strength(
+    root: Path,
+    out_dir: Path,
+    params: np.ndarray,
+    index: int,
+    projection: str,
+) -> Path:
+    if index < 1 or index > len(params):
+        raise ValueError(f"Index must be between 1 and {len(params)}, got {index}.")
+
+    projection = projection.upper()
+    if projection not in {"K0", "K1"}:
+        raise ValueError(f"Projection must be K0 or K1, got {projection!r}.")
+
+    point = params[index - 1]
+    x, y = load_sample(sample_path(root, projection, index))
+
+    out = out_dir / f"yukiya_48ca_4d_gt_{projection.lower()}_sample_{index}.png"
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(x, y, color="#2457a6", lw=1.8)
+    ax.set_title(
+        "Yukiya 48Ca 4D GT "
+        f"{projection} sample {index}: "
+        f"p=({point[1]:.4g}, {point[2]:.4g}, {point[3]:.4g}, {point[4]:.4g})"
+    )
+    ax.set_xlabel("Energy")
+    ax.set_ylabel(f"{projection} strength")
+    ax.set_xlim(0, 30)
+    ymax = float(np.nanmax(y))
+    ax.set_ylim(0, ymax * 1.08 if ymax > 0 else 1)
+    ax.grid(alpha=0.25)
+    fig.tight_layout()
+    fig.savefig(out, dpi=180)
+    plt.close(fig)
+    return out
+
+
+def plot_total_strength_overlay(root: Path, out_dir: Path, params: np.ndarray) -> Path:
+    out = out_dir / "yukiya_48ca_4d_gt_total_strength_overlay.png"
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    norm = plt.Normalize(params[:, 0].min(), params[:, 0].max())
+    cmap = plt.get_cmap("viridis")
+
+    ymax = 0.0
+    for i, point in enumerate(params, start=1):
+        color = cmap(norm(point[0]))
+        x, y0, y1 = aligned_k0_k1(root, i)
+        total = y0 + 2.0 * y1
+        ymax = max(ymax, float(np.nanmax(total)))
+        ax.plot(x, total, lw=1.0, alpha=0.58, color=color)
+
+    sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+    cbar = fig.colorbar(sm, ax=ax, pad=0.015)
+    cbar.set_label("p1")
+    ax.set_title("Yukiya 48Ca 4D GT total strength: K0 + 2 K1")
+    ax.set_xlabel("Energy")
+    ax.set_ylabel("Total strength")
+    ax.set_xlim(0, 30)
+    ax.set_ylim(0, ymax * 1.08 if ymax > 0 else 1)
+    ax.grid(alpha=0.25)
+    fig.tight_layout()
+    fig.savefig(out, dpi=180)
+    plt.close(fig)
+    return out
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--data-dir",
         type=Path,
-        default=Path(__file__).resolve().parent,
+        default=Path(__file__).resolve().parents[1] / "data" / "gamow_teller_48Ca_4d",
         help="Directory containing params.txt plus K0/ and K1/ sample files.",
     )
     parser.add_argument("--out-dir", type=Path, default=None)
+    parser.add_argument(
+        "--index",
+        type=int,
+        default=None,
+        help="If set, plot only this 1-based sample index instead of the overlay diagnostics.",
+    )
+    parser.add_argument(
+        "--projection",
+        choices=["K0", "K1"],
+        default="K0",
+        help="Projection to use with --index.",
+    )
     args = parser.parse_args()
 
     root = args.data_dir
@@ -192,12 +271,16 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     params = load_params(root)
-    outputs = [
-        plot_k0_overlay(root, out_dir, params),
-        plot_k1_overlay(root, out_dir, params),
-        plot_k0_k1_overlay(root, out_dir, params),
-        plot_k0_k1_difference(root, out_dir, params),
-    ]
+    if args.index is not None:
+        outputs = [plot_individual_strength(root, out_dir, params, args.index, args.projection)]
+    else:
+        outputs = [
+            plot_k0_overlay(root, out_dir, params),
+            plot_k1_overlay(root, out_dir, params),
+            plot_k0_k1_overlay(root, out_dir, params),
+            plot_k0_k1_difference(root, out_dir, params),
+            plot_total_strength_overlay(root, out_dir, params),
+        ]
     for path in outputs:
         print(path)
 
