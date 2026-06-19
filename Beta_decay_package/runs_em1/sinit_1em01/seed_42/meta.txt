@@ -1,0 +1,11 @@
+best_cost=1.4265210260930603
+best_iter=5602
+seed=42
+s_init_scale=0.1
+coordinate_scales=(476.5625, 238.2813, 238.2813, 238.2813)
+n=20
+retain=1.0
+weight=0.0
+diag_train_row=30
+stopped_at=19999
+min_iterations_enforced=20000

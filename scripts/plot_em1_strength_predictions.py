@@ -147,7 +147,7 @@ def main() -> None:
     parser.add_argument("--out-dir", type=Path, default=None)
     parser.add_argument("--retain", type=float, default=1.0)
     parser.add_argument("--reference-index", type=int, default=0, help="0-based reference index in sorted full dataset.")
-    parser.add_argument("--fixed-width", type=float, default=1.0)
+    parser.add_argument("--fixed-width", type=float, default=None, help="Use a fixed width for prediction plots. Omit for affine-width runs.")
     parser.add_argument("--no-coordinate-normalization", action="store_true")
     args = parser.parse_args()
 

@@ -4,12 +4,30 @@ python Beta_decay_package/src/main_gpt2.py \
   --n 20 \
   --retain 1.0 \
   --weight 0.0 \
-  --fixed-width 1.0 \
-  --s-init-sweep 0.05 0.1 0.2 \
+  --fixed-width 0.75 \
+  --s-init-sweep 0.1 \
   --reference-index 0 \
   --n-restarts 1 \
   --seed0 42 \
   --num-iter 20000 \
   --print-every 2000 \
+  --diag-index 30
   --plots save \
   --save-dir runs_em1/gamow_teller_48Ca_4d_K0_n20_fixedw1_coordnorm
+
+
+python Beta_decay_package/src/main_gpt2.py \
+  --data-dir data/gamow_teller_48Ca_4d/total_strength_K0 \
+  --strength-window 0 30 \
+  --n 20 \
+  --retain 1.0 \
+  --weight 0.0 \
+  --s-init-scale 0.1 \
+  --reference-index 0 \
+  --diag-index 17 \
+  --n-restarts 1 \
+  --seed0 42 \
+  --num-iter 20000 \
+  --print-every 2000 \
+  --plots save \
+  --save-dir runs_em1/gamow_teller_48Ca_4d_K0_n20_affinew_coordnorm

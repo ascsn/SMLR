@@ -1,5 +1,0 @@
-python runs_em1/plot_em1_strength_predictions.py \
-  --run-dir runs_em1/gamow_teller_48Ca_4d_K0_n20_fixedw1_coordnorm \
-  --split train \
-  --index 17 \
-  --fixed-width 1.0
