@@ -1,0 +1,17 @@
+# Fixed width
+python scripts/plot_em1_strength_predictions.py \
+  --run-dir runs_em1/gamow_teller_48Ca_4d_K0_n20_fixedw1_coordnorm \
+  --split train \
+  --all \
+  --fixed-width 1.0
+
+# Affine width
+  python scripts/plot_em1_strength_predictions.py \
+  --run-dir runs_em1/gamow_teller_48Ca_4d_K0_n20_fixedw1_coordnorm \
+  --split train \
+  --all \
+
+  python scripts/plot_em1_strength_predictions.py \
+  --run-dir runs_em1/gamow_teller_48Ca_4d_K0_n20_affinew_randomsplit \
+  --split train \
+  --index 1

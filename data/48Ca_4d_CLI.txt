@@ -11,7 +11,7 @@ python Beta_decay_package/src/main_gpt2.py \
   --seed0 42 \
   --num-iter 20000 \
   --print-every 2000 \
-  --diag-index 30
+  --diag-index 30 \
   --plots save \
   --save-dir runs_em1/gamow_teller_48Ca_4d_K0_n20_fixedw1_coordnorm
 
