@@ -1,0 +1,8 @@
+split = validation
+row = 3
+params = -375, 62.5, -62.5, -62.5
+true_max = 4.8285320000000000e+00
+pred_max = 6.9550584660666956e+00
+true_integral = 7.8948981618000005e+00
+pred_integral = 1.1916418085625356e+01
+relative_l2 = 1.1532800618361090e+00

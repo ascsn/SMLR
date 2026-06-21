@@ -20,6 +20,10 @@ sys.path.insert(0, str(REPO_ROOT / "Beta_decay_package" / "src"))
 import helper_gpt as helper  # noqa: E402
 
 
+def rounded_param_key(values):
+    return tuple(round(float(v), 4) for v in values)
+
+
 def load_strength_dataset(data_dir: Path):
     pattern = re.compile(r"strength_(-?[0-9.]+)_(-?[0-9.]+)_(-?[0-9.]+)_(-?[0-9.]+)\.out")
     combined = []
@@ -33,16 +37,40 @@ def load_strength_dataset(data_dir: Path):
     return combined
 
 
-def split_dataset(combined, train_ratio: float = 0.6, cv_ratio: float = 0.0):
+def split_dataset(combined, train_ratio: float = 0.6, cv_ratio: float = 0.1):
     n_total = len(combined)
     n_train = int(n_total * train_ratio)
     n_cv = int(n_total * cv_ratio)
     return {
         "train": combined[:n_train],
-        "cv": combined[n_train:n_train + n_cv],
+        "validation": combined[n_train:n_train + n_cv],
         "test": combined[n_train + n_cv:],
         "all": combined,
     }
+
+
+def load_saved_split(run_dir: Path, data_dir: Path, split: str):
+    split_files = {
+        "train": run_dir / "train_set.txt",
+        "validation": run_dir / "validation_set.txt",
+        "test": run_dir / "test_set.txt",
+    }
+    split_path = split_files.get(split)
+    if split_path is None or not split_path.is_file():
+        return None
+
+    all_entries = load_strength_dataset(data_dir)
+    by_key = {rounded_param_key(helper.dataset_entry_params(entry)): entry for entry in all_entries}
+    entries = []
+    for line in split_path.read_text().splitlines():
+        if not line.strip():
+            continue
+        params = tuple(float(v) for v in line.split(","))
+        key = rounded_param_key(params)
+        if key not in by_key:
+            raise ValueError(f"Could not match split row {line!r} to a strength file in {data_dir}")
+        entries.append(by_key[key])
+    return entries
 
 
 def infer_n(num_params: int, num_components: int) -> int:
@@ -141,7 +169,7 @@ def main() -> None:
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--data-dir", type=Path, default=REPO_ROOT / "data" / "gamow_teller_48Ca_4d" / "total_strength_K0")
     parser.add_argument("--params", type=Path, default=None, help="Saved params file. Defaults to params_best in --run-dir.")
-    parser.add_argument("--split", choices=["train", "test", "all"], default="train")
+    parser.add_argument("--split", choices=["train", "validation", "test", "all"], default="train")
     parser.add_argument("--index", type=int, default=1, help="1-based row within --split.")
     parser.add_argument("--all", action="store_true", help="Plot every row in --split.")
     parser.add_argument("--out-dir", type=Path, default=None)
@@ -156,8 +184,12 @@ def main() -> None:
     params = np.loadtxt(params_path)
 
     combined = load_strength_dataset(args.data_dir)
-    splits = split_dataset(combined)
-    selected = splits[args.split]
+    if args.split == "all":
+        selected = combined
+    else:
+        selected = load_saved_split(run_dir, args.data_dir, args.split)
+        if selected is None:
+            selected = split_dataset(combined)[args.split]
     if not selected:
         raise ValueError(f"Split {args.split!r} is empty")
 

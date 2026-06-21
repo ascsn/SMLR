@@ -49,6 +49,10 @@ def parse_args():
     p.add_argument("--print-every",  type=int,   default=1000,     help="Logging cadence (iterations)")
     p.add_argument("--save-dir",     type=str,   default="Beta_decay_package/runs_em1", help="Directory to save run artifacts")
     p.add_argument("--data-dir",     type=str,   default="beta_decay_80Ni", help="Root directory for beta-decay data")
+    p.add_argument("--split-seed",   type=int,   default=42,
+                   help="Seed for random train/cv/test split for >2D strength_*.out datasets.")
+    p.add_argument("--split-ratios", type=float, nargs=3, metavar=("TRAIN", "CV", "TEST"),
+                   default=(0.6, 0.1, 0.3), help="Train/cv/test split ratios for >2D strength_*.out datasets.")
     p.add_argument("--strength-window", type=float, nargs=2, metavar=("LOW", "HIGH"), default=None,
                    help="Optional energy window for strength files. Use only for strength-only datasets.")
     p.add_argument("--fixed-width",  type=float, default=None,
@@ -86,6 +90,8 @@ def main():
     PRINT_EVERY    = args.print_every
     SAVE_DIR       = args.save_dir
     DATA_DIR       = args.data_dir
+    SPLIT_SEED     = args.split_seed
+    SPLIT_RATIOS   = tuple(args.split_ratios)
     STRENGTH_WINDOW = tuple(args.strength_window) if args.strength_window is not None else None
     FIXED_WIDTH    = args.fixed_width
     S_INIT_SCALE   = args.s_init_scale
@@ -168,15 +174,34 @@ def main():
         raise ValueError(f"No beta strength files found in {strength_dir!r}.")
 
     # splits
-    train_ratio = 0.6; cv_ratio = 0.0; test_ratio = 0.4
+    num_components = len(helper.dataset_entry_params(combined[0]))
     n_total = len(combined)
+
+    if num_components > 2:
+        train_ratio, cv_ratio, test_ratio = SPLIT_RATIOS
+        ratio_sum = train_ratio + cv_ratio + test_ratio
+        if not np.isclose(ratio_sum, 1.0):
+            raise ValueError(f"--split-ratios must sum to 1.0, got {SPLIT_RATIOS} with sum {ratio_sum}.")
+        split_indices = np.arange(n_total)
+        rng_split = np.random.default_rng(SPLIT_SEED)
+        rng_split.shuffle(split_indices)
+        print('Random split seed:', SPLIT_SEED, 'ratios:', SPLIT_RATIOS)
+    else:
+        train_ratio = 0.6; cv_ratio = 0.0; test_ratio = 0.4
+        split_indices = np.arange(n_total)
+        print('Using legacy deterministic 2D split ratios:', (train_ratio, cv_ratio, test_ratio))
+
     n_train = int(n_total * train_ratio)
     n_cv    = int(n_total * cv_ratio)
     n_test  = n_total - n_train - n_cv
 
-    train_set = combined[:n_train]
-    cv_set    = combined[n_train:n_train + n_cv]
-    test_set  = combined[n_train + n_cv:]
+    train_idx = split_indices[:n_train]
+    cv_idx    = split_indices[n_train:n_train + n_cv]
+    test_idx  = split_indices[n_train + n_cv:]
+
+    train_set = [combined[int(i)] for i in train_idx]
+    cv_set    = [combined[int(i)] for i in cv_idx]
+    test_set  = [combined[int(i)] for i in test_idx]
 
     # Use a concrete sampled point as the linear expansion/reference point.
     combined_ar = np.array([helper.dataset_entry_params(entry) for entry in combined], dtype=float)
@@ -193,7 +218,6 @@ def main():
             raise ValueError(f"--diag-index must be between 1 and {len(train_set)}, got {DIAG_INDEX}.")
     print('Diagnostic train row:', diag_train_idx + 1, helper.dataset_entry_params(train_set[diag_train_idx]))
 
-    num_components = len(helper.dataset_entry_params(combined[0]))
     coordinate_scales = None
     if NORMALIZE_COORDINATES:
         coord_ranges = np.ptp(combined_ar, axis=0)
@@ -436,6 +460,8 @@ def main():
                 f.write(f"coordinate_scales={coordinate_scales}\n")
                 f.write(f"n={n}\nretain={retain}\nweight={weight}\n")
                 f.write(f"diag_train_row={diag_train_idx + 1}\n")
+                f.write(f"split_seed={SPLIT_SEED if num_components > 2 else None}\n")
+                f.write(f"split_ratios={(SPLIT_RATIOS if num_components > 2 else (0.6, 0.0, 0.4))}\n")
                 f.write(f"stopped_at={len(cost_history)-1}\n")
                 f.write(f"min_iterations_enforced={MIN_ITERATIONS}\n")
 
@@ -468,9 +494,14 @@ def main():
     # -------------------- save global best & summary --------------------
     np.savetxt(os.path.join(SAVE_DIR, f'params_best_n{n}_retain{retain}.txt'), global_best_params)
 
-    with open(os.path.join(SAVE_DIR, "train_set.txt"), "w") as f:
-        for tup in train_set:
-            f.write(",".join(map(str, helper.dataset_entry_params(tup))) + "\n")
+    def save_split_file(name, split_entries):
+        with open(os.path.join(SAVE_DIR, name), "w") as f:
+            for tup in split_entries:
+                f.write(",".join(map(str, helper.dataset_entry_params(tup))) + "\n")
+
+    save_split_file("train_set.txt", train_set)
+    save_split_file("validation_set.txt", cv_set)
+    save_split_file("test_set.txt", test_set)
     spec = paper_beta_em1_spec(data_dir=str(DATA_DIR), nucnam=nucnam, output_dir=SAVE_DIR)
     spec = spec.__class__(
         name=spec.name,
