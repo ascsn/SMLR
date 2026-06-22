@@ -18,6 +18,6 @@ python scripts/plot_em1_strength_predictions.py \
   --all
 
 python scripts/plot_em1_strength_predictions.py \
-  --run-dir runs_em1/gamow_teller_48Ca_4d_K0_n20_affinew_randomsplit \
-  --split test \
+  --run-dir runs_em1/gamow_teller_48Ca_4d_K0_n30_affinew_localcluster_split \
+  --split train \
   --all

@@ -1,0 +1,15 @@
+best_cost=0.15073807238661255
+best_iter=19954
+seed=42
+s_init_scale=0.1
+coordinate_scales=(476.5625, 238.2813, 238.2813, 238.2813)
+n=30
+retain=1.0
+weight=0.0
+diag_train_row=1
+split_mode=clustered
+split_seed=42
+split_ratios=(0.6, 0.1, 0.3)
+cluster_size=3
+stopped_at=19999
+min_iterations_enforced=20000

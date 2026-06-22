@@ -52,6 +52,14 @@ def parse_args():
                    help="Regex used to parse parameters from alphaD filenames. Defaults to strength-regex with alphaD_ prefix.")
     p.add_argument("--filter-ranges", type=str, default=None,
                    help='Optional JSON dict of filename-parameter filters, e.g. {"p1":[0.4,1.8],"p2":[1.5,4.0]}.')
+    p.add_argument("--split-mode", choices=["range", "random"], default="range",
+                   help="Use range filters or a random split over the full matched parameter space.")
+    p.add_argument("--split-seed", type=int, default=42,
+                   help="Seed for --split-mode random.")
+    p.add_argument("--random-train-count", type=int, default=None,
+                   help="Number of full-space samples assigned to training for --split-mode random.")
+    p.add_argument("--random-train-fraction", type=float, default=None,
+                   help="Training fraction for --split-mode random when --random-train-count is omitted.")
     p.add_argument("--central-point", type=str, default=None,
                    help='Optional JSON list specifying the central point, e.g. "[1.0, 2.5]".')
 
@@ -123,6 +131,28 @@ def build_split_masks(param_values, param_names, filter_ranges):
     return split.train_mask, split.test_mask
 
 
+def build_random_split_masks(param_values, train_count=None, train_fraction=None, seed=42):
+    n_total = int(np.asarray(param_values).shape[0])
+    if n_total == 0:
+        raise ValueError("Cannot split an empty dataset.")
+    if train_count is None:
+        if train_fraction is None:
+            raise ValueError("--split-mode random requires --random-train-count or --random-train-fraction.")
+        if not (0.0 < float(train_fraction) < 1.0):
+            raise ValueError(f"--random-train-fraction must be between 0 and 1, got {train_fraction}.")
+        train_count = int(n_total * float(train_fraction))
+    train_count = int(train_count)
+    if train_count <= 0 or train_count >= n_total:
+        raise ValueError(f"Random train count must be in [1, {n_total - 1}], got {train_count}.")
+
+    indices = np.arange(n_total)
+    rng = np.random.default_rng(seed)
+    rng.shuffle(indices)
+    train_mask = np.zeros(n_total, dtype=bool)
+    train_mask[indices[:train_count]] = True
+    return train_mask, ~train_mask
+
+
 def subset_dataset(dataset, mask, central_point_override=None):
     idx = np.flatnonzero(mask)
     if idx.size == 0:
@@ -192,7 +222,15 @@ def main():
     ensure_same_omega_grid(all_dataset.strengths)
 
     split_filters = parse_filter_ranges(args.filter_ranges)
-    train_mask, test_mask = build_split_masks(all_dataset.param_values, all_dataset.param_names, split_filters)
+    if args.split_mode == "random":
+        train_mask, test_mask = build_random_split_masks(
+            all_dataset.param_values,
+            train_count=args.random_train_count,
+            train_fraction=args.random_train_fraction,
+            seed=args.split_seed,
+        )
+    else:
+        train_mask, test_mask = build_split_masks(all_dataset.param_values, all_dataset.param_names, split_filters)
     dataset = subset_dataset(all_dataset, train_mask, central_point_override=central_point)
     test_dataset = subset_dataset(all_dataset, test_mask, central_point_override=dataset.central_point) if np.any(test_mask) else None
 
@@ -218,6 +256,8 @@ def main():
     print("  config:", config_summary)
     if split_filters:
         print("  train filters:", split_filters)
+    if args.split_mode == "random":
+        print("  random split seed:", args.split_seed)
 
     param_values_tf = tf.convert_to_tensor(dataset.param_values, dtype=tf.float32)
     central_point_tf = tf.convert_to_tensor(dataset.central_point, dtype=tf.float32)
@@ -424,6 +464,8 @@ def main():
             "n_train_samples": len(dataset.strengths),
             "n_test_samples": 0 if test_dataset is None else len(test_dataset.strengths),
             "train_filters": split_filters,
+            "split_mode": args.split_mode,
+            "split_seed": args.split_seed if args.split_mode == "random" else None,
             "central_point": dataset.central_point.tolist(),
             "config": config_summary,
             "global_best_cost": global_best_cost,

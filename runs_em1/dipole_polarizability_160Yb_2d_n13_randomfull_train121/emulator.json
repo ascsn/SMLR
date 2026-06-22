@@ -1,0 +1,79 @@
+{
+  "adapter": "PaperDipoleAdapter",
+  "backend": "tensorflow",
+  "metadata": {
+    "global_best_cost": 0.15281973779201508,
+    "global_best_meta": {
+      "iter": 19984,
+      "seed": 1234,
+      "test_metrics": {
+        "alphaD_cost": 0.006466636899858713,
+        "alphaD_rel": 0.0012026602635160089,
+        "cost": 0.1707574874162674,
+        "m1_cost": 0.0,
+        "strength_cost": 0.16429084539413452
+      },
+      "train_metrics": {
+        "alphaD_cost": 0.0009275450720451772,
+        "alphaD_rel": 0.0007096692570485175,
+        "cost": 0.15280568599700928,
+        "m1_cost": 0.0,
+        "strength_cost": 0.15187814831733704
+      }
+    }
+  },
+  "name": "dipole_em1",
+  "package_version": "0.1.0",
+  "params_file": "params.txt",
+  "retained_modes": {
+    "kind": "centered",
+    "retain": 0.6
+  },
+  "spec": {
+    "central_point": [
+      1.100000023841858,
+      2.75
+    ],
+    "metadata": {
+      "domain": "dipole",
+      "paper_behavior": true
+    },
+    "model": {
+      "ansatz": "paper_dipole",
+      "fold": 2.0,
+      "n": 13,
+      "n_params": 2,
+      "retain": 0.6,
+      "use_vector_terms": true,
+      "width_model": "affine"
+    },
+    "name": "dipole_em1",
+    "observable": {
+      "data_dir": "data/dipole_polarizability_160Yb_2d/total_alphaD/",
+      "filename_regex": null,
+      "log_scale": false,
+      "min_columns": 1,
+      "name": "alphaD",
+      "parameter_names": [
+        "p1",
+        "p2"
+      ],
+      "units": null
+    },
+    "output_dir": "runs_em1/dipole_polarizability_160Yb_2d_n13_randomfull_train121",
+    "strength": {
+      "allow_negative_strength": false,
+      "data_dir": "data/dipole_polarizability_160Yb_2d/total_strength/",
+      "filename_regex": "strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\\.out",
+      "max_columns": 2,
+      "min_columns": 2,
+      "min_files": 1,
+      "parameter_names": [
+        "p1",
+        "p2"
+      ],
+      "require_rectangular_grid": true
+    },
+    "train_filter_ranges": {}
+  }
+}

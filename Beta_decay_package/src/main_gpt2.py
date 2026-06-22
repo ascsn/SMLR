@@ -53,6 +53,16 @@ def parse_args():
                    help="Seed for random train/cv/test split for >2D strength_*.out datasets.")
     p.add_argument("--split-ratios", type=float, nargs=3, metavar=("TRAIN", "CV", "TEST"),
                    default=(0.6, 0.1, 0.3), help="Train/cv/test split ratios for >2D strength_*.out datasets.")
+    p.add_argument("--split-mode", choices=["auto", "random", "clustered"], default="auto",
+                   help="Split strategy. auto preserves legacy 2D behavior and random >2D behavior.")
+    p.add_argument("--random-train-count", type=int, default=None,
+                   help="Training count for a 2D random full-space split.")
+    p.add_argument("--random-train-fraction", type=float, default=None,
+                   help="Training fraction for a 2D random full-space split when count is omitted.")
+    p.add_argument("--cluster-size", type=int, default=3,
+                   help="For --split-mode clustered, each random seed contributes itself plus nearest neighbors.")
+    p.add_argument("--no-legacy-2d-filter", action="store_true", default=False,
+                   help="For old lorm_Ni_80 2D files, include the full parameter space instead of the legacy inner box.")
     p.add_argument("--strength-window", type=float, nargs=2, metavar=("LOW", "HIGH"), default=None,
                    help="Optional energy window for strength files. Use only for strength-only datasets.")
     p.add_argument("--fixed-width",  type=float, default=None,
@@ -101,6 +111,7 @@ def main():
     NORMALIZE_COORDINATES = not args.no_coordinate_normalization
     PLOTS_MODE     = args.plots              # "none" | "save"
     DO_PHASE_PLOT  = args.phase_plot         # True/False
+    SPLIT_MODE     = args.split_mode
 
     os.makedirs(SAVE_DIR, exist_ok=True)
     os.environ["SMLR_BETA_DATA_DIR"] = DATA_DIR
@@ -164,7 +175,7 @@ def main():
             alpha_val = old_match.group(2)
             params = (float(alpha_val), float(beta_val))
             # keep region
-            if ((0.1 <= float(beta_val) <= 0.9) and (0.2 <= float(alpha_val) <= 1.8)):
+            if args.no_legacy_2d_filter or ((0.1 <= float(beta_val) <= 0.9) and (0.2 <= float(alpha_val) <= 1.8)):
                 combined.append((params, path))
         elif new_match:
             params = tuple(float(v) for v in new_match.groups())
@@ -177,27 +188,82 @@ def main():
     num_components = len(helper.dataset_entry_params(combined[0]))
     n_total = len(combined)
 
-    if num_components > 2:
-        train_ratio, cv_ratio, test_ratio = SPLIT_RATIOS
+    def random_indices_with_counts(total, train_count, cv_count, seed):
+        split = np.arange(total)
+        rng = np.random.default_rng(seed)
+        rng.shuffle(split)
+        return split[:train_count], split[train_count:train_count + cv_count], split[train_count + cv_count:]
+
+    def ratio_counts(total, ratios):
+        train_ratio, cv_ratio, test_ratio = ratios
         ratio_sum = train_ratio + cv_ratio + test_ratio
         if not np.isclose(ratio_sum, 1.0):
             raise ValueError(f"--split-ratios must sum to 1.0, got {SPLIT_RATIOS} with sum {ratio_sum}.")
-        split_indices = np.arange(n_total)
+        train_count = int(total * train_ratio)
+        cv_count = int(total * cv_ratio)
+        return train_count, cv_count, total - train_count - cv_count
+
+    def clustered_train_indices(param_array, train_count, cluster_size, seed):
+        if cluster_size <= 0:
+            raise ValueError(f"--cluster-size must be positive, got {cluster_size}.")
+        values = np.asarray(param_array, dtype=float)
+        ranges = np.ptp(values, axis=0)
+        ranges = np.where(ranges > 0.0, ranges, 1.0)
+        scaled = (values - np.min(values, axis=0)) / ranges
+        rng = np.random.default_rng(seed)
+        selected = []
+        selected_set = set()
+        remaining = set(range(values.shape[0]))
+
+        while len(selected) < train_count and remaining:
+            seed_idx = int(rng.choice(np.array(sorted(remaining), dtype=int)))
+            d2 = np.sum((scaled - scaled[seed_idx]) ** 2, axis=1)
+            candidates = [int(i) for i in np.argsort(d2) if int(i) in remaining]
+            need = train_count - len(selected)
+            for idx in candidates[:min(cluster_size, need)]:
+                if idx not in selected_set:
+                    selected.append(idx)
+                    selected_set.add(idx)
+                    remaining.remove(idx)
+                if len(selected) >= train_count:
+                    break
+        return np.array(selected, dtype=int)
+
+    if SPLIT_MODE == "clustered":
+        if num_components <= 2:
+            raise ValueError("--split-mode clustered is intended for >2D strength_*.out datasets.")
+        n_train, n_cv, n_test = ratio_counts(n_total, SPLIT_RATIOS)
+        combined_ar_for_split = np.array([helper.dataset_entry_params(entry) for entry in combined], dtype=float)
+        train_idx = clustered_train_indices(combined_ar_for_split, n_train, args.cluster_size, SPLIT_SEED)
+        remaining = np.array([i for i in range(n_total) if i not in set(map(int, train_idx))], dtype=int)
         rng_split = np.random.default_rng(SPLIT_SEED)
-        rng_split.shuffle(split_indices)
-        print('Random split seed:', SPLIT_SEED, 'ratios:', SPLIT_RATIOS)
+        rng_split.shuffle(remaining)
+        cv_idx = remaining[:n_cv]
+        test_idx = remaining[n_cv:]
+        print('Clustered split seed:', SPLIT_SEED, 'ratios:', SPLIT_RATIOS, 'cluster_size:', args.cluster_size)
+    elif num_components > 2 or SPLIT_MODE == "random":
+        if num_components <= 2:
+            train_ratio = 0.6 if args.random_train_fraction is None else float(args.random_train_fraction)
+            n_train = int(args.random_train_count) if args.random_train_count is not None else int(n_total * train_ratio)
+            n_cv = 0
+            n_test = n_total - n_train
+            if n_train <= 0 or n_train >= n_total:
+                raise ValueError(f"2D random train count must be in [1, {n_total - 1}], got {n_train}.")
+            print('Random 2D split seed:', SPLIT_SEED, 'counts:', (n_train, n_cv, n_test))
+        else:
+            n_train, n_cv, n_test = ratio_counts(n_total, SPLIT_RATIOS)
+            print('Random split seed:', SPLIT_SEED, 'ratios:', SPLIT_RATIOS)
+        train_idx, cv_idx, test_idx = random_indices_with_counts(n_total, n_train, n_cv, SPLIT_SEED)
     else:
         train_ratio = 0.6; cv_ratio = 0.0; test_ratio = 0.4
         split_indices = np.arange(n_total)
+        n_train = int(n_total * train_ratio)
+        n_cv    = int(n_total * cv_ratio)
+        n_test  = n_total - n_train - n_cv
+        train_idx = split_indices[:n_train]
+        cv_idx    = split_indices[n_train:n_train + n_cv]
+        test_idx  = split_indices[n_train + n_cv:]
         print('Using legacy deterministic 2D split ratios:', (train_ratio, cv_ratio, test_ratio))
-
-    n_train = int(n_total * train_ratio)
-    n_cv    = int(n_total * cv_ratio)
-    n_test  = n_total - n_train - n_cv
-
-    train_idx = split_indices[:n_train]
-    cv_idx    = split_indices[n_train:n_train + n_cv]
-    test_idx  = split_indices[n_train + n_cv:]
 
     train_set = [combined[int(i)] for i in train_idx]
     cv_set    = [combined[int(i)] for i in cv_idx]
@@ -460,8 +526,10 @@ def main():
                 f.write(f"coordinate_scales={coordinate_scales}\n")
                 f.write(f"n={n}\nretain={retain}\nweight={weight}\n")
                 f.write(f"diag_train_row={diag_train_idx + 1}\n")
-                f.write(f"split_seed={SPLIT_SEED if num_components > 2 else None}\n")
-                f.write(f"split_ratios={(SPLIT_RATIOS if num_components > 2 else (0.6, 0.0, 0.4))}\n")
+                f.write(f"split_mode={SPLIT_MODE}\n")
+                f.write(f"split_seed={SPLIT_SEED if (num_components > 2 or SPLIT_MODE != 'auto') else None}\n")
+                f.write(f"split_ratios={(SPLIT_RATIOS if (num_components > 2 or SPLIT_MODE == 'clustered') else (0.6, 0.0, 0.4))}\n")
+                f.write(f"cluster_size={args.cluster_size if SPLIT_MODE == 'clustered' else None}\n")
                 f.write(f"stopped_at={len(cost_history)-1}\n")
                 f.write(f"min_iterations_enforced={MIN_ITERATIONS}\n")
 
