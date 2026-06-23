@@ -1,0 +1,11 @@
+#Plot parameter slices
+
+# Directory with train_set.txt / validation_set.txt / test_set.txt
+python scripts/plot_parameter_slices.py \
+  --source runs_em1/48Ca_4d_K0_n30_affinew_localcluster_split \
+  --all-permutations
+
+# Direct parameter file, e.g. params.txt
+python scripts/plot_parameter_slices.py \
+  --source data/nuclear/48Ca_4d/params.txt \
+  --all-permutations
