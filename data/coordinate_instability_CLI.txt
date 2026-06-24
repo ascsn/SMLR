@@ -1,7 +1,7 @@
 # 160Yb alpha_D EM1: random full-space split with the old inner-box count (121 train / 104 test).
 python Dipole_polarizability/src/main_gpt2.py \
-  --strength-dir data/dipole_polarizability_160Yb_2d/total_strength/ \
-  --alphaD-dir data/dipole_polarizability_160Yb_2d/total_alphaD/ \
+  --strength-dir data/nuclear/160Yb_2d/total_strength/ \
+  --alphaD-dir data/nuclear/160Yb_2d/total_alphaD/ \
   --strength-regex 'strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out' \
   --split-mode random \
   --split-seed 42 \
@@ -21,7 +21,7 @@ python Dipole_polarizability/src/main_gpt2.py \
   --num-iter 20000 \
   --print-every 1000 \
   --plots save \
-  --save-dir runs_em1/dipole_polarizability_160Yb_2d_n13_randomfull_train121
+  --save-dir runs_em1/160Yb_2d_n13_randomfull_train121
 
 # 80Ni beta-decay EM1: random full-space split with the old inner-box count (121 train / 104 test).
 python Beta_decay_package/src/main_gpt2.py \

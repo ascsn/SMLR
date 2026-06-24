@@ -7,15 +7,15 @@ python scripts/plot_em1_strength_predictions.py \
 
 # Plot one affine-width train spectrum. Omit --fixed-width for affine-width runs.
 python scripts/plot_em1_strength_predictions.py \
-  --run-dir runs_em1/gamow_teller_48Ca_4d_K0_n20_affinew_randomsplit \
+  --run-dir runs_em1/160Yb_2d_n13_randomfull_train121 \
   --split train \
-  --index 1
+  --all
 
 # Plot validation or test spectra from the saved run split.
 python scripts/plot_em1_strength_predictions.py \
   --run-dir runs_em1/gamow_teller_48Ca_4d_K0_n20_affinew_randomsplit \
   --split validation \
-  --all
+  --index 1
 
 python scripts/plot_em1_strength_predictions.py \
   --run-dir runs_em1/gamow_teller_48Ca_4d_K0_n30_affinew_localcluster_split \

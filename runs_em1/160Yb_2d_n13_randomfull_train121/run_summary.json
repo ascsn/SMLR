@@ -43,8 +43,8 @@
     }
   },
   "args": {
-    "strength_dir": "data/dipole_polarizability_160Yb_2d/total_strength/",
-    "alphaD_dir": "data/dipole_polarizability_160Yb_2d/total_alphaD/",
+    "strength_dir": "data/nuclear/160Yb_2d/total_strength/",
+    "alphaD_dir": "data/nuclear/160Yb_2d/total_alphaD/",
     "strength_regex": "strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\\.out",
     "alphaD_regex": null,
     "filter_ranges": null,
@@ -69,6 +69,6 @@
     "num_iter": 20000,
     "print_every": 1000,
     "plots": "save",
-    "save_dir": "runs_em1/dipole_polarizability_160Yb_2d_n13_randomfull_train121"
+    "save_dir": "runs_em1/160Yb_2d_n13_randomfull_train121"
   }
 }

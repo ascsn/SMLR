@@ -1,0 +1,8 @@
+split = train
+row = 14
+params = 1.614, 1.25
+true_max = 1.1705789176200000e+01
+pred_max = 1.9367994308471680e+01
+true_integral = 6.6195116358392283e+01
+pred_integral = 8.4258216857910156e+01
+relative_l2 = 2.7158144585313065e-01

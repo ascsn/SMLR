@@ -1,0 +1,8 @@
+split = test
+row = 9
+params = 0.586, 1.25
+true_max = 1.0553803668100000e+01
+pred_max = 1.6619838714599609e+01
+true_integral = 6.1903705826706393e+01
+pred_integral = 6.4482582092285156e+01
+relative_l2 = 1.2226961303883742e-01

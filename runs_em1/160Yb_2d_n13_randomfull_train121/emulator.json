@@ -49,7 +49,7 @@
     },
     "name": "dipole_em1",
     "observable": {
-      "data_dir": "data/dipole_polarizability_160Yb_2d/total_alphaD/",
+      "data_dir": "data/nuclear/160Yb_2d/total_alphaD/",
       "filename_regex": null,
       "log_scale": false,
       "min_columns": 1,
@@ -60,10 +60,10 @@
       ],
       "units": null
     },
-    "output_dir": "runs_em1/dipole_polarizability_160Yb_2d_n13_randomfull_train121",
+    "output_dir": "runs_em1/160Yb_2d_n13_randomfull_train121",
     "strength": {
       "allow_negative_strength": false,
-      "data_dir": "data/dipole_polarizability_160Yb_2d/total_strength/",
+      "data_dir": "data/nuclear/160Yb_2d/total_strength/",
       "filename_regex": "strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\\.out",
       "max_columns": 2,
       "min_columns": 2,

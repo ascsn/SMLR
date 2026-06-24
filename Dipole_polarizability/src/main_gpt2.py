@@ -455,8 +455,10 @@ def main():
             global_best_meta = {"seed": seed, "iter": best_iter_this, "train_metrics": train_metrics, "test_metrics": test_metrics}
 
     np.savetxt(os.path.join(args.save_dir, "best_params_global.txt"), global_best_params)
+    np.savetxt(os.path.join(args.save_dir, "train_set.txt"), dataset.param_values)
     np.savetxt(os.path.join(args.save_dir, "train_param_values.txt"), dataset.param_values)
     if test_dataset is not None:
+        np.savetxt(os.path.join(args.save_dir, "test_set.txt"), test_dataset.param_values)
         np.savetxt(os.path.join(args.save_dir, "test_param_values.txt"), test_dataset.param_values)
     summary = {
             "dataset_param_names": dataset.param_names,
