@@ -1,0 +1,35 @@
+Recommended repo:
+
+src/       reusable optimizer/package code
+data/
+configs/   specific experiments
+scripts/   local/Slurm execution
+outputs/   generated runs
+notebooks/   paper/reproduction plots
+
+
+
+Software repo:
+
+repo/
+├── src/package_name/
+├── tests/
+├── docs/
+├── examples/
+├── pyproject.toml
+├── README.md
+└── LICENSE
+
+
+
+Research repo:
+repo/
+├── src/
+├── configs/
+├── scripts/
+├── data/
+├── outputs/
+├── figures/
+├── notebooks/
+├── docs/reproduction.md
+└── README.md
