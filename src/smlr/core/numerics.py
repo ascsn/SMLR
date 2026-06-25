@@ -22,7 +22,7 @@ def _infer_float_dtype(*values, default=tf.float32):
 
 
 @tf.function
-def give_me_lorentzian(energy, poles, strength, width, dtype: Optional[tf.DType] = None):
+def evaluate_lorentzian_sum(energy, poles, strength, width, dtype: Optional[tf.DType] = None):
     """Evaluate a sum of Lorentzian strength functions."""
     dtype = dtype or _infer_float_dtype(energy, poles, strength, width)
     energy = tf.convert_to_tensor(energy, dtype=dtype)
@@ -37,7 +37,7 @@ def give_me_lorentzian(energy, poles, strength, width, dtype: Optional[tf.DType]
 
 
 @tf.function
-def give_me_lorentzian_batched(omega, poles_batch, strengths_batch, half_width_batch, dtype: Optional[tf.DType] = None):
+def evaluate_lorentzian_batched(omega, poles_batch, strengths_batch, half_width_batch, dtype: Optional[tf.DType] = None):
     """Evaluate batched Lorentzian sums using half widths."""
     dtype = dtype or _infer_float_dtype(omega, poles_batch, strengths_batch, half_width_batch)
     omega = tf.convert_to_tensor(omega, dtype=dtype)

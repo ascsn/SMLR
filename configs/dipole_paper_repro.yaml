@@ -1,0 +1,44 @@
+# Converted from Dipole_polarizability/paper_repro_CLI.txt
+runs:
+  - name: dipole_paper_repro_em1
+    source_cli: Dipole_polarizability/paper_repro_CLI.txt
+    entrypoint: Dipole_polarizability/src/main_gpt2.py
+    raw_command: >-
+      python Dipole_polarizability/src/main_gpt2.py --strength-dir
+      dipole_polarizability_160Yb/total_strength/ --alphaD-dir
+      dipole_polarizability_160Yb/total_alphaD/ --strength-regex
+      'strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out' --filter-ranges
+      '{"p1":[0.4,1.8],"p2":[1.5,4.0]}' --n 13 --retain 0.6
+      --fold 2.0 --ansatz paper_dipole --width-model affine --w-strength
+      100.0 --w-alphaD 200.0 --w-m1 0.0 --m1-target 875.0
+      --learning-rate 1e-2 --n-restarts 1 --seed0 1234 --num-iter 20000
+      --print-every 1000 --plots save --save-dir runs_em1
+    data:
+      strength_dir: dipole_polarizability_160Yb/total_strength/
+      alphaD_dir: dipole_polarizability_160Yb/total_alphaD/
+      strength_regex: 'strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out'
+    split:
+      filter_ranges:
+        p1: [0.4, 1.8]
+        p2: [1.5, 4.0]
+    model:
+      n: 13
+      retain: 0.6
+      fold: 2.0
+      ansatz: paper_dipole
+      width_model: affine
+    loss:
+      w_strength: 100.0
+      w_alphaD: 200.0
+      w_m1: 0.0
+      m1_target: 875.0
+    optimizer:
+      learning_rate: 1.0e-2
+    training:
+      n_restarts: 1
+      seed0: 1234
+      num_iter: 20000
+      print_every: 1000
+    outputs:
+      plots: save
+      save_dir: runs_em1

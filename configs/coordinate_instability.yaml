@@ -1,0 +1,80 @@
+# Converted from data/coordinate_instability_CLI.txt
+runs:
+  - name: 160Yb_alphaD_em1_randomfull_train121
+    description: 160Yb alpha_D EM1 random full-space split with the old inner-box count, 121 train / 104 test.
+    source_cli: data/coordinate_instability_CLI.txt
+    entrypoint: Dipole_polarizability/src/main_gpt2.py
+    raw_command: >-
+      python Dipole_polarizability/src/main_gpt2.py --strength-dir
+      data/nuclear/160Yb_2d/total_strength/ --alphaD-dir
+      data/nuclear/160Yb_2d/total_alphaD/ --strength-regex
+      'strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out' --split-mode
+      random --split-seed 42 --random-train-count 121 --n 13 --retain 0.6
+      --fold 2.0 --ansatz paper_dipole --width-model affine --w-strength
+      100.0 --w-alphaD 200.0 --w-m1 0.0 --m1-target 875.0
+      --learning-rate 1e-2 --n-restarts 1 --seed0 1234 --num-iter 20000
+      --print-every 1000 --plots save --save-dir
+      runs_em1/160Yb_2d_n13_randomfull_train121
+    data:
+      strength_dir: data/nuclear/160Yb_2d/total_strength/
+      alphaD_dir: data/nuclear/160Yb_2d/total_alphaD/
+      strength_regex: 'strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out'
+    split:
+      mode: random
+      seed: 42
+      random_train_count: 121
+    model:
+      n: 13
+      retain: 0.6
+      fold: 2.0
+      ansatz: paper_dipole
+      width_model: affine
+    loss:
+      w_strength: 100.0
+      w_alphaD: 200.0
+      w_m1: 0.0
+      m1_target: 875.0
+    optimizer:
+      learning_rate: 1.0e-2
+    training:
+      n_restarts: 1
+      seed0: 1234
+      num_iter: 20000
+      print_every: 1000
+    outputs:
+      plots: save
+      save_dir: runs_em1/160Yb_2d_n13_randomfull_train121
+
+  - name: beta_decay_80Ni_em1_randomfull_train121
+    description: 80Ni beta-decay EM1 random full-space split with the old inner-box count, 121 train / 104 test.
+    source_cli: data/coordinate_instability_CLI.txt
+    entrypoint: Beta_decay_package/src/main_gpt2.py
+    raw_command: >-
+      python Beta_decay_package/src/main_gpt2.py --data-dir
+      data/beta_decay_80Ni_2d --split-mode random --split-seed 42
+      --random-train-count 121 --no-legacy-2d-filter --n 13 --retain 0.9
+      --weight 1.0 --reference-index 112 --diag-index 1 --n-restarts 1
+      --seed0 42 --num-iter 20000 --print-every 1000 --plots save
+      --save-dir runs_em1/beta_decay_80Ni_2d_n13_randomfull_train121
+    data:
+      data_dir: data/beta_decay_80Ni_2d
+    split:
+      mode: random
+      seed: 42
+      random_train_count: 121
+      legacy_2d_filter: false
+    model:
+      n: 13
+      retain: 0.9
+      reference_index: 112
+      diag_index: 1
+    loss:
+      weight: 1.0
+    training:
+      n_restarts: 1
+      seed0: 42
+      num_iter: 20000
+      print_every: 1000
+    outputs:
+      plots: save
+      save_dir: runs_em1/beta_decay_80Ni_2d_n13_randomfull_train121
