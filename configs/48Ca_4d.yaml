@@ -6,14 +6,14 @@ runs:
     entrypoint: Beta_decay_package/src/main_gpt2.py
     raw_command: >-
       python Beta_decay_package/src/main_gpt2.py --data-dir
-      data/48Ca_4d/total_strength_K0 --split-seed 42
+      data/nuclear/48Ca_4d/total_strength_K0 --split-seed 42
       --split-ratios 0.6 0.1 0.3 --strength-window 0 30 --n 20
       --retain 1.0 --weight 0.0 --fixed-width 0.75 --s-init-scale 0.1
       --reference-index 0 --diag-index 1 --n-restarts 1 --seed0 42
       --num-iter 20000 --print-every 2000 --plots save --save-dir
       runs_em1/48Ca_4d_K0_n20_fixedw0p75_randomsplit
     data:
-      data_dir: data/48Ca_4d/total_strength_K0
+      data_dir: data/nuclear/48Ca_4d/total_strength_K0
       strength_window: [0, 30]
     split:
       seed: 42
@@ -36,26 +36,26 @@ runs:
       plots: save
       save_dir: runs_em1/48Ca_4d_K0_n20_fixedw0p75_randomsplit
 
-  - name: 48Ca_4d_K0_n30_affinew_randomsplit
+  - name: 48Ca_4d_K0_n40_affinew_randomsplit
     description: Affine-width 48Ca 4D K0 training with the same random split over input strength files.
     source_cli: data/nuclear/48Ca_4d_CLI.txt
     entrypoint: Beta_decay_package/src/main_gpt2.py
     raw_command: >-
       python Beta_decay_package/src/main_gpt2.py --data-dir
-      data/48Ca_4d/total_strength_K0 --split-seed 42
-      --split-ratios 0.6 0.1 0.3 --strength-window 0 30 --n 30
+      data/nuclear/48Ca_4d/total_strength_K0 --split-seed 42
+      --split-ratios 0.6 0.1 0.3 --strength-window 0 30 --n 40
       --retain 1.0 --weight 0.0 --s-init-scale 0.1 --reference-index 0
       --diag-index 1 --n-restarts 1 --seed0 42 --num-iter 20000
       --print-every 2000 --plots save --save-dir
-      runs_em1/48Ca_4d_K0_n30_affinew_randomsplit
+      runs_em1/48Ca_4d_K0_n40_affinew_randomsplit
     data:
-      data_dir: data/48Ca_4d/total_strength_K0
+      data_dir: data/nuclear/48Ca_4d/total_strength_K0
       strength_window: [0, 30]
     split:
       seed: 42
       ratios: [0.6, 0.1, 0.3]
     model:
-      n: 30
+      n: 40
       retain: 1.0
       width_model: affine
       s_init_scale: 0.1
@@ -70,4 +70,4 @@ runs:
       print_every: 2000
     outputs:
       plots: save
-      save_dir: runs_em1/48Ca_4d_K0_n30_affinew_randomsplit
+      save_dir: runs_em1/48Ca_4d_K0_n40_affinew_randomsplit

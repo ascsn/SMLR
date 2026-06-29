@@ -20,6 +20,37 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "Beta_decay_package" / "src"))
 import helper_gpt as helper  # noqa: E402
 
+
+@dataclass(frozen=True)
+class DatasetPoint:
+    params: np.ndarray
+    path: Path
+
+@dataclass(frozen=True)
+class StrengthDataset:
+    points: list[DatasetPoint, ...]
+    param_values: np.ndarray
+
+
+parse_strength_filename("strength_p1_p2_p3_p4.out")
+# -> np.array([x, x, x, x])
+
+discover_dataset
+# -> list[DatasetPoint], with inferred ndim
+
+load_strengths(points)
+# -> omega, S matrix (N, G), params shape (N, D)
+
+fit_normalizer(params, method="???")
+transform_params(params, normalizer)
+inverse_transform_params(x_norm, normalizer)
+# purpose is to stabilize parameter coordiante representation for loaded datasets,
+# and for proper initialization for the emulator training.
+
+#split_points(points="???") # maybe a different script for splitting the dataset into train/cv/test?
+
+##############################
+
 def load_dipole_helper():
     helper_path = REPO_ROOT / "Dipole_polarizability" / "src" / "helper_gpt.py"
     spec = importlib.util.spec_from_file_location("dipole_helper_gpt", helper_path)

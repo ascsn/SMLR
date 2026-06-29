@@ -48,7 +48,7 @@ def parse_args():
     p.add_argument("--min-iter",     type=int,   default=20000,   help=argparse.SUPPRESS)
     p.add_argument("--print-every",  type=int,   default=1000,     help="Logging cadence (iterations)")
     p.add_argument("--save-dir",     type=str,   default="Beta_decay_package/runs_em1", help="Directory to save run artifacts")
-    p.add_argument("--data-dir",     type=str,   default="beta_decay_80Ni", help="Root directory for beta-decay data")
+    p.add_argument("--data-dir",     type=str,   default="data/nuclear/80Ni_2d", help="Root directory for beta-decay data")
     p.add_argument("--split-seed",   type=int,   default=42,
                    help="Seed for random train/cv/test split for >2D strength_*.out datasets.")
     p.add_argument("--split-ratios", type=float, nargs=3, metavar=("TRAIN", "CV", "TEST"),

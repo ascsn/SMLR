@@ -24,14 +24,14 @@ import matplotlib.ticker as ticker
 from scipy.optimize import least_squares, nnls
 
 try:
-    from smlr.core.ansatz import ansatz as core_ansatz
+    from smlr.core import ansatz as core_ansatz
     from smlr.core import fitting as core_fitting
     from smlr.core import numerics as core_numerics
 except ModuleNotFoundError:  # pragma: no cover - source-tree execution before install
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-    from smlr.core.ansatz import ansatz as core_ansatz
+    from smlr.core import ansatz as core_ansatz
     from smlr.core import fitting as core_fitting
     from smlr.core import numerics as core_numerics
 
@@ -359,8 +359,7 @@ def dataset_entry_path(entry):
 
 def data_table(fmt_data, coeffs, g_A, nucnam=None, *, strength_window=None):
     '''
-    Here split the dataset from "beta_decay_data" folder
-    into: training set, validation set and test set
+    Here split the dataset into: training, validation and test set
     
     For the optimization use only training set, and after you finish
     test it on validation set
@@ -617,8 +616,16 @@ def tf_trapz(y, x):
     return tf.reduce_sum(avg * dx)             # scalar (float64)
 
 # cost_function
-def cost_function(params, n, fmt_data, Lors_true, HLs_true, coeffs, g_A, weight, central_point, retain,
-                  num_components=2, fixed_width=None, coordinate_scales=None):
+def cost_function(params,
+                  n,
+                  fmt_data,
+                  Lors_true,
+                  HLs_true, coeffs, g_A, weight,
+                  central_point,
+                  retain,
+                  num_components=2,
+                  fixed_width=None,
+                  coordinate_scales=None):
 
     D_mod, S_list, v0_mod, eta, width_params = modified_DS_general(params, n, num_components)
 
