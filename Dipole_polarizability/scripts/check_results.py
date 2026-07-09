@@ -1,73 +1,76 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Apr  2 21:47:30 2025
+from __future__ import annotations
 
-@author: anteravlic
-"""
+import argparse
+import json
+from pathlib import Path
+import sys
 
-'''
-Takes the parameters file once the training has been done and plots the final results
-
-'''
 import numpy as np
-import scrap.helper as helper
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+import helper_gpt as helper_gpt
 
 
-
-n = 10
-
-
-params = np.loadtxt('params_bestn'+str(n)+'_retain'+.txt')
-
-test_set = []
-with open("test_set.txt", "r") as f:
-    for line in f:
-        tup = tuple(map(str, line.strip().split(",")))  # Convert back to tuple of integers
-        test_set.append(tup)
-
-print(test_set)
-
-idx = 4
-
-helper.plot_Lorentzian_for_idx(idx, test_set,n,params)
-
-alphaD, alphaD_test, times = helper.plot_alphaD(test_set,params,n)
-
-plt.figure(2)
-plt.plot([i for i in range(len(test_set))], alphaD, marker = '.', label = 'emulator', color = 'red', alpha = 0.8)  
-plt.plot([i for i in range(len(test_set))], alphaD_test, marker = '.', label = 'FAM QRPA calc', ls = '--', color = 'blue', alpha = 0.8)  
-#plt.legend(frameon = False, ncol = 2)
-plt.ylabel(r'$\alpha_D$ (fm$^3$)', size = 18)
-plt.xlabel('Test set index', size = 18)
-#plt.title('${}^{180}$Yb, $n$ = '+str(n), size = 18)
-plt.gca().tick_params(axis="y",direction="in", which = 'both', labelsize = 12)
-plt.gca().tick_params(axis="x",direction="in", which = 'both', labelsize = 12)
-plt.gca().yaxis.set_minor_locator(ticker.MultipleLocator(0.1))
-plt.gca().xaxis.set_minor_locator(ticker.MultipleLocator(5))
-plt.annotate('$n = $'+str(n), (0.1,0.9), xycoords='axes fraction', size = 18)
-#plt.savefig('dipole_polarizability_emulator.pdf', bbox_inches='tight')
-
-plt.figure(3)
-rel =  np.abs(np.array(alphaD_test)-np.array(alphaD))/np.array(alphaD_test)
-plt.scatter(alphaD, alphaD_test, marker = 'o', label = 'QRPA calc', color = 'blue', alpha = 0.8) 
-x = np.linspace(min(alphaD),max(alphaD),100)
-plt.plot(x, x, color = 'black')
-plt.gca().tick_params(axis="y",direction="in", which = 'both', labelsize = 12)
-plt.gca().tick_params(axis="x",direction="in", which = 'both', labelsize = 12)
-plt.gca().yaxis.set_minor_locator(ticker.MultipleLocator(0.1))
-plt.gca().xaxis.set_minor_locator(ticker.MultipleLocator(0.1))
-#plt.xlim(15.8,19)
-#plt.ylim(15.8,19)
-
-#plt.axhline(np.mean(rel), marker = '.', label = 'QRPA calc', ls = '--', color = 'black') 
-#plt.axhline(np.std(rel)+np.mean(rel), marker = '.', label = 'QRPA calc', ls = '--', color = 'black') 
-#plt.yscale('log')
-plt.title('n = '+str(n))
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Validate a Dipole_polarizability run directory against the current helper_gpt layout."
+    )
+    parser.add_argument("--run-dir", default="runs_em1")
+    parser.add_argument("--strength-dir", default="data/nuclear/160Yb_2d/total_strength")
+    parser.add_argument("--alphaD-dir", default="data/nuclear/160Yb_2d/total_alphaD")
+    parser.add_argument(
+        "--strength-regex",
+        default=r"strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out",
+    )
+    parser.add_argument("--alphaD-regex", default=None)
+    parser.add_argument("--filter-ranges", default='{"p1":[0.4,1.8],"p2":[1.5,4.0]}')
+    parser.add_argument("--n", type=int, default=13)
+    parser.add_argument("--ansatz", default="paper_dipole")
+    parser.add_argument("--width-model", default="affine")
+    return parser.parse_args()
 
 
-plt.xlabel(r'FAM QRPA $\alpha_D$', size = 16)
-plt.ylabel(r'Emulated $\alpha_D$', size = 16)
-#plt.savefig('dipole_polarizability_reconstruction.pdf', bbox_inches='tight')
+def main() -> None:
+    args = parse_args()
+    run_dir = Path(args.run_dir)
+    params_path = run_dir / "best_params_global.txt"
+    summary_path = run_dir / "run_summary.json"
+
+    if not params_path.exists():
+        raise FileNotFoundError(f"Missing parameters file: {params_path}")
+    if not summary_path.exists():
+        raise FileNotFoundError(f"Missing run summary: {summary_path}")
+
+    dataset = helper_gpt.load_dataset(
+        strength_dir=args.strength_dir,
+        alphaD_dir=args.alphaD_dir,
+        strength_regex=args.strength_regex,
+        alphaD_regex=args.alphaD_regex,
+        filter_ranges=args.filter_ranges,
+    )
+    params = np.loadtxt(params_path).astype(np.float32)
+    summary = json.loads(summary_path.read_text())
+
+    config = helper_gpt.AnsatzConfig(
+        n=args.n,
+        n_params=int(dataset.param_values.shape[1]),
+        ansatz=args.ansatz,
+        width_model=args.width_model,
+    )
+    expected = helper_gpt.count_trainable_parameters(config)
+    if params.shape != (expected,):
+        raise ValueError(f"Expected params shape {(expected,)}, got {params.shape}")
+    if not np.isfinite(params).all():
+        raise ValueError("Parameters contain non-finite values.")
+
+    print("Run check passed")
+    print("  run dir:", run_dir)
+    print("  samples:", len(dataset.strengths))
+    print("  param names:", dataset.param_names)
+    print("  params shape:", params.shape)
+    print("  summary samples:", summary.get("n_train_samples", summary.get("n_samples")))
+
+
+if __name__ == "__main__":
+    main()

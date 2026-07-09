@@ -1,0 +1,23 @@
+{
+  "seed": 1234,
+  "best_cost": 0.15281973779201508,
+  "best_iter": 19984,
+  "dataset_param_names": [
+    "p1",
+    "p2"
+  ],
+  "central_point": [
+    1.100000023841858,
+    2.75
+  ],
+  "config": {
+    "n": 13,
+    "n_params": 2,
+    "ansatz": "paper_dipole",
+    "width_model": "affine",
+    "use_vector_terms": true,
+    "n_basis": 3,
+    "n_upper": 91,
+    "n_trainable": 330
+  }
+}

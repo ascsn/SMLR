@@ -9,7 +9,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import re
-import scrap.helper as helper
+from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+import helper_gpt as helper
 from scipy.interpolate import griddata
 import tensorflow as tf
 from matplotlib.cm import ScalarMappable
@@ -27,8 +31,8 @@ The values of parameters should be read directly from the file name
 I have to read this because data outside the training region was not included
 in the main.py module, so I have to read it again.
 '''
-strength_dir = '../dipoles_data_all/total_strength/'
-alphaD_dir = '../dipoles_data_all/total_alphaD/'
+strength_dir = 'data/nuclear/160Yb_2d/total_strength'
+alphaD_dir = 'data/nuclear/160Yb_2d/total_alphaD'
 
 # Pattern for strength files: strength_beta_alpha.out
 pattern = re.compile(r'strength_([0-9.]+)_([0-9.]+)\.out')
@@ -363,7 +367,6 @@ Creating second figure for 3 emulators
 # plt.plot([],[], color = 'k', ls = '--', label = 'Emulator 2')
 # plt.legend(frameon = False)
 # plt.ylim(13,25)
-
 
 
 

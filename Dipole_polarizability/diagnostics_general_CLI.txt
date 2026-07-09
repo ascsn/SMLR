@@ -1,6 +1,6 @@
-python src/diagnostics_general_gpt.py \
-  --strength-dir ../dipoles_data_all/total_strength/ \
-  --alphaD-dir ../dipoles_data_all/total_alphaD/ \
+python Dipole_polarizability/src/diagnostics_general_gpt.py \
+  --strength-dir data/nuclear/160Yb_2d/total_strength \
+  --alphaD-dir data/nuclear/160Yb_2d/total_alphaD \
   --strength-regex 'strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out' \
   --filter-ranges '{"p1":[0.2,2.0],"p2":[1.0,4.5]}' \
   --n 13 \

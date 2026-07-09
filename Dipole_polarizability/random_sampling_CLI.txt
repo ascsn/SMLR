@@ -2,7 +2,9 @@ python Dipole_polarizability/src/main_gpt2.py \
   --strength-dir data/nuclear/160Yb_2d/total_strength \
   --alphaD-dir data/nuclear/160Yb_2d/total_alphaD \
   --strength-regex 'strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out' \
-  --filter-ranges '{"p1":[0.4,1.8],"p2":[1.5,4.0]}' \
+  --split-mode random \
+  --split-seed 42 \
+  --random-train-count 121 \
   --n 13 \
   --retain 0.6 \
   --fold 2.0 \
@@ -18,4 +20,4 @@ python Dipole_polarizability/src/main_gpt2.py \
   --num-iter 20000 \
   --print-every 1000 \
   --plots save \
-  --save-dir runs_em1
+  --save-dir runs_em1_random_070926

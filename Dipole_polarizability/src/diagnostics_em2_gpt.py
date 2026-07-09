@@ -1,137 +1,142 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+from __future__ import annotations
 
-import numpy as np
-import matplotlib.pyplot as plt
+import argparse
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.patches as patches
-from matplotlib.colors import LogNorm
+import matplotlib.pyplot as plt
+import numpy as np
 import tensorflow as tf
+from matplotlib.colors import LogNorm
 
-import src.helper_gpt as helper_gpt
-
-
-"""
-Evaluate Emulator 2 (alphaD-only) on the current helper_gpt/main_only_alphaD_gpt workflow.
-
-This script:
-1. Loads the same alphaD dataset structure used in training.
-2. Reconstructs predicted alphaD values from best_params_global.txt.
-3. Plots predicted-vs-true alphaD.
-4. Plots a parameter-space map of relative alphaD error.
-"""
+import helper_gpt as helper_gpt
 
 
-# -----------------------------------------------------------------------------
-# Settings
-# -----------------------------------------------------------------------------
-n = 10
-params = np.loadtxt("runs_em2/best_params_global.txt").astype(np.float32)
-
-strength_dir = "../dipoles_data_all/total_strength/"
-alphaD_dir = "../dipoles_data_all/total_alphaD/"
-strength_regex = r"strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out"
-alphaD_regex = None
-filter_ranges = None
-
-config = helper_gpt.AlphaDOnlyConfig(
-    n=n,
-    n_params=2,
-    ansatz="linear",
-    alphaD_mode="poles_and_strengths",
-)
-
-
-# -----------------------------------------------------------------------------
-# Load dataset
-# -----------------------------------------------------------------------------
-dataset = helper_gpt.load_generic_alphaD_dataset(
-    strength_dir=strength_dir,
-    alphaD_dir=alphaD_dir,
-    strength_regex=strength_regex,
-    alphaD_regex=alphaD_regex,
-    filter_ranges=filter_ranges,
-    central_point=None,
-)
-
-print("Loaded dataset")
-print("  param names:", dataset.param_names)
-print("  samples:", len(dataset.alphaD_values))
-print("  central point:", dataset.central_point.tolist())
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Evaluate Emulator 2 (alphaD-only) with the current helper_gpt workflow."
+    )
+    parser.add_argument("--run-dir", default="runs_em2")
+    parser.add_argument("--strength-dir", default="data/nuclear/160Yb_2d/total_strength")
+    parser.add_argument("--alphaD-dir", default="data/nuclear/160Yb_2d/total_alphaD")
+    parser.add_argument(
+        "--strength-regex",
+        default=r"strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out",
+    )
+    parser.add_argument("--alphaD-regex", default=None)
+    parser.add_argument("--filter-ranges", default='{"p1":[0.4,1.8],"p2":[1.5,4.0]}')
+    parser.add_argument("--n", type=int, default=10)
+    parser.add_argument("--ansatz", default="linear_exp")
+    parser.add_argument(
+        "--alphaD-mode",
+        choices=["mid_eigenvalue", "sum_inverse_positive"],
+        default="mid_eigenvalue",
+    )
+    parser.add_argument("--plots", choices=["none", "save", "show"], default="save")
+    parser.add_argument("--fig-dir", default=None)
+    parser.add_argument("--max-label-points", type=int, default=1000)
+    return parser.parse_args()
 
 
+def main() -> None:
+    args = parse_args()
+    run_dir = Path(args.run_dir)
+    params = np.loadtxt(run_dir / "best_params_global.txt").astype(np.float32)
 
-# -----------------------------------------------------------------------------
-# Build alphaD predictions
-# -----------------------------------------------------------------------------
-pred_fn = helper_gpt.make_alphaD_only_loss_fn_generic(config)
+    dataset = helper_gpt.load_generic_alphaD_dataset(
+        strength_dir=args.strength_dir,
+        alphaD_dir=args.alphaD_dir,
+        strength_regex=args.strength_regex,
+        alphaD_regex=args.alphaD_regex,
+        filter_ranges=args.filter_ranges,
+        central_point=None,
+    )
+    config = helper_gpt.AlphaDOnlyConfig(
+        n=args.n,
+        n_params=int(dataset.param_values.shape[1]),
+        ansatz=args.ansatz,
+        alphaD_mode=args.alphaD_mode,
+    )
+    expected = helper_gpt.count_alphaD_only_parameters(config)
+    if params.shape != (expected,):
+        raise ValueError(f"Expected params shape {(expected,)}, got {params.shape}")
 
-alphaD_opt = pred_fn(
-    tf.convert_to_tensor(params, dtype=tf.float32),
-    tf.convert_to_tensor(dataset.param_values, dtype=tf.float32),
-    tf.convert_to_tensor(dataset.central_point, dtype=tf.float32),
-).numpy()
+    loss_fn = helper_gpt.make_alphaD_only_loss_fn_generic(
+        n=args.n,
+        param_values=dataset.param_values,
+        alphaD_true=dataset.alphaD_values,
+        central_point=dataset.central_point,
+        ansatz=args.ansatz,
+        alphaD_mode=args.alphaD_mode,
+    )
+    loss, alphaD_pred_tf = loss_fn(tf.convert_to_tensor(params, dtype=tf.float32))
 
-alphaD_true = np.asarray(dataset.alphaD_values)
-rel_err = np.abs(alphaD_opt - alphaD_true) / np.maximum(np.abs(alphaD_true), 1e-8)
+    alphaD_opt = alphaD_pred_tf.numpy()
+    alphaD_true = np.asarray(dataset.alphaD_values)
+    rel_err = np.abs(alphaD_opt - alphaD_true) / np.maximum(np.abs(alphaD_true), 1e-8)
 
-print("Mean relative alphaD error:", np.mean(rel_err))
-print("Max relative alphaD error:", np.max(rel_err))
+    print("Loaded dataset")
+    print("  param names:", dataset.param_names)
+    print("  samples:", len(dataset.alphaD_values))
+    print("  central point:", dataset.central_point.tolist())
+    print("  config:", helper_gpt.summarize_alphaD_only_config(config))
+    print("Loss:", float(loss.numpy()))
+    print("Mean relative alphaD error:", float(np.mean(rel_err)))
+    print("Max relative alphaD error:", float(np.max(rel_err)))
+
+    if args.plots == "none":
+        return
+
+    fig_dir = Path(args.fig_dir) if args.fig_dir else run_dir / "diagnostics_em2"
+    if args.plots == "save":
+        fig_dir.mkdir(parents=True, exist_ok=True)
+
+    fig1, ax1 = plt.subplots(figsize=(6, 4))
+    ax1.scatter(alphaD_true, alphaD_opt)
+    if len(alphaD_opt) <= args.max_label_points:
+        for i in range(len(alphaD_opt)):
+            ax1.text(alphaD_true[i], alphaD_opt[i], str(i), fontsize=9, ha="right", va="bottom")
+    xline = np.linspace(
+        min(np.min(alphaD_true), np.min(alphaD_opt)),
+        max(np.max(alphaD_true), np.max(alphaD_opt)),
+        100,
+    )
+    ax1.plot(xline, xline, color="black")
+    ax1.set_xlabel(r"True $\alpha_D$")
+    ax1.set_ylabel(r"Predicted $\alpha_D$")
+    ax1.set_title(f"Emulator 2, n = {args.n}")
+
+    fig2, ax2 = plt.subplots()
+    x = dataset.param_values[:, 0]
+    y = dataset.param_values[:, 1]
+    scatter = ax2.scatter(x, y, c=rel_err, marker="s", cmap="Spectral", norm=LogNorm())
+    fig2.colorbar(scatter, ax=ax2, label=r"Relative error $\alpha_D$")
+    if len(alphaD_opt) <= args.max_label_points:
+        for idx, (xi, yi) in enumerate(zip(x, y)):
+            ax2.text(xi, yi, str(idx), ha="center", va="center", fontsize=8, color="black")
+
+    train_rect = patches.Rectangle(
+        (float(np.min(x)), float(np.min(y))),
+        float(np.max(x) - np.min(x)),
+        float(np.max(y) - np.min(y)),
+        linewidth=1.5,
+        edgecolor="black",
+        facecolor="none",
+    )
+    ax2.add_patch(train_rect)
+    ax2.set_xlabel(dataset.param_names[0])
+    ax2.set_ylabel(dataset.param_names[1])
+    ax2.set_title(r"Parameter-space relative error in $\alpha_D$")
+
+    if args.plots == "save":
+        fig1.savefig(fig_dir / "alphaD_true_vs_pred_em2.png", bbox_inches="tight", dpi=200)
+        fig2.savefig(fig_dir / "parameter_error_map_em2.png", bbox_inches="tight", dpi=200)
+    else:
+        plt.show()
 
 
-# -----------------------------------------------------------------------------
-# alphaD predicted vs true
-# -----------------------------------------------------------------------------
-plt.figure(1, figsize=(6, 4))
-plt.scatter(alphaD_true, alphaD_opt)
-
-for i in range(len(alphaD_opt)):
-    plt.text(alphaD_true[i], alphaD_opt[i], str(i), fontsize=9, ha="right", va="bottom")
-
-xline = np.linspace(
-    min(np.min(alphaD_true), np.min(alphaD_opt)),
-    max(np.max(alphaD_true), np.max(alphaD_opt)),
-    100,
-)
-plt.plot(xline, xline, color="black")
-plt.xlabel(r"True $\alpha_D$")
-plt.ylabel(r"Predicted $\alpha_D$")
-plt.title(f"Emulator 2, n = {n}")
-
-
-# -----------------------------------------------------------------------------
-# Parameter-space relative error map
-# -----------------------------------------------------------------------------
-plt.figure(2)
-
-x = dataset.param_values[:, 0]
-y = dataset.param_values[:, 1]
-
-plt.scatter(x, y, c=rel_err, marker="s", cmap="Spectral", norm=LogNorm())
-plt.colorbar(label=r"Relative error $\alpha_D$")
-
-for idx, (xi, yi) in enumerate(zip(x, y)):
-    plt.text(xi, yi, str(idx), ha="center", va="center", fontsize=8, color="black")
-
-train_alpha = x
-train_beta = y
-
-alpha_min = np.min(train_alpha)
-alpha_max = np.max(train_alpha)
-beta_min = np.min(train_beta)
-beta_max = np.max(train_beta)
-
-train_rect = patches.Rectangle(
-    (alpha_min, beta_min),
-    alpha_max - alpha_min,
-    beta_max - beta_min,
-    linewidth=1.5,
-    edgecolor="black",
-    facecolor="none",
-)
-plt.gca().add_patch(train_rect)
-
-plt.xlabel(dataset.param_names[0])
-plt.ylabel(dataset.param_names[1])
-plt.title(r"Parameter-space relative error in $\alpha_D$")
-
-plt.show()
+if __name__ == "__main__":
+    main()

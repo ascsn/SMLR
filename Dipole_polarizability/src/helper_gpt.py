@@ -577,7 +577,7 @@ def nec_mat(n):
 
 
 
-def data_table(fmt_data, strength_dir='dipole_polarizability_160Yb/total_strength', alphaD_dir='dipole_polarizability_160Yb/total_alphaD'):
+def data_table(fmt_data, strength_dir='data/nuclear/160Yb_2d/total_strength', alphaD_dir='data/nuclear/160Yb_2d/total_alphaD'):
     strength = []
     alphaD = []
     for frmt in fmt_data:

@@ -6,8 +6,11 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import matplotlib.patches as patches
 from matplotlib.colors import LogNorm
+from pathlib import Path
+import sys
 
-import src.helper_gpt as helper_gpt
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+import helper_gpt as helper_gpt
 
 
 """
@@ -27,21 +30,21 @@ This script:
 # Settings
 # -----------------------------------------------------------------------------
 n = 13
-retain = 0.5
-detail_idx = 210
+retain = 0.6
+detail_idx = 60
 
 params = np.loadtxt("runs_em1/best_params_global.txt").astype(np.float32)
 
-strength_dir = "../dipoles_data_all/total_strength/"
-alphaD_dir = "../dipoles_data_all/total_alphaD/"
+strength_dir = "data/nuclear/160Yb_2d/total_strength"
+alphaD_dir = "data/nuclear/160Yb_2d/total_alphaD"
 strength_regex = r"strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out"
 alphaD_regex = None
-filter_ranges = None
+filter_ranges = {"p1": [0.4, 1.8], "p2": [1.5, 4.0]}
 
 config = helper_gpt.AnsatzConfig(
     n=n,
     n_params=2,
-    ansatz="linear_exp",
+    ansatz="paper_dipole",
     width_model="affine",
     use_vector_terms=True,
 )

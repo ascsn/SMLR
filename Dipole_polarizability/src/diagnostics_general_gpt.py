@@ -11,8 +11,11 @@ import numpy as np
 import tensorflow as tf
 from matplotlib.colors import LogNorm
 
-import helper_gpt #as helper_gpt
+import helper_gpt as helper_gpt
 try:
+    from import_helpers import ensure_repo_src_on_path
+
+    ensure_repo_src_on_path()
     from smlr import metrics as smlr_metrics
     from smlr.diagnostics import (
         DiagnosticLabels,

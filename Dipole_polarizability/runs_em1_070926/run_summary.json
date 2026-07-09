@@ -1,0 +1,83 @@
+{
+  "dataset_param_names": [
+    "p1",
+    "p2"
+  ],
+  "n_total_samples": 225,
+  "n_train_samples": 121,
+  "n_test_samples": 104,
+  "train_filters": {
+    "p1": [
+      0.4,
+      1.8
+    ],
+    "p2": [
+      1.5,
+      4.0
+    ]
+  },
+  "split_mode": "range",
+  "split_seed": null,
+  "central_point": [
+    1.100000023841858,
+    2.75
+  ],
+  "config": {
+    "n": 13,
+    "n_params": 2,
+    "ansatz": "paper_dipole",
+    "width_model": "affine",
+    "use_vector_terms": true,
+    "n_basis": 3,
+    "n_upper": 91,
+    "n_trainable": 330
+  },
+  "global_best_cost": 0.11825507879257202,
+  "global_best_meta": {
+    "seed": 1234,
+    "iter": 19952,
+    "train_metrics": {
+      "cost": 0.11826374381780624,
+      "strength_cost": 0.11793291568756104,
+      "alphaD_cost": 0.0003308317100163549,
+      "m1_cost": 0.0,
+      "alphaD_rel": 0.00045316052273847163
+    },
+    "test_metrics": {
+      "cost": 1.068241000175476,
+      "strength_cost": 0.32054808735847473,
+      "alphaD_cost": 0.747692883014679,
+      "m1_cost": 0.0,
+      "alphaD_rel": 0.006949413102120161
+    }
+  },
+  "args": {
+    "strength_dir": "data/nuclear/160Yb_2d/total_strength",
+    "alphaD_dir": "data/nuclear/160Yb_2d/total_alphaD",
+    "strength_regex": "strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\\.out",
+    "alphaD_regex": null,
+    "filter_ranges": "{\"p1\":[0.4,1.8],\"p2\":[1.5,4.0]}",
+    "split_mode": "range",
+    "split_seed": 42,
+    "random_train_count": null,
+    "random_train_fraction": null,
+    "central_point": null,
+    "n": 13,
+    "retain": 0.6,
+    "fold": 2.0,
+    "ansatz": "paper_dipole",
+    "width_model": "affine",
+    "no_vector_terms": false,
+    "w_strength": 100.0,
+    "w_alphaD": 200.0,
+    "w_m1": 0.0,
+    "m1_target": 875.0,
+    "learning_rate": 0.01,
+    "n_restarts": 1,
+    "seed0": 1234,
+    "num_iter": 20000,
+    "print_every": 1000,
+    "plots": "save",
+    "save_dir": "runs_em1"
+  }
+}

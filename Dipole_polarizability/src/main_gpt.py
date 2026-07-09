@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-import src.helper_gpt as helper_gpt
+import helper_gpt as helper_gpt
 
 
 # -----------------------------------------------------------------------------
@@ -26,9 +26,9 @@ def parse_args():
     )
 
     # Data
-    p.add_argument("--strength-dir", type=str, default="../dipoles_data_all/total_strength/",
+    p.add_argument("--strength-dir", type=str, default="data/nuclear/160Yb_2d/total_strength",
                    help="Directory containing strength files.")
-    p.add_argument("--alphaD-dir", type=str, default="../dipoles_data_all/total_alphaD/",
+    p.add_argument("--alphaD-dir", type=str, default="data/nuclear/160Yb_2d/total_alphaD",
                    help="Directory containing alphaD files. Can be omitted if alphaD is computed from strength.")
     p.add_argument("--strength-regex", type=str,
                    default=r"strength_(?P<p2>[0-9.]+)_(?P<p1>[0-9.]+)\.out",

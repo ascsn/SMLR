@@ -13,8 +13,11 @@ from matplotlib.colors import LogNorm
 import matplotlib.colors as mcolors
 import matplotlib.patches as patches
 
-import helper_gpt #as helper_gpt
+import helper_gpt as helper_gpt
 try:
+    from import_helpers import ensure_repo_src_on_path
+
+    ensure_repo_src_on_path()
     from smlr import metrics as smlr_metrics
     from smlr.diagnostics import (
         DiagnosticLabels,

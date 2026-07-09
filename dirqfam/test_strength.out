@@ -1,0 +1,20 @@
+dB/dw(f,omega) = -1/pi * Im[S(f,omega)].
+
+Nucleus: Yb 160.
+Parametrization of the Lagrangian: DD-PC1.
+Ground state deformation beta = +0.220.
+Isovector J = 1, K = 0 excitation.
+Gamma smearing = 1.000 [MeV].
+Fully self-consistent response.
+
+n0f = 16(17) oscillator shells for large(small) spinor component.
+Gaussian quadrature mesh: NGH = 48, NGL = 48.
+Oscillator basis deformation beta0 = +0.300.
+Coulomb included in calculation.  
+Pairing included in calculation.  
+
+
+ omega [MeV]           dB/dw(f,omega) [e^2fm^2/MeV]   S(f,omega) [e^2fm^2/MeV]                  rel. residual error
+
+ 0.000000000E+00      -0.297381353E-15               -0.288763188E+01 +  0.934251074E-15 i      0.413E-06                         
+ 0.100000000E+01       0.181735190E-01               -0.287802597E+01 + -0.570937937E-01 i      0.931E-06                         
